@@ -20,7 +20,7 @@
                 <task>
                     <name>woe</name>
                     <job_type>python</job_type>
-                    <script>woepy.py --input=%raw --output=woe/woe.txt --outputdata=woe.csv</script>
+                    <script>python woepy.py --input=%raw --output=woe/woe.txt --outputdata=woe.csv</script>
                     <package></package>
                     <skip_task></skip_task>
                     <task_input></task_input>
@@ -43,7 +43,7 @@
                 <task>
                     <name>logreg</name>
                     <job_type>python</job_type>
-                    <script>logreg.py --input=%t1 --outputdata=logreg.csv --spec=spec.txt</script>
+                    <script>python logreg.py --input=%t1 --outputdata=logreg.csv --spec=spec.txt</script>
                     <package></package>
                     <skip_task></skip_task>
                     <task_input></task_input>
@@ -65,7 +65,7 @@
                     </task_output>
                 </task>
             </tasks>
-            <stage_script>merge.py --input=%t2,%t3 --output=%t4</stage_script>
+            <stage_script>python merge.py --input=%t2,%t3 --output=%t4</stage_script>
             <stage_package></stage_package>
             <skip_stage></skip_stage>
             <stage_input>
@@ -81,7 +81,7 @@
                 <task>
                     <name>roc</name>
                     <job_type>python</job_type>
-                    <script>roc.py --input=%t4 --output=roc.xls</script>
+                    <script>python roc.py --input=%t4 --output=roc.xls</script>
                     <package></package>
                     <skip_task></skip_task>
                     <task_input></task_input>

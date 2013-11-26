@@ -169,7 +169,7 @@ class Project:
                     self.datafiles.extend(task.input)
                 if task.output is not None :
                     self.datafiles.extend(task.output)
-        #TODO: need to create the input file list for each worktask based on datafile id and stuffs
+        #create the input file list for each worktask based on datafile id and stuffs
         for stage_name, stage in self.stages.iteritems() :
             for task_name, task in stage.tasks.iteritems() :
                 if task.script is None or task.script == '' :
@@ -180,28 +180,41 @@ class Project:
                         task.input.append(files[0])
                     else :
                         logging.error("file replacer error : {0}".format(repr(files)))
+            for file_id in re.findall(r'%\w+', stage.script):
+                files = [x for x in self.datafiles if x.id == file_id[1:]]
+                if len(files) == 1:
+                    stage.input.append(files[0])
+                else:
+                    logging.error("file replacer error : {0}".format(repr(files)))
         self.deactivate = False
 
-    def nextStage(self, system):
+    def nextStage(self, system, fetch_completes=None):
         if self.deactivate :
             return -1
         stage = self.findUndelieveredStage()
         if stage is None :
             return -1
         for taskname, task in stage.tasks.iteritems() :
-            if task.skip :
+            if task.skip or task.delievered:
                 continue
             target_engine, same_engine = system.findEngineByType(task.jobtype)
-            target_path = "" if same_engine else target_engine.address + ":"
+            target_path = "" if same_engine else target_engine.username + "@" + target_engine.address + ":"
             target_path += target_engine.taskpool
-            taskcontent = self.createWorkTask(task)
-            distributor = Distributer(target_path, os.sep.join([system.engine.delivery, self.inner_name]), taskname, taskcontent, same_engine)
-            distributor.setDaemon(True)
+            taskcontent = self.createWorkTask(task, system.engine)
+            distributor = Distributer(system.engine, os.sep.join([system.engine.delivery, self.inner_name]), taskname,
+                                      taskcontent, target_path, same_engine)
+            #distributor.setDaemon(True)
             distributor.start()
             task.delievered = True
         if stage.checkComplete() and not stage.skip and not stage.triggered:
-            # TODO: start stage script
-            print "stage started!"
+            if fetch_completes :
+                for item in fetch_completes :
+                    while not item.isSet() :
+                        item.wait(3)
+            script_task_content = self.createWorkTask(stage, system.engine)
+            distributor = Distributer(system.engine, os.sep.join([system.engine.delivery, self.inner_name]), stage.name,
+                                      script_task_content, system.engine.taskpool, True)
+            distributor.start()
             stage.triggered = True
 
     def findUndelieveredStage(self):
@@ -210,21 +223,31 @@ class Project:
                 return stage
         return None
 
-    def createWorkTask(self, task):
+    def createWorkTask(self, task, engine):
         work_task_xml = xmlwitch.Builder()
         with work_task_xml.worktask() :
             work_task_xml.project(self.name)
             work_task_xml.project_id(self.inner_name)
             work_task_xml.task_name(task.name)
-            work_task_xml.job_type(task.jobtype)
             work_task_xml.script(task.script)
-            work_task_xml.package(task.package)
+            if task.package is not None:
+                package = self.findAbsolutePath(task.package, engine)
+                if not package:
+                    # TODO: handle error
+                    pass
+                work_task_xml.package(task.package)
+            else :
+                work_task_xml.package()
             with work_task_xml.input():
                 for item in task.input:
+                    path = self.findAbsolutePath(item.path, engine)
+                    if not path :
+                        # TODO : handle error
+                        pass
                     if item.is_folder:
-                        work_task_xml.folder(item.path, id=item.id)
+                        work_task_xml.folder(path, id=item.id)
                     else :
-                        work_task_xml.file(item.path, id=item.id)
+                        work_task_xml.file(path, id=item.id)
             with work_task_xml.output():
                 for item in task.output:
                     if item.is_output:
@@ -239,6 +262,16 @@ class Project:
                         work_task_xml.file(item.path, id=item.id, type=datatype)
         return str(work_task_xml)
 
+    def findAbsolutePath(self, path, engine):
+        if (path.startswith(os.sep) or path[1] == ":") and os.path.exists(path) :
+            return path
+        elif os.path.exists(os.sep.join([engine.temp, self.inner_name, path])) :
+            return os.sep.join([engine.temp, self.inner_name, path])
+        elif os.path.exists(os.sep.join([engine.output, self.inner_name, path])) :
+            return os.sep.join([engine.output, self.inner_name, path])
+        else :
+            logging.error("File cannot be found : {0}".format(path))
+            return None
 
 
 class WorkTask:
@@ -246,7 +279,6 @@ class WorkTask:
         self.project_name = wconfig['project']
         self.project_id = wconfig['project_id']
         self.task_name = wconfig['task_name']
-        self.jobtype = wconfig['job_type']
         self.script = wconfig['script']
         self.package = wconfig['package']
         self.inputs = []

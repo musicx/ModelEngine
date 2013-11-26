@@ -65,24 +65,6 @@ class TaskScanner(Thread):
                 self.moveTask(filename, project.inner_name)
                 project.nextStage(self.system)
 
-            elif "command" in doc:
-                command = Command(doc['command'])
-                if command.project_name is not None :
-                    self.moveTasks(filename, command.projects)
-                else :
-                    self.moveTask(filename, None)
-                #TODO: generate same command xml and send it to all clients
-                # do the project level command, such as stop task, stage or shut the proj down
-                # close engine
-                if command.command == "shutdown" :
-                    if command.project_name is None:
-                        self.system.stopper.set()
-                    else :
-                        # TODO: because there is no python API to kill thread or subprocess, set the project to deactivate to stop FURTHER actions
-                        # TODO: however, for multiprocessing.Process, p.terminate() can be used!
-                        for project in command.projects.itervalues() :
-                            project.deactivate = True
-
             elif "worktask" in doc:
                 worktask = WorkTask(doc['worktask'])
                 self.checkFolder(worktask.project_id)
@@ -91,20 +73,32 @@ class TaskScanner(Thread):
                 # copy the input file from remote to local
                 finish_events = []
                 for item in missing_list :
-                    file_path = item.path if item.path.startswith(os.sep) or item.path[1] == ":" \
-                                          else os.seq.join((self.system.controller.output, item.path))
                     finished = Event()
-                    fetcher = Fetcher(self.engine, self.system.controller.address, file_path,
+                    fetcher = Fetcher(self.engine, self.system.controller.address, item.path,
                                       self.engine.temp, finished)
                     fetcher.start()
                     finish_events.append(finished)
-                worker_process = WorkerProcess(worktask.script, self.message_queue)
+                worker_process = WorkerProcess(worktask.script, self.message_queue, finish_events, worktask.package)
                 self.engine.worktasks[worktask.project_id].append(worker_process)
                 worker_process.start()
 
-                print "WorkTask {0}:{1} cannot be processed due to {2}".format(worktask.project_name, worktask.task_name, worktask.message)
-                #TODO: return the failure of the worktask
-                #TODO: kick the task off in another process
+            elif "command" in doc:
+                command = Command(doc['command'])
+                if command.project_name is not None:
+                    self.moveTasks(filename, command.projects)
+                else:
+                    self.moveTask(filename, None)
+                    #TODO: generate same command xml and send it to all clients
+                # do the project level command, such as stop task, stage or shut the proj down
+                # close engine
+                if command.command == "shutdown":
+                    if command.project_name is None:
+                        self.system.stopper.set()
+                    else:
+                        # TODO: because there is no python API to kill thread or subprocess, set the project to deactivate to stop FURTHER actions
+                        # TODO: however, for multiprocessing.Process, p.terminate() can be used!
+                        for project in command.projects.itervalues():
+                            project.deactivate = True
 
             elif "message" in doc:
                 logging.debug("find message")
@@ -178,6 +172,7 @@ class Distributer(Thread) :
         self.task_name = task_name
         self.xml = xml_content
         self.is_local = is_local
+        #self.setDaemon(True)
 
     def run(self) :
         filename = self.generateTaskFile()
@@ -247,44 +242,66 @@ class MessageCollector(Thread) :
             self.message_queue.task_done()
 
 class WorkerThread(Thread) :
-    def __init__(self, in_queue, out_queue):
+    def __init__(self, script, out_queue, events=None, package=None):
         Thread.__init__(self)
-        self.task_queue = in_queue
+        self.script = script
         self.message_queue = out_queue
+        self.events = events
+        self.package = package
 
     def run(self):
-        taskscript = self.task_queue.get()
+        if self.events is not None :
+            for item in self.events :
+                while not item.isSet() :
+                    item.wait(1)
         try :
             if sys.platform.startswith("win") :
-                runningOutput = subprocess.check_output(["cmd /C " + taskscript + "& exit 0"],
+                runningOutput = subprocess.check_output(["cmd /C " + self.script + "& exit 0"],
                                                         stderr=subprocess.STDOUT, shell=True)
             else :
-                runningOutput = subprocess.check_output([taskscript + "; exit 0"],
+                runningOutput = subprocess.check_output([self.script + "; exit 0"],
                                                         stderr=subprocess.STDOUT, shell=True)
         except Exception as err:
             runningOutput = err.message
-        self.task_queue.task_done()
         self.message_queue.put(runningOutput)
 
 
 class WorkerProcess(Process) :
-    def __init__(self, in_queue, out_queue):
+    def __init__(self, script, out_queue, events=None, package=None, dir=""):
         Process.__init__(self)
-        self.task_queue = in_queue
+        self.script = script
         self.message_queue = out_queue
+        self.events = events
+        self.package = package
+        self.dir = dir
 
     def run(self):
-        taskscript = self.task_queue.get()
+        if self.events is not None:
+            for item in self.events:
+                while not item.isSet():
+                    item.wait(1)
+        if self.package is not None :
+            filename = os.path.basename(self.package)
+            if filename.endswith(".zip") :
+                unzip = "unzip "
+            elif filename.endswith(".tar.gz") :
+                unzip = "tar xzf "
+            elif filename.endswith(".tar.bz2") :
+                unzip = "tar xjf "
+            elif filename.endswith(".gz") :
+                unzip = "gunzip "
+            elif filename.endswith(".bz2") :
+                unzip = "bzip2 -d "
+        zip_res = subprocess.call(unzip + os.sep.join([self.dir, filename]), stderr=subprocess.STDOUT, shell=True)
         try :
             if sys.platform.startswith("win") :
-                runningOutput = subprocess.check_output(["cmd /C " + taskscript + "& exit 0"],
+                runningOutput = subprocess.check_output(["cmd /C " + self.script + "& exit 0"],
                                                         stderr=subprocess.STDOUT, shell=True)
             else :
-                runningOutput = subprocess.check_output([taskscript + "; exit 0"],
+                runningOutput = subprocess.check_output([self.script + "; exit 0"],
                                                         stderr=subprocess.STDOUT, shell=True)
         except Exception as err:
             runningOutput = err.message
-        self.task_queue.task_done()
         self.message_queue.put(runningOutput)
 
 
@@ -294,19 +311,11 @@ if __name__ == '__main__':
     system = System(config_path)
     system.stopper = Event()
     stopper = Event()
-    task_queue = Queue()
     message_queue = Queue()
-    timer = TaskScanner(stopper, system, task_queue, message_queue)
-    workers = []
-    for i in xrange(system.num_worker) :
-        worker = WorkerThread(task_queue, message_queue)
-        workers.append(worker)
+    timer = TaskScanner(stopper, system, message_queue)
     timer.start()
-    message_collector = MessageCollector(task_queue, message_queue)
+    message_collector = MessageCollector(message_queue)
     message_collector.start()
-    for worker in workers :
-        worker.start()
-
     while not system.stopper.isSet():
         system.stopper.wait(15)
     stopper.set()
