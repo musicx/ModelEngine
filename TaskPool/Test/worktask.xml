@@ -1,0 +1,16 @@
+<worktask>
+    <project>collusion_test</project>
+    <project_id>collusion_test_1230123</project_id>
+    <task_name>train</task_name>
+    <job_type>python</job_type>
+    <script>train.py</script>
+    <parameter>--input=$f1 --output=$o1</parameter>
+    <input>
+        <file id="f1">raw.csv</file>
+        <file id="f2">woe.txt</file>
+    </input>
+    <output>
+        <file id="o1" type="data">score.csv</file>
+        <file id="o2" type="output">spec.txt</file>
+    </output>
+</worktask>

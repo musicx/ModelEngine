@@ -1,0 +1,100 @@
+<project>
+    <name>collusion_test</name>
+    <email>yijiliu@ebay.com</email>
+    <record_ids>
+        <id>payment_transid</id>
+        <id>account_number</id>
+    </record_ids>
+    <bad_indicator>is_bad</bad_indicator>
+    <weight_indicator>unit_weight</weight_indicator>
+    <preserve_var_list>c:\work\python\modelengine\input\preserve_var.txt</preserve_var_list>
+    <model_var_list>c:\work\python\modelengine\input\model_var.txt</model_var_list>
+    <project_input>
+        <file id="raw">data\raw.csv</file>
+    </project_input>
+    <clean_after_success></clean_after_success>
+    <stages>
+        <stage>
+            <name>preprocessing</name>
+            <tasks>
+                <task>
+                    <name>woe</name>
+                    <job_type>python</job_type>
+                    <script>woepy.py --input=%raw --output=woe/woe.txt --outputdata=woe.csv</script>
+                    <package></package>
+                    <skip_task></skip_task>
+                    <task_input></task_input>
+                    <task_output>
+                        <file type="output">woe.txt</file>
+                        <folder type="output">woe</folder>
+                        <file id="t1" type="data">woe.csv</file>
+                    </task_output>
+                </task>
+            </tasks>
+            <stage_script></stage_script>
+            <stage_package></stage_package>
+            <skip_stage></skip_stage>
+            <stage_input></stage_input>
+            <stage_output></stage_output>
+        </stage>
+        <stage>
+            <name>modeling</name>
+            <tasks>
+                <task>
+                    <name>logreg</name>
+                    <job_type>python</job_type>
+                    <script>logreg.py --input=%t1 --outputdata=logreg.csv --spec=spec.txt</script>
+                    <package></package>
+                    <skip_task></skip_task>
+                    <task_input></task_input>
+                    <task_output>
+                        <file>spec.txt</file>
+                        <file id="t2" type="data">logreg.csv</file>
+                    </task_output>
+                </task>
+                <task>
+                    <name>nn</name>
+                    <job_type>sas</job_type>
+                    <script>nn.sas</script>
+                    <package></package>
+                    <skip_task></skip_task>
+                    <task_input></task_input>
+                    <task_output>
+                        <file id="t3" type="data">nn.csv</file>
+                        <file>nn.txt</file>
+                    </task_output>
+                </task>
+            </tasks>
+            <stage_script>merge.py --input=%t2,%t3 --output=%t4</stage_script>
+            <stage_package></stage_package>
+            <skip_stage></skip_stage>
+            <stage_input>
+                <file>abc.txt</file>
+            </stage_input>
+            <stage_output>
+                <file id="t4" type="data">score.csv</file>
+            </stage_output>
+        </stage>
+        <stage>
+            <name>evaluation</name>
+            <tasks>
+                <task>
+                    <name>roc</name>
+                    <job_type>python</job_type>
+                    <script>roc.py --input=%t4 --output=roc.xls</script>
+                    <package></package>
+                    <skip_task></skip_task>
+                    <task_input></task_input>
+                    <task_output>
+                        <file type="output">roc.xls</file>
+                    </task_output>
+                </task>
+            </tasks>
+            <stage_script></stage_script>
+            <stage_package></stage_package>
+            <skip_stage></skip_stage>
+            <stage_input></stage_input>
+            <stage_output></stage_output>
+        </stage>
+    </stages>
+</project>
