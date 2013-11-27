@@ -1,8 +1,6 @@
 <configuration>
     <check_interval>2</check_interval>
     <engine_name>localhost</engine_name>
-    <worker_number>2</worker_number>
-    <copier_number>2</copier_number>
     <username></username>
     <engines>
         <server>

@@ -182,7 +182,7 @@ class Distributer(Thread) :
             print "copy error"
 
     def generateTaskFile(self):
-        base_name = "gen_{0}_{1}.xml".format(self.task_name, long(time.time()))
+        base_name = "{0}_{1}.xml".format(self.task_name, long(time.time()))
         file_path = os.sep.join([self.source, base_name])
         with open(file_path, 'w') as fn:
             fn.write(self.xml)
@@ -228,18 +228,26 @@ class Fetcher(Thread) :
 
 
 class MessageCollector(Thread) :
-    def __init__(self, task_queue, message_queue):
+    def __init__(self, in_queue, cur_engine, target_engine, is_local):
         Thread.__init__(self)
-        self.task_queue = task_queue
-        self.message_queue = message_queue
+        self.engine = cur_engine
+        self.notice_queue = in_queue
+        self.is_local = is_local
+        if self.is_local :
+            self.target = target_engine.taskpool
+        else :
+            self.target = "{0}@{1}:{2}".format(target_engine.username, target_engine.address, target_engine.taskpool)
         self.setDaemon(True)
 
     def run(self):
         while True :
-            message = self.message_queue.get()
+            notice = self.notice_queue.get()
             #TODO: write the message to log / email it out / send to controller
-            print message
-            self.message_queue.task_done()
+            xml_content = notice.createMessage(self.engine.address)
+            message_sender = Distributer(self.engine, os.sep.join([self.engine.delivery, notice.project_id]),
+                                         notice.project_id + "_message", xml_content, self.target, self.is_local)
+            self.notice_queue.task_done()
+
 
 class WorkerThread(Thread) :
     def __init__(self, script, out_queue, events=None, package=None):
@@ -267,13 +275,13 @@ class WorkerThread(Thread) :
 
 
 class WorkerProcess(Process) :
-    def __init__(self, script, out_queue, events=None, package=None, dir=""):
+    def __init__(self, script, out_queue, events=None, package=None, cur_dir=""):
         Process.__init__(self)
         self.script = script
         self.message_queue = out_queue
         self.events = events
         self.package = package
-        self.dir = dir
+        self.dir = cur_dir
 
     def run(self):
         if self.events is not None:
@@ -282,17 +290,23 @@ class WorkerProcess(Process) :
                     item.wait(1)
         if self.package is not None :
             filename = os.path.basename(self.package)
+            unzip = ""
             if filename.endswith(".zip") :
-                unzip = "unzip "
+                unzip = "unzip -q "
             elif filename.endswith(".tar.gz") :
                 unzip = "tar xzf "
             elif filename.endswith(".tar.bz2") :
                 unzip = "tar xjf "
             elif filename.endswith(".gz") :
-                unzip = "gunzip "
+                unzip = "gunzip -q "
             elif filename.endswith(".bz2") :
-                unzip = "bzip2 -d "
-        zip_res = subprocess.call(unzip + os.sep.join([self.dir, filename]), stderr=subprocess.STDOUT, shell=True)
+                unzip = "bzip2 -dq "
+            if unzip != "" :
+                zip_res = subprocess.call(unzip + os.sep.join([self.dir, filename]), stderr=subprocess.STDOUT, shell=True)
+                if zip_res != "" :
+                    #TODO Error log / stop task / notify controller of the failure
+                    self.message_queue.put(zip_res)
+                    return
         try :
             if sys.platform.startswith("win") :
                 runningOutput = subprocess.check_output(["cmd /C " + self.script + "& exit 0"],

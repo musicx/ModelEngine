@@ -320,7 +320,11 @@ class WorkTask:
 
 class Message:
     def __init__(self, mconfig):
-        pass
+        self.worker = mconfig['worker']
+        self.project_id = mconfig['project_id']
+        self.task_name = mconfig['task_name']
+        self.status = int(mconfig['status'])
+        self.message = mconfig['message']
 
 
 class Command:
@@ -335,4 +339,22 @@ class Command:
                 self.projects[candidate.inner_name] = candidate
 
 
+class Notice :
+    """ this is the class for internal info transfer, message collector will get this from the message queue, and
+        then create message xmls to send back to controller.
+    """
+    def __init__(self, project, task, message, status):
+        self.project_id = project
+        self.task_name = task
+        self.message = message
+        self.status = status
 
+    def createMessage(self, address):
+        message_xml = xmlwitch.Builder()
+        with message_xml.message() :
+            message_xml.project_id(self.project_id)
+            message_xml.worker(address)
+            message_xml.task_name(self.task_name)
+            message_xml.status(self.status)
+            message_xml.message(self.message)
+        return str(message_xml)

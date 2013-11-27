@@ -30,8 +30,6 @@ class System:
         self.interval = int(float(doc['configuration']['check_interval']))
         self.engines = {}
         self.username = doc['configuration']['username']
-        self.num_worker = int(float(doc['configuration']['worker_number']))
-        self.num_copier = int(float(doc['configuration']['copier_number']))
         for server in doc['configuration']['engines']['server']:
             engine = Engine(server, self.username)
             self.engines[engine.name] = engine

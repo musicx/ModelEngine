@@ -2,8 +2,8 @@
     <project>collusion_test</project>
     <project_id>collusion_test_1230123</project_id>
     <task_name>train</task_name>
-    <script>train.py</script>
-    <parameter>--input=$f1 --output=$o1</parameter>
+    <script>python train.py --input=$f1 --output=$o1</script>
+    <package></package>
     <input>
         <file id="f1">raw.csv</file>
         <file id="f2">woe.txt</file>
