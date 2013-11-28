@@ -3,6 +3,7 @@ import logging
 import os
 import shutil
 import re
+import time
 import xmlwitch
 from start import Distributer
 
@@ -139,7 +140,10 @@ class Project:
         self.system = system
         self.stages = OrderedDict()
         self.name = pconfig['name']
-        self.inner_name = ""
+        self.project_id = "{0}_{1}".format(self.name, long(time.time()))
+        while self.project_id in self.system.projects:
+            self.project_id = "{0}_{1}".format(self.name, long(time.time()))
+        self.project_id = ""
         self.email = pconfig['email'] # TODO: this can be changed to multiple receivers
         self.datameta = DataMeta()
         self.datameta.id.extend(pconfig['record_ids']['id'])
@@ -203,14 +207,14 @@ class Project:
             target_path = "" if same_engine else target_engine.username + "@" + target_engine.address + ":"
             target_path += target_engine.taskpool
             taskcontent = self.createWorkTask(task, self.system.engine)
-            distributor = Distributer(self.system.engine, os.sep.join([self.system.engine.delivery, self.inner_name]),
+            distributor = Distributer(self.system.engine, os.sep.join([self.system.engine.delivery, self.project_id]),
                                       taskname, taskcontent, target_path, same_engine)
             #distributor.setDaemon(True)
             distributor.start()
             task.delievered = True
         if stage.allTaskComplete() and not stage.skip and not stage.delievered:
             script_task_content = self.createWorkTask(stage, self.system.engine)
-            distributor = Distributer(self.system.engine, os.sep.join([self.system.engine.delivery, self.inner_name]),
+            distributor = Distributer(self.system.engine, os.sep.join([self.system.engine.delivery, self.project_id]),
                                       stage.name, script_task_content, self.system.engine.taskpool, True)
             distributor.start()
             stage.delievered = True
@@ -231,7 +235,7 @@ class Project:
         work_task_xml = xmlwitch.Builder()
         with work_task_xml.worktask() :
             work_task_xml.project(self.name)
-            work_task_xml.project_id(self.inner_name)
+            work_task_xml.project_id(self.project_id)
             work_task_xml.task_name(task.name)
             work_task_xml.script(task.script)
             if task.package is not None:
@@ -269,10 +273,10 @@ class Project:
     def findAbsolutePath(self, path, engine):
         if (path.startswith(os.sep) or path[1] == ":") and os.path.exists(path) :
             return path
-        elif os.path.exists(os.sep.join([engine.temp, self.inner_name, path])) :
-            return os.sep.join([engine.temp, self.inner_name, path])
-        elif os.path.exists(os.sep.join([engine.output, self.inner_name, path])) :
-            return os.sep.join([engine.output, self.inner_name, path])
+        elif os.path.exists(os.sep.join([engine.temp, self.project_id, path])) :
+            return os.sep.join([engine.temp, self.project_id, path])
+        elif os.path.exists(os.sep.join([engine.output, self.project_id, path])) :
+            return os.sep.join([engine.output, self.project_id, path])
         else :
             logging.error("File cannot be found : {0}".format(path))
             return None
@@ -321,22 +325,35 @@ class WorkTask:
         else :
             self.outputs.append(DataFile(wconfig['output']['folder'], 1))
 
-    def check(self, system):
+    def checkMissing(self, engine):
+        """
+        check the temp && the output folder for the file, as well as the absolute path if given
+        """
         missing_files = []
-        # TODO: check where to check for the input files. The output folder or the temp folder or both?
         for input_file in self.inputs :
-            path = input_file.path if input_file.path.startswith(os.sep) or input_file.path[1] == ":" \
-                                   else os.sep.join((system.engine.temp, self.project_id, input_file.path))
-            if not os.path.exists(path):
-                # Create a list of files needs to be copied from controller to local
-                missing_files.append(input_file)
+            temp_path = input_file.path if input_file.path.startswith(os.sep) or input_file.path[1] == ":" \
+                                        else os.sep.join((engine.temp, self.project_id, input_file.path))
+            output_path = input_file.path if input_file.path.startswith(os.sep) or input_file.path[1] == ":" \
+                                          else os.sep.join((engine.output, self.project_id, input_file.path))
+            if not os.path.exists(output_path):
+                if not os.path.exists(temp_path) :
+                    missing_files.append(input_file)
+                else :
+                    input_file.path = temp_path
             else :
-                input_file.path = path
+                input_file.path = output_path
         if self.package is not None and self.package.strip() != "" :
-            package_path = self.package if self.package.startswith(os.sep) or self.package[1] == ":" \
-                                        else os.sep.join((system.engine.temp, self.project_id, self.package))
-            if not os.path.exists(package_path) :
-                missing_files.append(DataFile(self.package, is_package=1))
+            package_temp_path = self.package if self.package.startswith(os.sep) or self.package[1] == ":" \
+                                             else os.sep.join((engine.temp, self.project_id, self.package))
+            package_output_path = self.package if self.package.startswith(os.sep) or self.package[1] == ":" \
+                                               else os.sep.join((engine.output, self.project_id, self.package))
+            if not os.path.exists(package_output_path) :
+                if not os.path.exists(package_temp_path) :
+                    missing_files.append(DataFile(self.package, is_package=1))
+                else :
+                    self.package = package_temp_path
+            else :
+                self.package = package_output_path
         return missing_files
 
 
@@ -358,20 +375,27 @@ class Command:
         if self.project_name is not None and self.email is not None :
             candidates = system.findProjectByName(self.project_name, self.email)
             for candidate in candidates:
-                self.projects[candidate.inner_name] = candidate
+                self.projects[candidate.project_id] = candidate
 
 
 class Notice :
-    """ this is the class for internal info transfer, message collector will get this from the message queue, and
-        then create message xmls to send back to controller.
     """
-    def __init__(self, project, task, message, status):
-        self.project_id = project
-        self.task_name = task
+    this is the class for internal info transfer, message collector will get this from the message queue, and
+    then create message xml to send back to controller.
+    """
+    def __init__(self, project_id, task_name, message, status):
+        """
+        status : 0 if success, -1 if error
+        """
+        self.project_id = project_id
+        self.task_name = task_name
         self.message = message
         self.status = status
 
     def createMessage(self, address):
+        """
+        address : the address of current engine
+        """
         message_xml = xmlwitch.Builder()
         with message_xml.message() :
             message_xml.project_id(self.project_id)

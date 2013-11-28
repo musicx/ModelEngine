@@ -1,6 +1,6 @@
 import glob
 import logging
-from multiprocessing import Process, Queue
+from multiprocessing import Process, Queue, JoinableQueue
 import os
 import subprocess
 import sys
@@ -28,21 +28,20 @@ __author__ = 'yijiliu'
 
 
 class TaskScanner(Thread):
-    def __init__(self, event, whole_system, out_queue, ref_queue):
+    def __init__(self, stopper_event, current_system, out_queue):
         Thread.__init__(self)
-        self.stopped = event
-        self.system = whole_system
-        self.interval = whole_system.interval
-        self.engine = whole_system.engine
-        self.task_queue = out_queue
-        self.message_queue = ref_queue
+        self.stopped = stopper_event
+        self.system = current_system
+        self.interval = current_system.interval
+        self.engine = current_system.engine
+        self.message_queue = out_queue
 
     def run(self):
         while not self.stopped.isSet():
             self.stopped.wait(self.interval)
-            self.checkxml()
+            self.checkTaskPool()
 
-    def checkxml(self):
+    def checkTaskPool(self):
         taskfiles = glob.glob(os.path.join(self.engine.taskpool, '*.xml'))
         for filename in taskfiles:
             with open(filename) as fn:
@@ -56,20 +55,16 @@ class TaskScanner(Thread):
 
             if "project" in doc:
                 project = Project(doc['project'], self.system)
-                inner_name = "{0}_{1}".format(project.name, long(time.time()))
-                while inner_name in self.system.projects:
-                    inner_name = "{0}_{1}".format(project.name, long(time.time()))
-                self.system.projects[inner_name] = project
-                project.inner_name = inner_name
-                self.checkFolder(project.inner_name)
-                self.moveTask(filename, project.inner_name)
+                self.system.projects[project.project_id] = project
+                self.checkFolder(project.project_id)
+                self.moveTask(filename, project.project_id)
                 project.nextTasks()
 
             elif "worktask" in doc:
                 worktask = WorkTask(doc['worktask'])
                 self.checkFolder(worktask.project_id)
                 self.moveTask(filename, worktask.project_id)
-                missing_list = worktask.check(self.engine)
+                missing_list = worktask.checkMissing(self.engine)
                 # copy the input file from remote to local
                 finish_events = []
                 for item in missing_list :
@@ -78,6 +73,7 @@ class TaskScanner(Thread):
                                       self.engine.temp, finished)
                     fetcher.start()
                     finish_events.append(finished)
+                #TODO : replace the placeholder in the script
                 worker_process = WorkerProcess(worktask.script, self.message_queue, finish_events, worktask.package)
                 self.engine.worktasks[worktask.project_id].append(worker_process)
                 worker_process.start()
@@ -123,11 +119,17 @@ class TaskScanner(Thread):
                 #TODO: find email address in the xml and send error message to him/her.
 
 
-    def moveTask(self, filename, inner_name):
+    def moveTask(self, filename, project_id):
+        """
+        logic is to put project level file to its own delivery folder,
+        and to put system level file to root delivery folder
+        if not successful, remove the ".xml" suffix
+        if still not successful, raise IOError
+        """
         basename = os.path.basename(filename)
         timestamp = long(time.time())
-        if inner_name is not None :
-            target = os.sep.join((self.engine.delivery, inner_name,
+        if project_id is not None :
+            target = os.sep.join((self.engine.delivery, project_id,
                                   "del_{0}_{1}".format(timestamp, basename)))
         else :
             target = os.sep.join((self.engine.delivery, "del_{0}_{1}".format(timestamp, basename)))
@@ -141,19 +143,23 @@ class TaskScanner(Thread):
                 logging.error("Task renaming cannot be done! Previlege may needed! Exception Raised!")
                 raise IOError
 
-
-    def moveTasks(self, filename, inner_names):
+    def moveTasks(self, filename, project_ids):
+        """
+        logic is to first copy the file to each project delivery folder, then remove it if any success
+        if all failed, remove the ".xml" suffix and leave it in the taskpool folder
+        if failed again, raise IOError
+        """
         basename = os.path.basename(filename)
         timestamp = long(time.time())
         error_count = 0
-        for inner_name in inner_names :
-            target = os.sep.join((self.engine.delivery, inner_name,
+        for project_id in project_ids :
+            target = os.sep.join((self.engine.delivery, project_id,
                                   "del_{0}_{1}".format(timestamp, basename)))
             try :
                 shutil.copyfile(filename, target)
             except Exception :
                 error_count += 1
-        if error_count == len(inner_names) :
+        if error_count == len(project_ids) :
             try:
                 os.rename(filename, filename[:-4])
             except Exception:
@@ -162,11 +168,10 @@ class TaskScanner(Thread):
         else :
             os.remove(filename)
 
-
-    def checkFolder(self, name):
-        temp = os.sep.join((self.engine.temp, name))
-        output = os.sep.join((self.engine.output, name))
-        delivery = os.sep.join((self.engine.delivery, name))
+    def checkFolder(self, project_id):
+        temp = os.sep.join((self.engine.temp, project_id))
+        output = os.sep.join((self.engine.output, project_id))
+        delivery = os.sep.join((self.engine.delivery, project_id))
         if not os.path.exists(temp) :
             os.makedirs(temp)
         if not os.path.exists(output) :
@@ -227,6 +232,8 @@ class Fetcher(Thread) :
         self.finished = finished
 
     def run(self) :
+        #TODO: handle the scenario when it's the same machine copy
+        #TODO: handle the scenario when the source file is folder
         target_path = self.target + os.sep if not self.target.endswith(os.sep) else self.target
         source_path = "{0}@{1}:{2}".format(self.engine.username, self.source, self.filename)
         logging.info("fetch file {0} from remote server {1}".format(self.filename, self.source))
@@ -240,11 +247,20 @@ class Fetcher(Thread) :
 
 
 class MessageCollector(Thread) :
-    def __init__(self, in_queue, cur_engine, target_engine, is_local):
+    """
+    this is a daemon thread used to receive notices from other threads and processes
+    a notice will be sent to controller as Message to update project status
+    """
+    def __init__(self, notice_queue, source_engine, target_engine):
+        """
+        notice_queue: the JoinableQueue used to receive notices
+        source_engine: the Engine of source machine / CURRENT engine
+        target_engine: the Engine of target machine / CONTROLLER engine
+        """
         Thread.__init__(self)
-        self.engine = cur_engine
-        self.notice_queue = in_queue
-        self.is_local = is_local
+        self.engine = source_engine
+        self.notice_queue = notice_queue
+        self.is_local = source_engine.address == target_engine.address
         if self.is_local :
             self.target = target_engine.taskpool
         else :
@@ -352,12 +368,12 @@ if __name__ == '__main__':
     config_path = r'c:\work\python\modelengine\configuration\engine_config.xml'
     logging.basicConfig(level=logging.DEBUG, format='%(levelname)s - %(processName)s : %(threadName)s - %(message)s')
     system = System(config_path)
-    system.stopper = Event()
-    stopper = Event()
-    message_queue = Queue()
+    system.stopper = Event()        # used to kill the system if shutdown command is found
+    stopper = Event()               # used to kill the daemon task scanner
+    message_queue = JoinableQueue()         # the queue shared by multiple processes for result communication
     timer = TaskScanner(stopper, system, message_queue)
     timer.start()
-    message_collector = MessageCollector(message_queue)
+    message_collector = MessageCollector(message_queue, system.engine, system.controller)
     message_collector.start()
     while not system.stopper.isSet():
         system.stopper.wait(15)
