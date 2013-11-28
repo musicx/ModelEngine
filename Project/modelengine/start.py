@@ -70,10 +70,9 @@ class TaskScanner(Thread):
                 for item in missing_list :
                     finished = Event()
                     fetcher = Fetcher(self.engine, self.system.controller.address, item.path,
-                                      self.engine.temp, finished)
+                                      self.engine.temp, finished, item.is_folder)
                     fetcher.start()
                     finish_events.append(finished)
-                #TODO : replace the placeholder in the script
                 worker_process = WorkerProcess(worktask.script, self.message_queue, finish_events, worktask.package)
                 self.engine.worktasks[worktask.project_id].append(worker_process)
                 worker_process.start()
@@ -223,22 +222,26 @@ class Distributer(Thread) :
 
 
 class Fetcher(Thread) :
-    def __init__(self, cur_engine, source_address, file_path, target_folder, finished):
+    def __init__(self, cur_engine, source_address, file_path, target_folder, finished, is_folder=False):
         Thread.__init__(self)
         self.engine = cur_engine
         self.source = source_address
         self.filename = file_path
         self.target = target_folder
         self.finished = finished
+        self.is_folder = is_folder
 
     def run(self) :
-        #TODO: handle the scenario when it's the same machine copy
-        #TODO: handle the scenario when the source file is folder
+        #TODO: handle the scenario when it's the same machine copy, or is there any?
         target_path = self.target + os.sep if not self.target.endswith(os.sep) else self.target
         source_path = "{0}@{1}:{2}".format(self.engine.username, self.source, self.filename)
         logging.info("fetch file {0} from remote server {1}".format(self.filename, self.source))
-        runningOutput = subprocess.check_output(["scp -i {0} -q {1} {2}".format(self.engine.rsa_key, source_path, target_path) + "; exit 0"],
-                                                stderr=subprocess.STDOUT, shell=True)
+        if self.is_folder :
+            runningOutput = subprocess.check_output(["scp -i {0} -q -r {1} {2}".format(self.engine.rsa_key, source_path, target_path) + "; exit 0"],
+                                                    stderr=subprocess.STDOUT, shell=True)
+        else :
+            runningOutput = subprocess.check_output(["scp -i {0} -q {1} {2}".format(self.engine.rsa_key, source_path, target_path) + "; exit 0"],
+                                                    stderr=subprocess.STDOUT, shell=True)
         if runningOutput != "" :
             #TODO: COPY ERROR
             print "copy error"

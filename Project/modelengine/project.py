@@ -35,7 +35,7 @@ class DataFile:
         if type(fconfig) in (str, unicode) :
             self.is_data = False
             self.is_output = not self.is_package
-            self.id = 'na'
+            self.id = '##'
             self.path = fconfig
         else :
             if '@type' in fconfig :
@@ -44,7 +44,7 @@ class DataFile:
             else :
                 self.is_output = not self.is_package   # TODO: ERROR! default value of the input files should be different
                 self.is_data = False
-            self.id = fconfig['@id'] if '@id' in fconfig else 'na'
+            self.id = fconfig['@id'] if '@id' in fconfig else '##'
             self.path = fconfig['#text']
 
 
@@ -331,17 +331,23 @@ class WorkTask:
         """
         missing_files = []
         for input_file in self.inputs :
+            missing_flag = False
             temp_path = input_file.path if input_file.path.startswith(os.sep) or input_file.path[1] == ":" \
-                                        else os.sep.join((engine.temp, self.project_id, input_file.path))
+                                        else os.sep.join([engine.temp, self.project_id, os.path.basename(input_file.path)])
             output_path = input_file.path if input_file.path.startswith(os.sep) or input_file.path[1] == ":" \
                                           else os.sep.join((engine.output, self.project_id, input_file.path))
             if not os.path.exists(output_path):
                 if not os.path.exists(temp_path) :
                     missing_files.append(input_file)
+                    missing_flag = True
                 else :
                     input_file.path = temp_path
             else :
                 input_file.path = output_path
+            replace_path = os.sep.join([engine.temp, self.project_id, os.path.basename(input_file.path)]) \
+                           if missing_flag else input_file.path
+            if input_file.id is not None and input_file.id != "##":
+                self.script.replace("%" + input_file.id, replace_path)
         if self.package is not None and self.package.strip() != "" :
             package_temp_path = self.package if self.package.startswith(os.sep) or self.package[1] == ":" \
                                              else os.sep.join((engine.temp, self.project_id, self.package))
@@ -354,6 +360,11 @@ class WorkTask:
                     self.package = package_temp_path
             else :
                 self.package = package_output_path
+        # replace the package path in the script
+        parts = self.script.split(" ")[:2]
+        file_pattern = re.compile(r'\w+\.\w+')
+        if file_pattern.search(parts[1]) is not None :
+            self.script.replace(parts[1], os.sep.join([engine.temp, self.project_id, os.path.basename(parts[1])]), 1)
         return missing_files
 
 
