@@ -89,7 +89,8 @@ class Stage:
         self.package = sconfig['stage_package']
         skip = sconfig.get('skip_stage', 'no')
         self.skip = skip is not None and skip.lower() == 'yes'
-        self.triggered = False if self.script is not None else True
+        self.delievered = False if self.script is not None else True
+        self.complete = self.delievered
         self.input = []
         if 'stage_input' in sconfig and sconfig['stage_input'] is not None and 'file' in sconfig['stage_input']:
             if type(sconfig['stage_input']['file']) is not list :
@@ -120,13 +121,13 @@ class Stage:
                 task = Task(item)
                 self.tasks[task.name] = task
 
-    def checkDeliever(self):
+    def allTaskDelievered(self):
         for task in self.tasks.itervalues() :
             if task.delievered :
                 return True
         return False
 
-    def checkComplete(self):
+    def allTaskComplete(self):
         for task in self.tasks.itervalues() :
             if not task.complete:
                 return False
@@ -134,7 +135,8 @@ class Stage:
 
 
 class Project:
-    def __init__(self, pconfig):
+    def __init__(self, pconfig, system):
+        self.system = system
         self.stages = OrderedDict()
         self.name = pconfig['name']
         self.inner_name = ""
@@ -188,7 +190,7 @@ class Project:
                     logging.error("file replacer error : {0}".format(repr(files)))
         self.deactivate = False
 
-    def nextStage(self, system, fetch_completes=None):
+    def nextTasks(self):
         if self.deactivate :
             return -1
         stage = self.findUndelieveredStage()
@@ -197,29 +199,31 @@ class Project:
         for taskname, task in stage.tasks.iteritems() :
             if task.skip or task.delievered:
                 continue
-            target_engine, same_engine = system.findEngineByType(task.jobtype)
+            target_engine, same_engine = self.system.findEngineByType(task.jobtype)
             target_path = "" if same_engine else target_engine.username + "@" + target_engine.address + ":"
             target_path += target_engine.taskpool
-            taskcontent = self.createWorkTask(task, system.engine)
-            distributor = Distributer(system.engine, os.sep.join([system.engine.delivery, self.inner_name]), taskname,
-                                      taskcontent, target_path, same_engine)
+            taskcontent = self.createWorkTask(task, self.system.engine)
+            distributor = Distributer(self.system.engine, os.sep.join([self.system.engine.delivery, self.inner_name]),
+                                      taskname, taskcontent, target_path, same_engine)
             #distributor.setDaemon(True)
             distributor.start()
             task.delievered = True
-        if stage.checkComplete() and not stage.skip and not stage.triggered:
-            if fetch_completes :
-                for item in fetch_completes :
-                    while not item.isSet() :
-                        item.wait(3)
-            script_task_content = self.createWorkTask(stage, system.engine)
-            distributor = Distributer(system.engine, os.sep.join([system.engine.delivery, self.inner_name]), stage.name,
-                                      script_task_content, system.engine.taskpool, True)
+        if stage.allTaskComplete() and not stage.skip and not stage.delievered:
+            script_task_content = self.createWorkTask(stage, self.system.engine)
+            distributor = Distributer(self.system.engine, os.sep.join([self.system.engine.delivery, self.inner_name]),
+                                      stage.name, script_task_content, self.system.engine.taskpool, True)
             distributor.start()
-            stage.triggered = True
+            stage.delievered = True
 
     def findUndelieveredStage(self):
         for stagename, stage in self.stages.iteritems() :
-            if not stage.checkDeliever() :
+            if not (stage.allTaskDelievered() and stage.delievered) :
+                return stage
+        return None
+
+    def findIncompleteStage(self):
+        for stagename, stage in self.stages.iteritems() :
+            if not (stage.allTaskComplete() and stage.complete) :
                 return stage
         return None
 
@@ -272,6 +276,24 @@ class Project:
         else :
             logging.error("File cannot be found : {0}".format(path))
             return None
+
+    def updateStatus(self, taskname, status) :
+        stage = self.findIncompleteStage()
+        if taskname in stage.tasks :
+            if status == 0 :
+                stage.tasks[taskname].complete = True
+            else :
+                self.deactivate = True
+        elif taskname == stage.name :
+            if status == 0 :
+                stage.complete = True
+            else :
+                self.deactivate = True
+        else :
+            # ERROR log
+            logging.error("Cannot find corresponding task to update!")
+            self.deactivate = True
+        self.nextTasks()
 
 
 class WorkTask:

@@ -55,7 +55,7 @@ class TaskScanner(Thread):
                 continue
 
             if "project" in doc:
-                project = Project(doc['project'])
+                project = Project(doc['project'], self.system)
                 inner_name = "{0}_{1}".format(project.name, long(time.time()))
                 while inner_name in self.system.projects:
                     inner_name = "{0}_{1}".format(project.name, long(time.time()))
@@ -63,7 +63,7 @@ class TaskScanner(Thread):
                 project.inner_name = inner_name
                 self.checkFolder(project.inner_name)
                 self.moveTask(filename, project.inner_name)
-                project.nextStage(self.system)
+                project.nextTasks()
 
             elif "worktask" in doc:
                 worktask = WorkTask(doc['worktask'])
@@ -101,10 +101,22 @@ class TaskScanner(Thread):
                             project.deactivate = True
 
             elif "message" in doc:
-                logging.debug("find message")
-                continue
                 message = Message(doc['message'])
-                #TODO: update the project corresponding to the message
+                # message status meaning:
+                # -1 : error, email project owner
+                # 0 : success, update task status
+                if message.status == 0 :
+                    output_files = self.system.projects[message.project_id].getOutput(message.task_name)
+                    finish_events = []
+                    for item in output_files :
+                        finished = Event()
+                        fetcher = Fetcher(self.engine, message.worker, item.path,
+                                          self.engine.output, finished)
+                        fetcher.start()
+                        finish_events.append(finished)
+                    statusUpdater = StatusUpdater(self.system.projects[message.project_id], message.task_name,
+                                                  message.status, finish_events)
+                    statusUpdater.start()
 
             else:
                 logging.warning("unknown root command found in the task configuration file : {0}".format(filename))
@@ -242,11 +254,28 @@ class MessageCollector(Thread) :
     def run(self):
         while True :
             notice = self.notice_queue.get()
-            #TODO: write the message to log / email it out / send to controller
+            #send to controller
             xml_content = notice.createMessage(self.engine.address)
             message_sender = Distributer(self.engine, os.sep.join([self.engine.delivery, notice.project_id]),
                                          notice.project_id + "_message", xml_content, self.target, self.is_local)
+            message_sender.start()
             self.notice_queue.task_done()
+
+
+class StatusUpdater(Thread) :
+    def __init__(self, project, taskname, status, events=None):
+        Thread.__init__(self)
+        self.project = project
+        self.taskname = taskname
+        self.status = status
+        self.events = events
+
+    def run(self):
+        if self.events is not None :
+            for event in self.events :
+                if not event.isSet() :
+                    event.wait(1)
+        self.project.updateStatus(self.taskname, self.status)
 
 
 class WorkerThread(Thread) :
