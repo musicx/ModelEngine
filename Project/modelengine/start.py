@@ -73,17 +73,43 @@ class TaskScanner(Thread):
                                       self.engine.temp, finished, item.is_folder)
                     fetcher.start()
                     finish_events.append(finished)
-                worker_process = WorkerProcess(worktask.script, self.message_queue, finish_events, worktask.package)
+                worker_process = WorkerProcess(worktask.project_id, worktask.task_name, worktask.script,
+                                               self.message_queue, finish_events, worktask.package)
+                # maintain a worktask dict for different projects
                 self.engine.worktasks[worktask.project_id].append(worker_process)
                 worker_process.start()
 
             elif "command" in doc:
                 command = Command(doc['command'])
-                if command.project_name is not None:
+                if len(command.projects) != 0:
                     self.moveTasks(filename, command.projects)
                 else:
                     self.moveTask(filename, None)
-                    #TODO: generate same command xml and send it to all clients
+                if command.project_id is None and self.system.controller.address == self.engine.address :
+                    # generate same user created command xml and send it to all clients except self (controller)
+                    controller_command = xmlwitch.Builder()
+                    with controller_command.command() :
+                        if command.project_name is not None :
+                            controller_command.project(command.project_name)
+                        if command.email is not None :
+                            controller_command.email(command.email)
+                        controller_command.command(command.command)
+                    for project_id, project in command.projects.iteritems() :
+                        for engine in self.system.engines.itervalues() :
+                            if engine.address == self.system.controller.address :
+                                continue
+                            distributor = Distributer(self.engine, os.sep.join([self.engine.delivery, project_id]),
+                                                      "dup_" + command.command, str(controller_command),
+                                                      "{0}@{1}:{2}".format(engine.username, engine.address, engine.taskpool))
+                            distributor.start()
+                    if len(command.projects) == 0 :
+                        for engine in self.system.engines.itervalues() :
+                            if engine.address == self.system.controller.address :
+                                continue
+                            distributor = Distributer(self.engine, self.engine.delivery,
+                                                      "dup_" + command.command, str(controller_command),
+                                                      "{0}@{1}:{2}".format(engine.username, engine.address, engine.taskpool))
+                            distributor.start()
                 # do the project level command, such as stop task, stage or shut the proj down
                 # close engine
                 if command.command == "shutdown":
@@ -94,6 +120,18 @@ class TaskScanner(Thread):
                         # TODO: however, for multiprocessing.Process, p.terminate() can be used!
                         for project in command.projects.itervalues():
                             project.deactivate = True
+
+                elif command.command == "clean" :
+                    worker_processes = self.engine.worktasks.pop(command.project_id, {})
+                    for worker_process in worker_processes :
+                        if worker_process.is_alive() :
+                            worker_process.terminate()
+                    for project_id in command.projects :
+                        project = self.system.projects.pop(project_id, None)
+                        if project is None :
+                            continue
+                        # TODO: remove the temp / delievery / output folder if necessary
+
 
             elif "message" in doc:
                 message = Message(doc['message'])
@@ -298,38 +336,19 @@ class StatusUpdater(Thread) :
 
 
 class WorkerThread(Thread) :
-    def __init__(self, script, out_queue, events=None, package=None):
+    def __init__(self, project_id, task_name, script, out_queue, events=None, package=None):
+        """
+        wait for all the Events in events are set, then start the script
+        before script is run, un-package any zip files if given
+        then send the output to message_queue as Notice
+        """
         Thread.__init__(self)
+        self.project_id = project_id
+        self.task_name = task_name
         self.script = script
         self.message_queue = out_queue
         self.events = events
         self.package = package
-
-    def run(self):
-        if self.events is not None :
-            for item in self.events :
-                while not item.isSet() :
-                    item.wait(1)
-        try :
-            if sys.platform.startswith("win") :
-                runningOutput = subprocess.check_output(["cmd /C " + self.script + "& exit 0"],
-                                                        stderr=subprocess.STDOUT, shell=True)
-            else :
-                runningOutput = subprocess.check_output([self.script + "; exit 0"],
-                                                        stderr=subprocess.STDOUT, shell=True)
-        except Exception as err:
-            runningOutput = err.message
-        self.message_queue.put(runningOutput)
-
-
-class WorkerProcess(Process) :
-    def __init__(self, script, out_queue, events=None, package=None, cur_dir=""):
-        Process.__init__(self)
-        self.script = script
-        self.message_queue = out_queue
-        self.events = events
-        self.package = package
-        self.dir = cur_dir
 
     def run(self):
         if self.events is not None:
@@ -337,23 +356,22 @@ class WorkerProcess(Process) :
                 while not item.isSet():
                     item.wait(1)
         if self.package is not None :
-            filename = os.path.basename(self.package)
             unzip = ""
-            if filename.endswith(".zip") :
+            if self.package.endswith(".zip") :
                 unzip = "unzip -q "
-            elif filename.endswith(".tar.gz") :
+            elif self.package.endswith(".tar.gz") :
                 unzip = "tar xzf "
-            elif filename.endswith(".tar.bz2") :
+            elif self.package.endswith(".tar.bz2") :
                 unzip = "tar xjf "
-            elif filename.endswith(".gz") :
+            elif self.package.endswith(".gz") :
                 unzip = "gunzip -q "
-            elif filename.endswith(".bz2") :
+            elif self.package.endswith(".bz2") :
                 unzip = "bzip2 -dq "
             if unzip != "" :
-                zip_res = subprocess.call(unzip + os.sep.join([self.dir, filename]), stderr=subprocess.STDOUT, shell=True)
+                zip_res = subprocess.call(unzip + self.package, stderr=subprocess.STDOUT, shell=True)
                 if zip_res != "" :
                     #TODO Error log / stop task / notify controller of the failure
-                    self.message_queue.put(zip_res)
+                    self.message_queue.put(Notice(self.project_id, self.task_name, zip_res, -1))
                     return
         try :
             if sys.platform.startswith("win") :
@@ -362,9 +380,63 @@ class WorkerProcess(Process) :
             else :
                 runningOutput = subprocess.check_output([self.script + "; exit 0"],
                                                         stderr=subprocess.STDOUT, shell=True)
+            has_error = (runningOutput.find("error") >= 0) * -1
         except Exception as err:
             runningOutput = err.message
-        self.message_queue.put(runningOutput)
+            has_error = -1
+        self.message_queue.put(Notice(self.project_id, self.task_name, runningOutput, has_error))
+
+
+class WorkerProcess(Process) :
+    def __init__(self, project_id, task_name, script, out_queue, events=None, package=None):
+        """
+        wait for all the Events in events are set, then start the script
+        before script is run, un-package any zip files if given
+        then send the output to message_queue as Notice
+        """
+        Process.__init__(self)
+        self.project_id = project_id
+        self.task_name = task_name
+        self.script = script
+        self.message_queue = out_queue
+        self.events = events
+        self.package = package
+
+    def run(self):
+        if self.events is not None:
+            for item in self.events:
+                while not item.isSet():
+                    item.wait(1)
+        if self.package is not None :
+            unzip = ""
+            if self.package.endswith(".zip") :
+                unzip = "unzip -q "
+            elif self.package.endswith(".tar.gz") :
+                unzip = "tar xzf "
+            elif self.package.endswith(".tar.bz2") :
+                unzip = "tar xjf "
+            elif self.package.endswith(".gz") :
+                unzip = "gunzip -q "
+            elif self.package.endswith(".bz2") :
+                unzip = "bzip2 -dq "
+            if unzip != "" :
+                zip_res = subprocess.call(unzip + self.package, stderr=subprocess.STDOUT, shell=True)
+                if zip_res != "" :
+                    #TODO Error log / stop task / notify controller of the failure
+                    self.message_queue.put(Notice(self.project_id, self.task_name, zip_res, -1))
+                    return
+        try :
+            if sys.platform.startswith("win") :
+                runningOutput = subprocess.check_output(["cmd /C " + self.script + "& exit 0"],
+                                                        stderr=subprocess.STDOUT, shell=True)
+            else :
+                runningOutput = subprocess.check_output([self.script + "; exit 0"],
+                                                        stderr=subprocess.STDOUT, shell=True)
+            has_error = (runningOutput.find("error") >= 0) * -1
+        except Exception as err:
+            runningOutput = err.message
+            has_error = -1
+        self.message_queue.put(Notice(self.project_id, self.task_name, runningOutput, has_error))
 
 
 if __name__ == '__main__':

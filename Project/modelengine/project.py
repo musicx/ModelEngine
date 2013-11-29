@@ -199,7 +199,7 @@ class Project:
             return -1
         stage = self.findUndelieveredStage()
         if stage is None :
-            return -1
+            return 0
         for taskname, task in stage.tasks.iteritems() :
             if task.skip or task.delievered:
                 continue
@@ -218,6 +218,7 @@ class Project:
                                       stage.name, script_task_content, self.system.engine.taskpool, True)
             distributor.start()
             stage.delievered = True
+        return 1
 
     def findUndelieveredStage(self):
         for stagename, stage in self.stages.iteritems() :
@@ -297,7 +298,23 @@ class Project:
             # ERROR log
             logging.error("Cannot find corresponding task to update!")
             self.deactivate = True
-        self.nextTasks()
+        result = self.nextTasks()
+        if result == 0 :
+            # TODO: clean the whole project and send command to all slaves
+            self.clean()
+
+    def clean(self):
+        clean_xml = xmlwitch.Builder()
+        with clean_xml.command() :
+            clean_xml.project_id(self.project_id)
+            clean_xml.command("clean")
+        for engine in self.system.engines.itervalue() :
+            same_engine = engine.address == self.system.engine.address
+            target_folder = "{0}@{1}:{2}".format(engine.username, engine.address, engine.taskpool) \
+                            if not same_engine else engine.taskpool
+            distributor = Distributer(self.system.engine, os.sep.join([self.system.engine.delivery, self.project_id]),
+                                      "clean", str(clean_xml), target_folder, same_engine)
+            distributor.start()
 
 
 class WorkTask:
@@ -361,10 +378,11 @@ class WorkTask:
             else :
                 self.package = package_output_path
         # replace the package path in the script
-        parts = self.script.split(" ")[:2]
-        file_pattern = re.compile(r'\w+\.\w+')
-        if file_pattern.search(parts[1]) is not None :
-            self.script.replace(parts[1], os.sep.join([engine.temp, self.project_id, os.path.basename(parts[1])]), 1)
+        script_part = self.script.split(" ")[1]
+        if not os.path.exists(script_part) :
+            file_pattern = re.compile(r'\w+\.\w+')
+            if file_pattern.search(script_part) is not None :
+                self.script.replace(script_part, os.sep.join([engine.temp, self.project_id, os.path.basename(script_part)]), 1)
         return missing_files
 
 
@@ -380,13 +398,18 @@ class Message:
 class Command:
     def __init__(self, cconfig, system):
         self.project_name = cconfig.get('project', None)
+        self.project_id = cconfig.get('project_id', None)
         self.email = cconfig.get('email', None)
         self.command = cconfig['command']
         self.projects = {}
-        if self.project_name is not None and self.email is not None :
+        if self.project_name is not None and self.email is not None and self.project_id is None:
             candidates = system.findProjectByName(self.project_name, self.email)
             for candidate in candidates:
                 self.projects[candidate.project_id] = candidate
+        elif self.project_id is not None :
+            if self.project_id in system.projects :
+                self.projects[self.project_id] = system.projects[self.project_id]
+
 
 
 class Notice :
