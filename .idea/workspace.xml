@@ -2,7 +2,6 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="7614d203-ba21-4be5-8496-1ea3e2dba989" name="Default" comment="">
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/Project/modelengine/project.py" afterPath="$PROJECT_DIR$/Project/modelengine/project.py" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/Project/modelengine/start.py" afterPath="$PROJECT_DIR$/Project/modelengine/start.py" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
     </list>
@@ -50,10 +49,10 @@
       <file leaf-file-name="start.py" pinned="false" current="true" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/Project/modelengine/start.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="115" column="26" selection-start="5555" selection-end="5555" vertical-scroll-proportion="0.5254237" vertical-offset="1260" max-vertical-offset="6180">
+            <state line="452" column="29" selection-start="20656" selection-end="20656" vertical-scroll-proportion="0.6779661" vertical-offset="5445" max-vertical-offset="6465">
               <folding>
                 <element signature="e#0#11#0" expanded="true" />
-                <element signature="e#15447#17722#0" expanded="false" />
+                <element signature="e#15858#18133#0" expanded="false" />
               </folding>
             </state>
           </provider>
@@ -469,7 +468,11 @@
       <created>1385628115467</created>
       <updated>1385628115467</updated>
     </task>
-    <option name="localTasksCounter" value="5" />
+    <task id="LOCAL-00005" summary="Friday noon">
+      <created>1385710814725</created>
+      <updated>1385710814725</updated>
+    </task>
+    <option name="localTasksCounter" value="6" />
     <servers />
   </component>
   <component name="TodoView" selected-index="0">
@@ -526,7 +529,8 @@
     <MESSAGE value="11-27 17:00" />
     <MESSAGE value="start reviewing" />
     <MESSAGE value="modify script part" />
-    <option name="LAST_COMMIT_MESSAGE" value="modify script part" />
+    <MESSAGE value="Friday noon" />
+    <option name="LAST_COMMIT_MESSAGE" value="Friday noon" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -635,10 +639,10 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/Project/modelengine/start.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="115" column="26" selection-start="5555" selection-end="5555" vertical-scroll-proportion="0.5254237" vertical-offset="1260" max-vertical-offset="6180">
+        <state line="452" column="29" selection-start="20656" selection-end="20656" vertical-scroll-proportion="0.6779661" vertical-offset="5445" max-vertical-offset="6465">
           <folding>
             <element signature="e#0#11#0" expanded="true" />
-            <element signature="e#15447#17722#0" expanded="false" />
+            <element signature="e#15858#18133#0" expanded="false" />
           </folding>
         </state>
       </provider>

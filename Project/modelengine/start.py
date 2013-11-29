@@ -113,20 +113,24 @@ class TaskScanner(Thread):
                 # do the project level command, such as stop task, stage or shut the proj down
                 # close engine
                 if command.command == "shutdown":
-                    if command.project_name is None:
+                    if len(command.projects) == 0:
                         self.system.stopper.set()
                     else:
-                        # TODO: because there is no python API to kill thread or subprocess, set the project to deactivate to stop FURTHER actions
-                        # TODO: however, for multiprocessing.Process, p.terminate() can be used!
-                        for project in command.projects.itervalues():
+                        # because there is no python API to kill thread or subprocess,
+                        # set the project to deactivate to stop FURTHER actions.
+                        # however, for multiprocessing.Process, p.terminate() can be used!
+                        for project_id, project in command.projects.iteritems():
                             project.deactivate = True
-
+                            worker_processes = self.engine.worktasks.pop(project_id, {})
+                            for worker_process in worker_processes :
+                                if worker_process.is_alive() :
+                                    worker_process.terminate()
                 elif command.command == "clean" :
-                    worker_processes = self.engine.worktasks.pop(command.project_id, {})
-                    for worker_process in worker_processes :
-                        if worker_process.is_alive() :
-                            worker_process.terminate()
                     for project_id in command.projects :
+                        worker_processes = self.engine.worktasks.pop(project_id, {})
+                        for worker_process in worker_processes :
+                            if worker_process.is_alive() :
+                                worker_process.terminate()
                         project = self.system.projects.pop(project_id, None)
                         if project is None :
                             continue
@@ -150,6 +154,9 @@ class TaskScanner(Thread):
                     statusUpdater = StatusUpdater(self.system.projects[message.project_id], message.task_name,
                                                   message.status, finish_events)
                     statusUpdater.start()
+                elif message.status == -1 :
+                    logging.error(message.message)
+
 
             else:
                 logging.warning("unknown root command found in the task configuration file : {0}".format(filename))
@@ -437,6 +444,18 @@ class WorkerProcess(Process) :
             runningOutput = err.message
             has_error = -1
         self.message_queue.put(Notice(self.project_id, self.task_name, runningOutput, has_error))
+
+
+class EmailNotifier(Thread) :
+    def __init__(self, project_name, email, message):
+        Thread.__init__(self)
+        subject = "Update on project {0}".format(project_name)
+        self.script = "printf {0} | mail -s {1} {2}".format(repr(message), repr(subject), email)
+
+    def run(self):
+        if not sys.platform.startswith("win") :
+            result = subprocess.check_call([self.script + "; exit 0"], stderr=subprocess.STDOUT, shell=True)
+            #TODO : ERROR handle
 
 
 if __name__ == '__main__':
