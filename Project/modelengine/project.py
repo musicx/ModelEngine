@@ -29,21 +29,18 @@ class DataMeta:
 
 
 class DataFile:
-    def __init__(self, fconfig, is_folder=0, is_package=0):
-        self.is_folder = True if is_folder == 1 else False
-        self.is_package = True if is_package == 1 else False
+    def __init__(self, fconfig, is_input=False, is_output=False, is_folder=False, is_package=False):
+        self.is_folder = is_folder
+        self.is_package = is_package
+        self.is_output = is_output
+        self.is_input = is_input
         if type(fconfig) in (str, unicode) :
-            self.is_data = False
-            self.is_output = not self.is_package
             self.id = '##'
             self.path = fconfig
         else :
             if '@type' in fconfig :
                 self.is_output = True if fconfig['@type'] == 'output' else False
-                self.is_data = True if fconfig['@type'] == 'data' else False
-            else :
-                self.is_output = not self.is_package   # TODO: ERROR! default value of the input files should be different
-                self.is_data = False
+                self.is_input = True if fconfig['@type'] == 'data' else False
             self.id = fconfig['@id'] if '@id' in fconfig else '##'
             self.path = fconfig['#text']
 
@@ -59,25 +56,25 @@ class Task:
         self.input = []
         if 'task_input' in tconfig and tconfig['task_input'] is not None and 'file' in tconfig['task_input']:
             if type(tconfig['task_input']['file']) is not list :
-                self.input.append(DataFile(tconfig['task_input']['file']))
+                self.input.append(DataFile(tconfig['task_input']['file'], is_input=True))
             else :
                 for item in tconfig['task_input']['file'] :
-                    self.input.append(DataFile(item))
+                    self.input.append(DataFile(item, is_input=True))
         self.output = None
         if tconfig['task_output'] is not None :
             self.output = []
             if 'file' in tconfig['task_output'] :
                 if type(tconfig['task_output']['file']) is not list :
-                    self.output.append(DataFile(tconfig['task_output']['file']))
+                    self.output.append(DataFile(tconfig['task_output']['file'], is_output=True))
                 else:
                     for item in tconfig['task_output']['file'] :
-                        self.output.append(DataFile(item))
+                        self.output.append(DataFile(item, is_output=True))
             if 'folder' in tconfig['task_output'] :
                 if type(tconfig['task_output']['folder']) is not list :
-                    self.output.append(DataFile(tconfig['task_output']['folder'], 1))
+                    self.output.append(DataFile(tconfig['task_output']['folder'], is_folder=True, is_output=True))
                 else:
                     for item in tconfig['task_output']['folder'] :
-                        self.output.append(DataFile(item, 1))
+                        self.output.append(DataFile(item, is_folder=True, is_output=True))
         self.complete = False
         self.delievered = False
 
@@ -95,25 +92,25 @@ class Stage:
         self.input = []
         if 'stage_input' in sconfig and sconfig['stage_input'] is not None and 'file' in sconfig['stage_input']:
             if type(sconfig['stage_input']['file']) is not list :
-                self.input.append(DataFile(sconfig['stage_input']['file']))
+                self.input.append(DataFile(sconfig['stage_input']['file'], is_input=True))
             else :
                 for item in sconfig['stage_input']['file'] :
-                    self.input.append(DataFile(item))
+                    self.input.append(DataFile(item, is_input=True))
         self.output = None
         if sconfig['stage_output'] is not None :
             self.output = []
             if 'file' in sconfig['stage_output'] :
                 if type(sconfig['stage_output']['file']) is not list :
-                    self.output.append(DataFile(sconfig['stage_output']['file']))
+                    self.output.append(DataFile(sconfig['stage_output']['file'], is_output=True))
                 else :
                     for item in sconfig['stage_output']['file'] :
-                        self.output.append(DataFile(item))
+                        self.output.append(DataFile(item, is_output=True))
             if 'folder' in sconfig['stage_output'] :
                 if type(sconfig['stage_output']['folder']) is not list :
-                    self.output.append(DataFile(sconfig['stage_output']['folder'], 1))
+                    self.output.append(DataFile(sconfig['stage_output']['folder'], is_folder=True, is_output=True))
                 else :
                     for item in sconfig['stage_output']['folder'] :
-                        self.output.append(DataFile(item, 1))
+                        self.output.append(DataFile(item, is_folder=True, is_output=True))
         if type(sconfig['tasks']['task']) is not list :
             task = Task(sconfig['tasks']['task'])
             self.tasks[task.name] = task
@@ -143,9 +140,9 @@ class Project:
         self.project_id = "{0}_{1}".format(self.name, long(time.time()))
         while self.project_id in self.system.projects:
             self.project_id = "{0}_{1}".format(self.name, long(time.time()))
-        self.project_id = ""
         self.email = pconfig['email'] # TODO: this can be changed to multiple receivers
-        self.clean = pconfig.get('clean_after_success', 'no').lower() == 'yes'
+        self.clean = pconfig.get('clean_after_success', None) is not None \
+                     and pconfig['clean_after_success'].lower() == 'yes'
 
         #self.datameta = DataMeta()
         #self.datameta.id.extend(pconfig['record_ids']['id'])
@@ -185,12 +182,20 @@ class Project:
                 for file_id in re.findall(r'%\w+', task.script) :
                     files = [x for x in self.datafiles if x.id == file_id[1:]]
                     if len(files) == 1 :
+                        if any([x.id == files[0].id for x in task.input]) :
+                            continue
+                        if any([x.id == files[0].id for x in task.output]) :
+                            continue
                         task.input.append(files[0])
                     else :
                         logging.error("file replacer error : {0}".format(repr(files)))
             for file_id in re.findall(r'%\w+', stage.script):
                 files = [x for x in self.datafiles if x.id == file_id[1:]]
                 if len(files) == 1:
+                    if any([x.id == files[0].id for x in stage.input]) :
+                        continue
+                    if any([x.id == files[0].id for x in stage.output]) :
+                        continue
                     stage.input.append(files[0])
                 else:
                     logging.error("file replacer error : {0}".format(repr(files)))
@@ -237,7 +242,7 @@ class Project:
     def createWorkTask(self, task, engine):
         work_task_xml = xmlwitch.Builder()
         with work_task_xml.worktask() :
-            work_task_xml.project(self.name)
+            #work_task_xml.project(self.name)
             work_task_xml.project_id(self.project_id)
             work_task_xml.task_name(task.name)
             work_task_xml.script(task.script)
@@ -321,7 +326,7 @@ class Project:
 
 class WorkTask:
     def __init__(self, wconfig):
-        self.project_name = wconfig['project']
+        #self.project_name = wconfig['project']
         self.project_id = wconfig['project_id']
         self.task_name = wconfig['task_name']
         self.script = wconfig['script']
@@ -329,20 +334,20 @@ class WorkTask:
         self.inputs = []
         if type(wconfig['input']['file']) == list :
             for item in wconfig['input']['file'] :
-                self.inputs.append(DataFile(item))
+                self.inputs.append(DataFile(item, is_input=True))
         else :
-            self.inputs.append(DataFile(wconfig['input']['file']))
+            self.inputs.append(DataFile(wconfig['input']['file'], is_input=True))
         self.outputs = []
         if type(wconfig['output']['file']) == list :
             for item in wconfig['output']['file'] :
-                self.outputs.append(DataFile(item))
+                self.outputs.append(DataFile(item, is_output=True))
         else :
-            self.outputs.append(DataFile(wconfig['output']['file']))
+            self.outputs.append(DataFile(wconfig['output']['file'], is_output=True))
         if type(wconfig['output']['folder']) == list :
             for item in wconfig['output']['folder'] :
-                self.outputs.append(DataFile(item))
+                self.outputs.append(DataFile(item, is_output=True, is_folder=True))
         else :
-            self.outputs.append(DataFile(wconfig['output']['folder'], 1))
+            self.outputs.append(DataFile(wconfig['output']['folder'], is_output=True, is_folder=True))
 
     def checkMissing(self, engine):
         """
@@ -374,7 +379,7 @@ class WorkTask:
                                                else os.sep.join((engine.output, self.project_id, self.package))
             if not os.path.exists(package_output_path) :
                 if not os.path.exists(package_temp_path) :
-                    missing_files.append(DataFile(self.package, is_package=1))
+                    missing_files.append(DataFile(self.package, is_package=True))
                 else :
                     self.package = package_temp_path
             else :

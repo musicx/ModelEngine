@@ -30,13 +30,21 @@ class System:
         self.interval = int(float(doc['configuration']['check_interval']))
         self.engines = {}
         self.username = doc['configuration']['username']
-        for server in doc['configuration']['engines']['server']:
-            engine = Engine(server, self.username)
+        if type(doc['configuration']['engines']) is not list :
+            engine = Engine(doc['configuration']['engines']['server'], self.username)
             self.engines[engine.name] = engine
-            if engine.name == doc['configuration']['engine_name']:
+            if engine.name == doc['configuration']['engine_name'] :
                 self.engine = engine
             if engine.controller :
                 self.controller = engine
+        else :
+            for server in doc['configuration']['engines']['server']:
+                engine = Engine(server, self.username)
+                self.engines[engine.name] = engine
+                if engine.name == doc['configuration']['engine_name']:
+                    self.engine = engine
+                if engine.controller :
+                    self.controller = engine
         self.engine.check()
         self.projects = {}
         self.engine.worktasks = defaultdict(list)

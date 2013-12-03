@@ -1,6 +1,6 @@
 import glob
 import logging
-from multiprocessing import Process, Queue, JoinableQueue
+from multiprocessing import Process, JoinableQueue
 import os
 import subprocess
 import sys
@@ -80,7 +80,7 @@ class TaskScanner(Thread):
                 worker_process.start()
 
             elif "command" in doc:
-                command = Command(doc['command'])
+                command = Command(doc['command'], self.system)
                 if len(command.projects) != 0:
                     self.moveTasks(filename, command.projects)
                 else:
