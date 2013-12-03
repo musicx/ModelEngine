@@ -2,7 +2,11 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="7614d203-ba21-4be5-8496-1ea3e2dba989" name="Default" comment="">
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/Project/modelengine/start.py" afterPath="$PROJECT_DIR$/Project/modelengine/start.py" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/TaskPool/test_project.xml" />
+      <change type="DELETED" beforePath="C:\Work\Python\ModelEngine\TaskPool\woe_1384851675.xml" afterPath="" />
+      <change type="MOVED" beforePath="C:\Work\Python\ModelEngine\TaskPool\project.xml" afterPath="$PROJECT_DIR$/TaskPool/Test/project.xml" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/Configuration/engine_config.xml" afterPath="$PROJECT_DIR$/Configuration/engine_config.xml" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/Project/modelengine/project.py" afterPath="$PROJECT_DIR$/Project/modelengine/project.py" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
     </list>
     <ignored path="ModelEngine.iws" />
@@ -29,10 +33,8 @@
       <file leaf-file-name="project.py" pinned="false" current="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/Project/modelengine/project.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="400" column="57" selection-start="18262" selection-end="18262" vertical-scroll-proportion="0.0" vertical-offset="5460" max-vertical-offset="6675">
-              <folding>
-                <element signature="e#0#35#0" expanded="true" />
-              </folding>
+            <state line="158" column="63" selection-start="6728" selection-end="6728" vertical-scroll-proportion="0.0" vertical-offset="2016" max-vertical-offset="6600">
+              <folding />
             </state>
           </provider>
         </entry>
@@ -40,20 +42,17 @@
       <file leaf-file-name="worktask.xml" pinned="false" current="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/TaskPool/Test/worktask.xml">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="10" column="12" selection-start="331" selection-end="331" vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="300">
+            <state line="10" column="12" selection-start="331" selection-end="331" vertical-scroll-proportion="0.0" vertical-offset="150" max-vertical-offset="300">
               <folding />
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="start.py" pinned="false" current="true" current-in-tab="true">
+      <file leaf-file-name="start.py" pinned="false" current="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/Project/modelengine/start.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="452" column="29" selection-start="20656" selection-end="20656" vertical-scroll-proportion="0.6779661" vertical-offset="5445" max-vertical-offset="6465">
-              <folding>
-                <element signature="e#0#11#0" expanded="true" />
-                <element signature="e#15858#18133#0" expanded="false" />
-              </folding>
+            <state line="211" column="14" selection-start="10392" selection-end="10392" vertical-scroll-proportion="0.0" vertical-offset="3165" max-vertical-offset="7200">
+              <folding />
             </state>
           </provider>
         </entry>
@@ -61,7 +60,7 @@
       <file leaf-file-name="engine.py" pinned="false" current="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/Project/modelengine/engine.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="33" column="50" selection-start="1125" selection-end="1125" vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="1305">
+            <state line="33" column="50" selection-start="1125" selection-end="1125" vertical-scroll-proportion="0.0" vertical-offset="495" max-vertical-offset="1305">
               <folding />
             </state>
           </provider>
@@ -70,16 +69,16 @@
       <file leaf-file-name="engine_config.xml" pinned="false" current="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/Configuration/engine_config.xml">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="3" column="0" selection-start="96" selection-end="96" vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="600">
+            <state line="10" column="48" selection-start="331" selection-end="357" vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="405">
               <folding />
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="project.xml" pinned="false" current="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/TaskPool/project.xml">
+      <file leaf-file-name="test_project.xml" pinned="false" current="true" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/TaskPool/test_project.xml">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="83" column="35" selection-start="3264" selection-end="3264" vertical-scroll-proportion="0.0" vertical-offset="616" max-vertical-offset="1590">
+            <state line="22" column="22" selection-start="846" selection-end="846" vertical-scroll-proportion="0.47345766" vertical-offset="0" max-vertical-offset="1320">
               <folding />
             </state>
           </provider>
@@ -114,18 +113,19 @@
         <option value="$PROJECT_DIR$/TaskPool/Test/command.xml" />
         <option value="$PROJECT_DIR$/TaskPool/project.xml" />
         <option value="$PROJECT_DIR$/TaskPool/Test/worktask.xml" />
-        <option value="$PROJECT_DIR$/Configuration/engine_config.xml" />
         <option value="$PROJECT_DIR$/Project/modelengine/engine.py" />
-        <option value="$PROJECT_DIR$/Project/modelengine/project.py" />
         <option value="$PROJECT_DIR$/Project/modelengine/start.py" />
+        <option value="$PROJECT_DIR$/Configuration/engine_config.xml" />
+        <option value="$PROJECT_DIR$/Project/modelengine/project.py" />
+        <option value="$PROJECT_DIR$/TaskPool/test_project.xml" />
       </list>
     </option>
   </component>
   <component name="ProjectFrameBounds">
-    <option name="x" value="-1688" />
-    <option name="y" value="-158" />
-    <option name="width" value="1696" />
-    <option name="height" value="1066" />
+    <option name="x" value="-8" />
+    <option name="y" value="-8" />
+    <option name="width" value="1616" />
+    <option name="height" value="876" />
   </component>
   <component name="ProjectLevelVcsManager" settingsEditedManually="true">
     <OptionsSetting value="true" id="Add" />
@@ -273,6 +273,7 @@
   </component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Work\Python\ModelEngine\TaskPool\Test" />
       <recent name="C:\Work\Python\ModelEngine\Input" />
       <recent name="C:\Work\Python\ModelEngine\Project" />
     </key>
@@ -472,7 +473,11 @@
       <created>1385710814725</created>
       <updated>1385710814725</updated>
     </task>
-    <option name="localTasksCounter" value="6" />
+    <task id="LOCAL-00006" summary="Friday noon">
+      <created>1385716285865</created>
+      <updated>1385716285865</updated>
+    </task>
+    <option name="localTasksCounter" value="7" />
     <servers />
   </component>
   <component name="TodoView" selected-index="0">
@@ -496,16 +501,14 @@
     </todo-panel>
   </component>
   <component name="ToolWindowManager">
-    <frame x="-1688" y="-158" width="1696" height="1066" extended-state="6" />
+    <frame x="-8" y="-8" width="1616" height="876" extended-state="6" />
     <editor active="true" />
     <layout>
-      <window_info id="Messages" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="-1" side_tool="false" content_ui="tabs" />
-      <window_info id="Changes" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
+      <window_info id="Changes" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32930845" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Terminal" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32930845" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32930845" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
-      <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32930845" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
       <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
-      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.16958359" sideWeight="0.67069155" order="0" side_tool="false" content_ui="combo" />
+      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.16930881" sideWeight="0.67069155" order="0" side_tool="false" content_ui="combo" />
       <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.39956093" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="Favorites" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="2" side_tool="true" content_ui="tabs" />
       <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33723405" sideWeight="0.5" order="7" side_tool="true" content_ui="tabs" />
@@ -514,6 +517,8 @@
       <window_info id="Cvs" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="4" side_tool="false" content_ui="tabs" />
       <window_info id="Message" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
       <window_info id="Ant Build" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
+      <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32930845" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
+      <window_info id="Messages" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Commander" active="false" anchor="right" auto_hide="false" internal_type="SLIDING" type="SLIDING" visible="false" weight="0.4" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
       <window_info id="Hierarchy" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="2" side_tool="false" content_ui="combo" />
       <window_info id="Inspection" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.4" sideWeight="0.5" order="5" side_tool="false" content_ui="tabs" />
@@ -538,13 +543,6 @@
     </breakpoint-manager>
   </component>
   <component name="editorHistoryManager">
-    <entry file="file://$PROJECT_DIR$/Project/modelengine/engine.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="43" column="40" selection-start="1681" selection-end="1681" vertical-scroll-proportion="0.0" vertical-offset="645" max-vertical-offset="1020">
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/Configuration/engine_config.xml">
       <provider selected="true" editor-type-id="text-editor">
         <state line="11" column="31" selection-start="487" selection-end="487" vertical-scroll-proportion="0.0" vertical-offset="165" max-vertical-offset="585">
@@ -552,7 +550,7 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/TaskPool/project.xml">
+    <entry file="file://$PROJECT_DIR$/TaskPool/Test/project.xml">
       <provider selected="true" editor-type-id="text-editor">
         <state line="15" column="12" selection-start="565" selection-end="565" vertical-scroll-proportion="0.0" vertical-offset="225" max-vertical-offset="1650">
           <folding />
@@ -595,28 +593,33 @@
     </entry>
     <entry file="file://C:/Anaconda/Lib/threading.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="811" column="19" selection-start="29113" selection-end="29113" vertical-scroll-proportion="0.4472169" vertical-offset="11932" max-vertical-offset="20025">
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/TaskPool/project.xml">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="83" column="35" selection-start="3264" selection-end="3264" vertical-scroll-proportion="0.0" vertical-offset="616" max-vertical-offset="1590">
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/Configuration/engine_config.xml">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="3" column="0" selection-start="96" selection-end="96" vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="600">
-          <folding />
-        </state>
+        <state line="811" column="19" selection-start="29113" selection-end="29113" vertical-scroll-proportion="0.4472169" vertical-offset="11932" max-vertical-offset="20025" />
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/TaskPool/Test/worktask.xml">
       <provider selected="true" editor-type-id="text-editor">
         <state line="10" column="12" selection-start="331" selection-end="331" vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="300">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Project/modelengine/start.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="211" column="14" selection-start="10392" selection-end="10392" vertical-scroll-proportion="0.0" vertical-offset="4508" max-vertical-offset="6465">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Project/modelengine/project.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="158" column="63" selection-start="6728" selection-end="6728" vertical-scroll-proportion="0.0" vertical-offset="2016" max-vertical-offset="6600">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/TaskPool/Test/project.xml">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="19" column="22" selection-start="692" selection-end="692" vertical-scroll-proportion="0.12912482" vertical-offset="195" max-vertical-offset="1590">
           <folding />
         </state>
       </provider>
@@ -628,22 +631,17 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/Project/modelengine/project.py">
+    <entry file="file://$PROJECT_DIR$/Configuration/engine_config.xml">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="400" column="57" selection-start="18262" selection-end="18262" vertical-scroll-proportion="0.0" vertical-offset="5460" max-vertical-offset="6675">
-          <folding>
-            <element signature="e#0#35#0" expanded="true" />
-          </folding>
+        <state line="10" column="48" selection-start="331" selection-end="357" vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="405">
+          <folding />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/Project/modelengine/start.py">
+    <entry file="file://$PROJECT_DIR$/TaskPool/test_project.xml">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="452" column="29" selection-start="20656" selection-end="20656" vertical-scroll-proportion="0.6779661" vertical-offset="5445" max-vertical-offset="6465">
-          <folding>
-            <element signature="e#0#11#0" expanded="true" />
-            <element signature="e#15858#18133#0" expanded="false" />
-          </folding>
+        <state line="22" column="22" selection-start="846" selection-end="846" vertical-scroll-proportion="0.47345766" vertical-offset="0" max-vertical-offset="1320">
+          <folding />
         </state>
       </provider>
     </entry>

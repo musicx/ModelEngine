@@ -145,17 +145,19 @@ class Project:
             self.project_id = "{0}_{1}".format(self.name, long(time.time()))
         self.project_id = ""
         self.email = pconfig['email'] # TODO: this can be changed to multiple receivers
-        self.datameta = DataMeta()
-        self.datameta.id.extend(pconfig['record_ids']['id'])
-        self.datameta.bad.append(pconfig['bad_indicator'])
-        self.datameta.weight.append(pconfig['weight_indicator'])
         self.clean = pconfig.get('clean_after_success', 'no').lower() == 'yes'
-        if 'model_var_list' in pconfig and os.path.exists(pconfig['model_var_list']) :
-            for line in open(pconfig['model_var_list']) :
-                self.datameta.model_vars.append(line.strip())
-        if 'report_var_list' in pconfig and os.path.exists(pconfig['report_var_list']) :
-            for line in open(pconfig['report_var_list']) :
-                self.datameta.report_vars.append(line.strip())
+
+        #self.datameta = DataMeta()
+        #self.datameta.id.extend(pconfig['record_ids']['id'])
+        #self.datameta.bad.append(pconfig['bad_indicator'])
+        #self.datameta.weight.append(pconfig['weight_indicator'])
+        #if 'model_var_list' in pconfig and os.path.exists(pconfig['model_var_list']) :
+        #    for line in open(pconfig['model_var_list']) :
+        #        self.datameta.model_vars.append(line.strip())
+        #if 'report_var_list' in pconfig and os.path.exists(pconfig['report_var_list']) :
+        #    for line in open(pconfig['report_var_list']) :
+        #        self.datameta.report_vars.append(line.strip())
+
         for item in pconfig['stages']['stage'] :
             stage = Stage(item)
             self.stages[stage.name] = stage

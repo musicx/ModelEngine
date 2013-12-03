@@ -1,7 +1,7 @@
 <configuration>
     <check_interval>2</check_interval>
     <engine_name>localhost</engine_name>
-    <username></username>
+    <username>yijiliu</username>
     <engines>
         <server>
             <name>localhost</name>
@@ -16,19 +16,6 @@
                 <type>python</type>
                 <type>sas</type>
                 <type>r</type>
-            </job_types>
-        </server>
-        <server>
-            <name>localhost2</name>
-            <address>localhost2</address>
-            <rsa_key></rsa_key>
-            <taskpool>c:\work\python\modelengine\taskpool</taskpool>
-            <delivery>c:\work\python\modelengine\delivery</delivery>
-            <temp>c:\work\python\modelengine\temp</temp>
-            <output>c:\work\python\modelengine\output</output>
-            <job_types>
-                <type>python</type>
-                <type>sas</type>
             </job_types>
         </server>
     </engines>
