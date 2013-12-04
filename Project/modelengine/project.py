@@ -43,11 +43,11 @@ class DataFile:
                 self.is_input = True if fconfig['@type'] == 'data' else False
             self.id = fconfig['@id'] if '@id' in fconfig else '##'
             self.path = fconfig['#text']
-
+        self.relative_path = self.path if self.is_folder else ""
 
 class Task:
     def __init__(self, tconfig):
-        self.name = tconfig['name']
+        self.name = "tsk_" + tconfig['name']
         self.jobtype = tconfig['job_type'].lower()
         self.script = tconfig['script']
         self.package = tconfig['package']
@@ -81,7 +81,7 @@ class Task:
 
 class Stage:
     def __init__(self, sconfig):
-        self.name = sconfig['name']
+        self.name = "stg_" + sconfig['name']
         self.tasks = {}
         self.script = sconfig['stage_script']
         self.package = sconfig['stage_package']
@@ -159,9 +159,9 @@ class Project:
             stage = Stage(item)
             self.stages[stage.name] = stage
         self.datafiles = []
-        if type(pconfig['project_input']['file']) is not list:
+        if 'file' in pconfig['project_input'] and type(pconfig['project_input']['file']) is not list:
             self.datafiles.append(DataFile(pconfig['project_input']['file']))
-        else:
+        elif 'file' in pconfig['project_input']:
             for item in pconfig['project_input']['file']:
                 self.datafiles.append(DataFile(item))
         for stage_name, stage in self.stages.iteritems() :
@@ -174,6 +174,16 @@ class Project:
                     self.datafiles.extend(task.input)
                 if task.output is not None :
                     self.datafiles.extend(task.output)
+        # check the uniqueness of each file id!
+        ids = set()
+        for item in self.datafiles :
+            if item.id == "##":
+                continue
+            if item.id in ids :
+                logging.error("ID conflict detected in the configuration" + item.id)
+                raise ValueError
+            else :
+                ids.add(item.id)
         #create the input file list for each worktask based on datafile id and stuffs
         for stage_name, stage in self.stages.iteritems() :
             for task_name, task in stage.tasks.iteritems() :
@@ -199,6 +209,7 @@ class Project:
                     stage.input.append(files[0])
                 else:
                     logging.error("file replacer error : {0}".format(repr(files)))
+            #TODO: consider update the is_input / is_output attribute for each DataFile depending on where they are read
         self.deactivate = False
 
     def nextTasks(self):
@@ -268,7 +279,7 @@ class Project:
                 for item in task.output:
                     if item.is_output:
                         datatype = 'output'
-                    elif item.is_data:
+                    elif item.is_input:
                         datatype = 'data'
                     else :
                         datatype = 'na'
@@ -332,21 +343,21 @@ class WorkTask:
         self.script = wconfig['script']
         self.package = wconfig['package']
         self.inputs = []
-        if type(wconfig['input']['file']) == list :
+        if 'file' in wconfig['input'] and type(wconfig['input']['file']) == list :
             for item in wconfig['input']['file'] :
                 self.inputs.append(DataFile(item, is_input=True))
-        else :
+        elif 'file' in wconfig['input'] :
             self.inputs.append(DataFile(wconfig['input']['file'], is_input=True))
         self.outputs = []
-        if type(wconfig['output']['file']) == list :
+        if 'file' in wconfig['output'] and type(wconfig['output']['file']) == list :
             for item in wconfig['output']['file'] :
                 self.outputs.append(DataFile(item, is_output=True))
-        else :
+        elif 'file' in wconfig['output'] :
             self.outputs.append(DataFile(wconfig['output']['file'], is_output=True))
-        if type(wconfig['output']['folder']) == list :
+        if 'folder' in wconfig['output'] and type(wconfig['output']['folder']) == list :
             for item in wconfig['output']['folder'] :
                 self.outputs.append(DataFile(item, is_output=True, is_folder=True))
-        else :
+        elif 'folder' in wconfig['output'] :
             self.outputs.append(DataFile(wconfig['output']['folder'], is_output=True, is_folder=True))
 
     def checkMissing(self, engine):
@@ -371,7 +382,14 @@ class WorkTask:
             replace_path = os.sep.join([engine.temp, self.project_id, os.path.basename(input_file.path)]) \
                            if missing_flag else input_file.path
             if input_file.id is not None and input_file.id != "##":
-                self.script.replace("%" + input_file.id, replace_path)
+                self.script = self.script.replace("%" + input_file.id, replace_path)
+        for output_file in self.outputs :
+            file_path = output_file.path if output_file.path.startswith(os.sep) or output_file.path[1] == ":" \
+                                         else os.sep.join([engine.temp, self.project_id, output_file.path])
+            output_file.path = file_path
+            if output_file.id is not None and output_file.id != "##" :
+                self.script = self.script.replace("%" + output_file.id, file_path)
+        package_missing_flag = False
         if self.package is not None and self.package.strip() != "" :
             package_temp_path = self.package if self.package.startswith(os.sep) or self.package[1] == ":" \
                                              else os.sep.join((engine.temp, self.project_id, self.package))
@@ -380,16 +398,19 @@ class WorkTask:
             if not os.path.exists(package_output_path) :
                 if not os.path.exists(package_temp_path) :
                     missing_files.append(DataFile(self.package, is_package=True))
+                    package_missing_flag = True
                 else :
                     self.package = package_temp_path
             else :
                 self.package = package_output_path
         # replace the package path in the script
         script_part = self.script.split(" ")[1]
+        candidate_script_path = os.sep.join([engine.temp, self.project_id, script_part]) if package_missing_flag \
+                                else self.package
         if not os.path.exists(script_part) :
             file_pattern = re.compile(r'\w+\.\w+')
             if file_pattern.search(script_part) is not None :
-                self.script.replace(script_part, os.sep.join([engine.temp, self.project_id, os.path.basename(script_part)]), 1)
+                self.script = self.script.replace(script_part, candidate_script_path, 1)
         return missing_files
 
 
@@ -400,6 +421,18 @@ class Message:
         self.task_name = mconfig['task_name']
         self.status = int(mconfig['status'])
         self.message = mconfig['message']
+        self.outputs = []
+        if 'output' in mconfig :
+            if 'file' in mconfig['output'] and type(mconfig['output']['file']) == list :
+                for item in mconfig['output']['file'] :
+                    self.outputs.append(DataFile(item, is_output=True))
+            elif 'file' in mconfig['output'] :
+                self.outputs.append(DataFile(mconfig['output']['file'], is_output=True))
+            if 'folder' in mconfig['output'] and type(mconfig['output']['folder']) == list :
+                for item in mconfig['output']['folder'] :
+                    self.outputs.append(DataFile(item, is_output=True, is_folder=True))
+            elif 'folder' in mconfig['output'] :
+                self.outputs.append(DataFile(mconfig['output']['folder'], is_output=True, is_folder=True))            
 
 
 class Command:
@@ -418,13 +451,12 @@ class Command:
                 self.projects[self.project_id] = system.projects[self.project_id]
 
 
-
 class Notice :
     """
     this is the class for internal info transfer, message collector will get this from the message queue, and
     then create message xml to send back to controller.
     """
-    def __init__(self, project_id, task_name, message, status):
+    def __init__(self, project_id, task_name, message, status, outputs):
         """
         status : 0 if success, -1 if error
         """
@@ -432,16 +464,30 @@ class Notice :
         self.task_name = task_name
         self.message = message
         self.status = status
+        self.outputs = outputs
 
-    def createMessage(self, address):
+    def createMessage(self, engine_name):
         """
         address : the address of current engine
         """
         message_xml = xmlwitch.Builder()
         with message_xml.message() :
             message_xml.project_id(self.project_id)
-            message_xml.worker(address)
+            message_xml.worker(engine_name)
             message_xml.task_name(self.task_name)
-            message_xml.status(self.status)
+            message_xml.status(str(self.status))
             message_xml.message(self.message)
+            if self.outputs is not None and len(self.outputs) > 0 :
+                with message_xml.outputs() :
+                    for item in self.outputs :
+                        if item.is_output:
+                            datatype = 'output'
+                        elif item.is_input:
+                            datatype = 'data'
+                        else :
+                            datatype = 'na'
+                        if item.is_folder:
+                            message_xml.folder(item.path, id=item.id, type=datatype)
+                        else :
+                            message_xml.file(item.path, id=item.id, type=datatype)
         return str(message_xml)

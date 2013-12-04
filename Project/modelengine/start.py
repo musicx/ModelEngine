@@ -54,26 +54,31 @@ class TaskScanner(Thread):
                 continue
 
             if "project" in doc:
-                project = Project(doc['project'], self.system)
-                self.system.projects[project.project_id] = project
-                self.checkFolder(project.project_id)
-                self.moveTask(filename, project.project_id)
-                project.nextTasks()
+                try :
+                    project = Project(doc['project'], self.system)
+                    self.system.projects[project.project_id] = project
+                    self.checkFolder(project.project_id)
+                    project.nextTasks()
+                except ValueError as err:
+                    #TODO: find email address in the xml and send error message to him/her.
+                    pass
+                finally:
+                    self.moveTask(filename, project.project_id)
 
             elif "worktask" in doc:
                 worktask = WorkTask(doc['worktask'])
                 self.checkFolder(worktask.project_id)
-                self.moveTask(filename, worktask.project_id)
                 missing_list = worktask.checkMissing(self.engine)
+                self.moveTask(filename, worktask.project_id)
                 # copy the input file from remote to local
                 finish_events = []
                 for item in missing_list :
                     finished = Event()
-                    fetcher = Fetcher(self.engine, self.system.controller.address, item.path,
+                    fetcher = Fetcher(self.engine, self.system.controller, item.path,
                                       self.engine.temp, finished, item.is_folder)
                     fetcher.start()
                     finish_events.append(finished)
-                worker_process = WorkerProcess(worktask.project_id, worktask.task_name, worktask.script,
+                worker_process = WorkerProcess(worktask.project_id, worktask.task_name, worktask.script, worktask.outputs,
                                                self.message_queue, finish_events, worktask.package)
                 # maintain a worktask dict for different projects
                 self.engine.worktasks[worktask.project_id].append(worker_process)
@@ -143,12 +148,14 @@ class TaskScanner(Thread):
                 # -1 : error, email project owner
                 # 0 : success, update task status
                 if message.status == 0 :
-                    output_files = self.system.projects[message.project_id].getOutput(message.task_name)
                     finish_events = []
-                    for item in output_files :
+                    for item in message.outputs :
                         finished = Event()
-                        fetcher = Fetcher(self.engine, message.worker, item.path,
-                                          self.engine.output, finished)
+                        source_path = item.path
+                        target_folder = os.sep.join([self.engine.output, message.project_id])
+                        if item.is_folder and not os.path.exists(item.relative_path):
+                            target_folder = os.sep.join([target_folder, item.relative_path])
+                        fetcher = Fetcher(self.engine, self.system.engines[message.worker], source_path, target_folder, finished)
                         fetcher.start()
                         finish_events.append(finished)
                     statusUpdater = StatusUpdater(self.system.projects[message.project_id], message.task_name,
@@ -267,26 +274,48 @@ class Distributer(Thread) :
 
 
 class Fetcher(Thread) :
-    def __init__(self, cur_engine, source_address, file_path, target_folder, finished, is_folder=False):
+    def __init__(self, local_engine, remote_engine, source_path, target_folder, finished, is_folder=False):
         Thread.__init__(self)
-        self.engine = cur_engine
-        self.source = source_address
-        self.filename = file_path
+        self.local = local_engine
+        self.remote = remote_engine
+        self.source = source_path
         self.target = target_folder
         self.finished = finished
         self.is_folder = is_folder
+        self.is_local = self.local.address == self.remote.address
 
     def run(self) :
-        #TODO: handle the scenario when it's the same machine copy, or is there any?
+        # add move mechanism if it is local fetcher
         target_path = self.target + os.sep if not self.target.endswith(os.sep) else self.target
-        source_path = "{0}@{1}:{2}".format(self.engine.username, self.source, self.filename)
-        logging.info("fetch file {0} from remote server {1}".format(self.filename, self.source))
-        if self.is_folder :
-            runningOutput = subprocess.check_output(["scp -i {0} -q -r {1} {2}".format(self.engine.rsa_key, source_path, target_path) + "; exit 0"],
-                                                    stderr=subprocess.STDOUT, shell=True)
+        if self.is_local :
+            source_path = self.source
+            logging.info("fetch file {0} from local server".format(self.source))
+            if source_path.find(self.local.temp) >= 0 :
+                # in the temp folder, move to output folder
+                if self.is_folder :
+                    if not os.path.exists(target_path) :
+                        os.makedirs(target_path)
+                    os.rename(source_path, target_path)
+                else :
+                    os.rename(source_path, os.sep.join([target_path, os.path.basename(source_path)]))
+            else :
+                # not in temp folder, copy to output folder
+                if self.is_folder :
+                    if os.path.exists(target_path) :
+                        shutil.rmtree(target_path, ignore_errors=True)
+                    shutil.copytree(source_path, target_path)
+                else :
+                    shutil.copy(source_path, target_path)
+            runningOutput = ""
         else :
-            runningOutput = subprocess.check_output(["scp -i {0} -q {1} {2}".format(self.engine.rsa_key, source_path, target_path) + "; exit 0"],
-                                                    stderr=subprocess.STDOUT, shell=True)
+            source_path = "{0}@{1}:{2}".format(self.remote.username, self.remote.address, self.source)
+            logging.info("fetch file {0} from remote server {1}".format(self.source, self.remote.address))
+            if self.is_folder :
+                runningOutput = subprocess.check_output(["scp -i {0} -q -r {1} {2}".format(self.local.rsa_key, source_path, target_path) + "; exit 0"],
+                                                        stderr=subprocess.STDOUT, shell=True)
+            else :
+                runningOutput = subprocess.check_output(["scp -i {0} -q {1} {2}".format(self.local.rsa_key, source_path, target_path) + "; exit 0"],
+                                                        stderr=subprocess.STDOUT, shell=True)
         if runningOutput != "" :
             #TODO: COPY ERROR
             print "copy error"
@@ -319,7 +348,7 @@ class MessageCollector(Thread) :
         while True :
             notice = self.notice_queue.get()
             #send to controller
-            xml_content = notice.createMessage(self.engine.address)
+            xml_content = notice.createMessage(self.engine.name)
             message_sender = Distributer(self.engine, os.sep.join([self.engine.delivery, notice.project_id]),
                                          notice.project_id + "_message", xml_content, self.target, self.is_local)
             message_sender.start()
@@ -343,7 +372,7 @@ class StatusUpdater(Thread) :
 
 
 class WorkerThread(Thread) :
-    def __init__(self, project_id, task_name, script, out_queue, events=None, package=None):
+    def __init__(self, project_id, task_name, script, outputs, out_queue, events=None, package=None):
         """
         wait for all the Events in events are set, then start the script
         before script is run, un-package any zip files if given
@@ -353,6 +382,7 @@ class WorkerThread(Thread) :
         self.project_id = project_id
         self.task_name = task_name
         self.script = script
+        self.outputs = outputs
         self.message_queue = out_queue
         self.events = events
         self.package = package
@@ -391,20 +421,21 @@ class WorkerThread(Thread) :
         except Exception as err:
             runningOutput = err.message
             has_error = -1
-        self.message_queue.put(Notice(self.project_id, self.task_name, runningOutput, has_error))
+        self.message_queue.put(Notice(self.project_id, self.task_name, runningOutput, has_error, self.outputs))
 
 
 class WorkerProcess(Process) :
-    def __init__(self, project_id, task_name, script, out_queue, events=None, package=None):
+    def __init__(self, project_id, task_name, script, outputs, out_queue, events=None, package=None):
         """
         wait for all the Events in events are set, then start the script
         before script is run, un-package any zip files if given
-        then send the output to message_queue as Notice
+        then send the output, together with the detail of output files to message_queue as Notice
         """
         Process.__init__(self)
         self.project_id = project_id
         self.task_name = task_name
         self.script = script
+        self.outputs = outputs
         self.message_queue = out_queue
         self.events = events
         self.package = package
@@ -443,7 +474,7 @@ class WorkerProcess(Process) :
         except Exception as err:
             runningOutput = err.message
             has_error = -1
-        self.message_queue.put(Notice(self.project_id, self.task_name, runningOutput, has_error))
+        self.message_queue.put(Notice(self.project_id, self.task_name, runningOutput, has_error, self.outputs))
 
 
 class EmailNotifier(Thread) :
