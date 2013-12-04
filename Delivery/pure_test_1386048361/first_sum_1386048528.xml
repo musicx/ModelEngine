@@ -1,0 +1,14 @@
+<worktask>
+  <project>pure_test</project>
+  <project_id>pure_test_1386048361</project_id>
+  <task_name>first_sum</task_name>
+  <script>python sum.py %base %out1</script>
+  <package>c:\work\python\modelengine\input\sum.py</package>
+  <input>
+    <file id="base">c:\work\python\modelengine\input\data1.dat</file>
+    <file id="out1" />
+  </input>
+  <output>
+    <file type="data" id="out1">sum1.dat</file>
+  </output>
+</worktask>
