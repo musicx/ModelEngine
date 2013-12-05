@@ -2,6 +2,8 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="7614d203-ba21-4be5-8496-1ea3e2dba989" name="Default" comment="">
+      <change type="DELETED" beforePath="C:\Work\Python\ModelEngine\TaskPool\test_project.xml" afterPath="" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/Project/modelengine/project.py" afterPath="$PROJECT_DIR$/Project/modelengine/project.py" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
     </list>
     <ignored path="ModelEngine.iws" />
@@ -25,10 +27,10 @@
   </component>
   <component name="FileEditorManager">
     <leaf>
-      <file leaf-file-name="project.py" pinned="false" current="false" current-in-tab="false">
+      <file leaf-file-name="project.py" pinned="false" current="true" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/Project/modelengine/project.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="45" column="64" selection-start="1507" selection-end="1507" vertical-scroll-proportion="0.0" vertical-offset="275" max-vertical-offset="7470">
+            <state line="41" column="80" selection-start="1256" selection-end="1256" vertical-scroll-proportion="0.7356077" vertical-offset="270" max-vertical-offset="7500">
               <folding>
                 <element signature="e#0#35#0" expanded="true" />
               </folding>
@@ -36,19 +38,10 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="worktask.xml" pinned="false" current="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/TaskPool/Test/worktask.xml">
-          <provider selected="true" editor-type-id="text-editor">
-            <state line="10" column="12" selection-start="331" selection-end="331" vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="300">
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="start.py" pinned="false" current="true" current-in-tab="true">
+      <file leaf-file-name="start.py" pinned="false" current="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/Project/modelengine/start.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="156" column="0" selection-start="7829" selection-end="7829" vertical-scroll-proportion="0.52025586" vertical-offset="2096" max-vertical-offset="7665">
+            <state line="140" column="41" selection-start="7362" selection-end="7362" vertical-scroll-proportion="0.0" vertical-offset="1927" max-vertical-offset="8085">
               <folding>
                 <element signature="e#0#11#0" expanded="true" />
               </folding>
@@ -68,7 +61,7 @@
       <file leaf-file-name="engine_config.xml" pinned="false" current="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/Configuration/engine_config.xml">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="10" column="48" selection-start="331" selection-end="357" vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="405">
+            <state line="11" column="44" selection-start="422" selection-end="422" vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="405">
               <folding />
             </state>
           </provider>
@@ -92,7 +85,6 @@
   <component name="IdeDocumentHistory">
     <option name="changedFiles">
       <list>
-        <option value="$PROJECT_DIR$/Configuration/system.xml.xhtml" />
         <option value="$PROJECT_DIR$/Data/readme.txt" />
         <option value="$PROJECT_DIR$/TaskPool/readme.txt" />
         <option value="$PROJECT_DIR$/Input/readme.txt" />
@@ -106,8 +98,9 @@
         <option value="$PROJECT_DIR$/Configuration/engine_config.xml" />
         <option value="$PROJECT_DIR$/TaskPool/test_project.xml" />
         <option value="$PROJECT_DIR$/Project/modelengine/engine.py" />
-        <option value="$PROJECT_DIR$/Project/modelengine/project.py" />
         <option value="$PROJECT_DIR$/Project/modelengine/start.py" />
+        <option value="$PROJECT_DIR$/Input/multiply.py" />
+        <option value="$PROJECT_DIR$/Project/modelengine/project.py" />
       </list>
     </option>
   </component>
@@ -173,24 +166,6 @@
             </PATH_ELEMENT>
             <PATH_ELEMENT>
               <option name="myItemId" value="TaskPool" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-            </PATH_ELEMENT>
-          </PATH>
-          <PATH>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="ModelEngine" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="ModelEngine" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="TaskPool" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="Test" />
               <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
             </PATH_ELEMENT>
           </PATH>
@@ -475,7 +450,11 @@
       <created>1386148837862</created>
       <updated>1386148837862</updated>
     </task>
-    <option name="localTasksCounter" value="9" />
+    <task id="LOCAL-00009" summary="add multiple debug level logging into the script">
+      <created>1386229008897</created>
+      <updated>1386229008897</updated>
+    </task>
+    <option name="localTasksCounter" value="10" />
     <servers />
   </component>
   <component name="TodoView" selected-index="0">
@@ -499,7 +478,7 @@
     </todo-panel>
   </component>
   <component name="ToolWindowManager">
-    <frame x="-8" y="-8" width="1616" height="876" extended-state="7" />
+    <frame x="-8" y="-8" width="1616" height="876" extended-state="6" />
     <editor active="true" />
     <layout>
       <window_info id="Messages" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
@@ -535,55 +514,35 @@
     <MESSAGE value="Friday noon" />
     <MESSAGE value="datafile changed. create boolean variable for input / output / folder / package" />
     <MESSAGE value="message class changed, outputs are now attached in the message." />
-    <option name="LAST_COMMIT_MESSAGE" value="message class changed, outputs are now attached in the message." />
+    <MESSAGE value="add multiple debug level logging into the script" />
+    <option name="LAST_COMMIT_MESSAGE" value="add multiple debug level logging into the script" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
       <breakpoints>
         <line-breakpoint enabled="true" type="python-line">
           <url>file://$PROJECT_DIR$/Project/modelengine/project.py</url>
-          <line>212</line>
+          <line>214</line>
           <option name="timeStamp" value="13" />
         </line-breakpoint>
         <line-breakpoint enabled="true" type="python-line">
           <url>file://$PROJECT_DIR$/Project/modelengine/start.py</url>
-          <line>366</line>
-          <option name="timeStamp" value="21" />
+          <line>56</line>
+          <option name="timeStamp" value="23" />
         </line-breakpoint>
         <line-breakpoint enabled="true" type="python-line">
-          <url>file://$PROJECT_DIR$/Project/modelengine/start.py</url>
-          <line>55</line>
-          <option name="timeStamp" value="23" />
+          <url>file://$PROJECT_DIR$/Project/modelengine/project.py</url>
+          <line>305</line>
+          <option name="timeStamp" value="24" />
         </line-breakpoint>
       </breakpoints>
       <breakpoints-dialog>
         <breakpoints-dialog />
       </breakpoints-dialog>
-      <option name="time" value="24" />
+      <option name="time" value="25" />
     </breakpoint-manager>
   </component>
   <component name="editorHistoryManager">
-    <entry file="file://$PROJECT_DIR$/TaskPool/Test/project.xml">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="15" column="12" selection-start="565" selection-end="565" vertical-scroll-proportion="0.0" vertical-offset="225" max-vertical-offset="1650">
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/Project/modelengine/engine.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="37" column="26" selection-start="1442" selection-end="1442" vertical-scroll-proportion="0.0" vertical-offset="555" max-vertical-offset="1020">
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/Configuration/engine_config.xml">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="12" column="62" selection-start="554" selection-end="554" vertical-scroll-proportion="0.0" vertical-offset="180" max-vertical-offset="585">
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/Input/model_var.txt">
       <provider selected="true" editor-type-id="text-editor">
         <state line="0" column="0" selection-start="0" selection-end="0" vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="585" />
@@ -604,23 +563,9 @@
         <state line="12" column="0" selection-start="664" selection-end="664" vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="270" />
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/TaskPool/Test/project.xml">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="19" column="22" selection-start="692" selection-end="692" vertical-scroll-proportion="0.12912482" vertical-offset="195" max-vertical-offset="1590">
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://C:/Anaconda/Lib/threading.py">
       <provider selected="true" editor-type-id="text-editor">
         <state line="813" column="28" selection-start="29172" selection-end="29172" vertical-scroll-proportion="0.5245203" vertical-offset="11949" max-vertical-offset="20025">
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/Configuration/engine_config.xml">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="10" column="48" selection-start="331" selection-end="357" vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="405">
           <folding />
         </state>
       </provider>
@@ -646,6 +591,27 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/TaskPool/Test/project.xml">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="19" column="22" selection-start="692" selection-end="692" vertical-scroll-proportion="0.19189766" vertical-offset="195" max-vertical-offset="1590">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Input/sum.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="0" column="0" selection-start="0" selection-end="181" vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="270">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Input/multiply.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="12" column="0" selection-start="181" selection-end="181" vertical-scroll-proportion="0.38379532" vertical-offset="0" max-vertical-offset="469">
+          <folding />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/Project/modelengine/engine.py">
       <provider selected="true" editor-type-id="text-editor">
         <state line="35" column="67" selection-start="1273" selection-end="1273" vertical-scroll-proportion="0.0" vertical-offset="506" max-vertical-offset="1425">
@@ -653,20 +619,27 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/Project/modelengine/project.py">
+    <entry file="file://$PROJECT_DIR$/Project/modelengine/start.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="45" column="64" selection-start="1507" selection-end="1507" vertical-scroll-proportion="0.0" vertical-offset="275" max-vertical-offset="7470">
+        <state line="140" column="41" selection-start="7362" selection-end="7362" vertical-scroll-proportion="0.0" vertical-offset="1927" max-vertical-offset="8085">
           <folding>
-            <element signature="e#0#35#0" expanded="true" />
+            <element signature="e#0#11#0" expanded="true" />
           </folding>
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/Project/modelengine/start.py">
+    <entry file="file://$PROJECT_DIR$/Configuration/engine_config.xml">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="156" column="0" selection-start="7829" selection-end="7829" vertical-scroll-proportion="0.52025586" vertical-offset="2096" max-vertical-offset="7665">
+        <state line="11" column="44" selection-start="422" selection-end="422" vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="405">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Project/modelengine/project.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="41" column="80" selection-start="1256" selection-end="1256" vertical-scroll-proportion="0.7356077" vertical-offset="270" max-vertical-offset="7500">
           <folding>
-            <element signature="e#0#11#0" expanded="true" />
+            <element signature="e#0#35#0" expanded="true" />
           </folding>
         </state>
       </provider>

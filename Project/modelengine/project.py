@@ -44,6 +44,8 @@ class DataFile:
             self.id = fconfig['@id'] if '@id' in fconfig else '##'
             self.path = fconfig['#text']
         self.relative_path = self.path if self.is_folder else ""
+        if not self.is_package and not self.is_input and not self.is_folder and not self.is_output :
+            self.is_output = True
 
 class Task:
     def __init__(self, tconfig):
@@ -65,16 +67,16 @@ class Task:
             self.output = []
             if 'file' in tconfig['task_output'] :
                 if type(tconfig['task_output']['file']) is not list :
-                    self.output.append(DataFile(tconfig['task_output']['file'], is_output=True))
+                    self.output.append(DataFile(tconfig['task_output']['file']))
                 else:
                     for item in tconfig['task_output']['file'] :
-                        self.output.append(DataFile(item, is_output=True))
+                        self.output.append(DataFile(item))
             if 'folder' in tconfig['task_output'] :
                 if type(tconfig['task_output']['folder']) is not list :
-                    self.output.append(DataFile(tconfig['task_output']['folder'], is_folder=True, is_output=True))
+                    self.output.append(DataFile(tconfig['task_output']['folder'], is_folder=True))
                 else:
                     for item in tconfig['task_output']['folder'] :
-                        self.output.append(DataFile(item, is_folder=True, is_output=True))
+                        self.output.append(DataFile(item, is_folder=True))
         self.complete = False
         self.delievered = False
 
@@ -101,16 +103,16 @@ class Stage:
             self.output = []
             if 'file' in sconfig['stage_output'] :
                 if type(sconfig['stage_output']['file']) is not list :
-                    self.output.append(DataFile(sconfig['stage_output']['file'], is_output=True))
+                    self.output.append(DataFile(sconfig['stage_output']['file']))
                 else :
                     for item in sconfig['stage_output']['file'] :
-                        self.output.append(DataFile(item, is_output=True))
+                        self.output.append(DataFile(item))
             if 'folder' in sconfig['stage_output'] :
                 if type(sconfig['stage_output']['folder']) is not list :
-                    self.output.append(DataFile(sconfig['stage_output']['folder'], is_folder=True, is_output=True))
+                    self.output.append(DataFile(sconfig['stage_output']['folder'], is_folder=True))
                 else :
                     for item in sconfig['stage_output']['folder'] :
-                        self.output.append(DataFile(item, is_folder=True, is_output=True))
+                        self.output.append(DataFile(item, is_folder=True))
         if type(sconfig['tasks']['task']) is not list :
             task = Task(sconfig['tasks']['task'])
             self.tasks[task.name] = task
@@ -141,8 +143,8 @@ class Project:
         while self.project_id in self.system.projects:
             self.project_id = "{0}_{1}".format(self.name, long(time.time()))
         self.email = pconfig['email'] # TODO: this can be changed to multiple receivers
-        self.clean = pconfig.get('clean_after_success', None) is not None \
-                     and pconfig['clean_after_success'].lower() == 'yes'
+        self.clean_after = pconfig.get('clean_after_success', None) is not None \
+                           and pconfig['clean_after_success'].lower() == 'yes'
 
         #self.datameta = DataMeta()
         #self.datameta.id.extend(pconfig['record_ids']['id'])
@@ -264,7 +266,7 @@ class Project:
                     pass
                 work_task_xml.package(task.package)
             else :
-                work_task_xml.package()
+                work_task_xml.package("")
             with work_task_xml.input():
                 for item in task.input:
                     path = self.findAbsolutePath(item.path, engine)
@@ -326,7 +328,7 @@ class Project:
         with clean_xml.command() :
             clean_xml.project_id(self.project_id)
             clean_xml.command("clean")
-        for engine in self.system.engines.itervalue() :
+        for engine in self.system.engines.itervalues() :
             same_engine = engine.address == self.system.engine.address
             target_folder = "{0}@{1}:{2}".format(engine.username, engine.address, engine.taskpool) \
                             if not same_engine else engine.taskpool
@@ -351,14 +353,14 @@ class WorkTask:
         self.outputs = []
         if 'file' in wconfig['output'] and type(wconfig['output']['file']) == list :
             for item in wconfig['output']['file'] :
-                self.outputs.append(DataFile(item, is_output=True))
+                self.outputs.append(DataFile(item))
         elif 'file' in wconfig['output'] :
-            self.outputs.append(DataFile(wconfig['output']['file'], is_output=True))
+            self.outputs.append(DataFile(wconfig['output']['file']))
         if 'folder' in wconfig['output'] and type(wconfig['output']['folder']) == list :
             for item in wconfig['output']['folder'] :
-                self.outputs.append(DataFile(item, is_output=True, is_folder=True))
+                self.outputs.append(DataFile(item, is_folder=True))
         elif 'folder' in wconfig['output'] :
-            self.outputs.append(DataFile(wconfig['output']['folder'], is_output=True, is_folder=True))
+            self.outputs.append(DataFile(wconfig['output']['folder'], is_folder=True))
 
     def checkMissing(self, engine):
         """
@@ -425,14 +427,14 @@ class Message:
         if 'outputs' in mconfig :
             if 'file' in mconfig['outputs'] and type(mconfig['outputs']['file']) == list :
                 for item in mconfig['outputs']['file'] :
-                    self.outputs.append(DataFile(item, is_output=True))
+                    self.outputs.append(DataFile(item))
             elif 'file' in mconfig['outputs'] :
-                self.outputs.append(DataFile(mconfig['outputs']['file'], is_output=True))
+                self.outputs.append(DataFile(mconfig['outputs']['file']))
             if 'folder' in mconfig['outputs'] and type(mconfig['outputs']['folder']) == list :
                 for item in mconfig['outputs']['folder'] :
-                    self.outputs.append(DataFile(item, is_output=True, is_folder=True))
+                    self.outputs.append(DataFile(item, is_folder=True))
             elif 'folder' in mconfig['outputs'] :
-                self.outputs.append(DataFile(mconfig['outputs']['folder'], is_output=True, is_folder=True))
+                self.outputs.append(DataFile(mconfig['outputs']['folder'], is_folder=True))
 
 
 class Command:
