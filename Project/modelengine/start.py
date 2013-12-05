@@ -44,6 +44,7 @@ class TaskScanner(Thread):
     def checkTaskPool(self):
         taskfiles = glob.glob(os.path.join(self.engine.taskpool, '*.xml'))
         for filename in taskfiles:
+            logging.debug("file found: " + filename)
             with open(filename) as fn:
                 lines = fn.read()
             try:
@@ -56,9 +57,11 @@ class TaskScanner(Thread):
             if "project" in doc:
                 try :
                     project = Project(doc['project'], self.system)
+                    logging.debug("project created " + project.project_id)
                     self.system.projects[project.project_id] = project
                     self.checkFolder(project.project_id)
                     project.nextTasks()
+                    logging.debug("task generated for project " + project.project_id)
                 except ValueError as err:
                     #TODO: find email address in the xml and send error message to him/her.
                     pass
@@ -67,8 +70,10 @@ class TaskScanner(Thread):
 
             elif "worktask" in doc:
                 worktask = WorkTask(doc['worktask'])
+                logging.debug("worktask {0} created for project {1}".format(worktask.task_name, worktask.project_id))
                 self.checkFolder(worktask.project_id)
                 missing_list = worktask.checkMissing(self.engine)
+                logging.debug("{0} missing files found for worktask ".format(len(missing_list)) + worktask.task_name)
                 self.moveTask(filename, worktask.project_id)
                 # copy the input file from remote to local
                 finish_events = []
@@ -83,9 +88,11 @@ class TaskScanner(Thread):
                 # maintain a worktask dict for different projects
                 self.engine.worktasks[worktask.project_id].append(worker_process)
                 worker_process.start()
+                logging.debug("worktask started! {0} : {1}".format(worktask.project_id, worktask.task_name))
 
             elif "command" in doc:
                 command = Command(doc['command'], self.system)
+                logging.debug("command created for {0}\nthe command is: {1}".format(command.projects, command.command))
                 if len(command.projects) != 0:
                     self.moveTasks(filename, command.projects)
                 else:
@@ -115,6 +122,7 @@ class TaskScanner(Thread):
                                                       "dup_" + command.command, str(controller_command),
                                                       "{0}@{1}:{2}".format(engine.username, engine.address, engine.taskpool))
                             distributor.start()
+                    logging.debug("command has been distributed")
                 # do the project level command, such as stop task, stage or shut the proj down
                 # close engine
                 if command.command == "shutdown":
@@ -144,9 +152,11 @@ class TaskScanner(Thread):
 
             elif "message" in doc:
                 message = Message(doc['message'])
+                logging.debug("message received for {0} : {1}".format(message.project_id, message.task_name))
                 # message status meaning:
                 # -1 : error, email project owner
                 # 0 : success, update task status
+                self.moveTask(filename, message.project_id)
                 if message.status == 0 :
                     finish_events = []
                     for item in message.outputs :
@@ -164,9 +174,9 @@ class TaskScanner(Thread):
                 elif message.status == -1 :
                     logging.error(message.message)
 
-
             else:
                 logging.warning("unknown root command found in the task configuration file : {0}".format(filename))
+                os.rename(filename, filename[:-4])
                 #TODO: find email address in the xml and send error message to him/her.
 
 
@@ -261,10 +271,12 @@ class Distributer(Thread) :
         target_path = os.sep.join((self.target, os.path.basename(filename)))
         if self.is_local :
             logging.info("move to taskpool of local server")
+            logging.debug("file copied from {0} to {1}".format(filename, target_path))
             #os.rename(filename, target_path)
             shutil.copyfile(filename, target_path)
         else :
             logging.info("copy to remote server: {0}".format(self.target))
+            logging.debug("file copied from {0} to {1}".format(filename, self.target))
             runningOutput = subprocess.check_output(["scp -i {0} -q {1} {2}".format(self.engine.rsa_key, filename, self.target) + "; exit 0"],
                                                     stderr=subprocess.STDOUT, shell=True)
             if runningOutput != "" :
@@ -296,16 +308,21 @@ class Fetcher(Thread) :
                     if not os.path.exists(target_path) :
                         os.makedirs(target_path)
                     os.rename(source_path, target_path)
+                    logging.debug("move local folder from {0} to {1}".format(source_path, target_path))
                 else :
-                    os.rename(source_path, os.sep.join([target_path, os.path.basename(source_path)]))
+                    target_path = os.sep.join([target_path, os.path.basename(source_path)])
+                    os.rename(source_path, target_path)
+                    logging.debug("move local file from {0} to {1}".format(source_path, target_path))
             else :
                 # not in temp folder, copy to output folder
                 if self.is_folder :
                     if os.path.exists(target_path) :
                         shutil.rmtree(target_path, ignore_errors=True)
                     shutil.copytree(source_path, target_path)
+                    logging.debug("copy local folder from {0} to {1}".format(source_path, target_path))
                 else :
                     shutil.copy(source_path, target_path)
+                    logging.debug("copy local file from {0} to {1}".format(source_path, target_path))
             runningOutput = ""
         else :
             source_path = "{0}@{1}:{2}".format(self.remote.username, self.remote.address, self.source)
@@ -313,9 +330,11 @@ class Fetcher(Thread) :
             if self.is_folder :
                 runningOutput = subprocess.check_output(["scp -i {0} -q -r {1} {2}".format(self.local.rsa_key, source_path, target_path) + "; exit 0"],
                                                         stderr=subprocess.STDOUT, shell=True)
+                logging.debug("copy remote folder from {0} to {1}".format(source_path, target_path))
             else :
                 runningOutput = subprocess.check_output(["scp -i {0} -q {1} {2}".format(self.local.rsa_key, source_path, target_path) + "; exit 0"],
                                                         stderr=subprocess.STDOUT, shell=True)
+                logging.debug("copy remote file from {0} to {1}".format(source_path, target_path))
         if runningOutput != "" :
             #TODO: COPY ERROR
             print "copy error"
@@ -347,12 +366,15 @@ class MessageCollector(Thread) :
     def run(self):
         while True :
             notice = self.notice_queue.get()
+            logging.debug("notice received for {0} : {1}".format(notice.project_id, notice.message))
             #send to controller
             xml_content = notice.createMessage(self.engine.name)
             message_sender = Distributer(self.engine, os.sep.join([self.engine.delivery, notice.project_id]),
-                                         notice.project_id + "_message", xml_content, self.target, self.is_local)
+                                         "{0}_{1}_message_{2}".format(notice.project_id, notice.task_name, notice.status),
+                                         xml_content, self.target, self.is_local)
             message_sender.start()
-            self.notice_queue.task_done()
+            logging.debug("notice {0} : {1} send via message".format(notice.project_id, notice.message))
+            #self.notice_queue.task_done()
 
 
 class StatusUpdater(Thread) :
@@ -405,6 +427,7 @@ class WorkerThread(Thread) :
             elif self.package.endswith(".bz2") :
                 unzip = "bzip2 -dq "
             if unzip != "" :
+                logging.debug("found zip file, try to unzip : " + self.package)
                 zip_res = subprocess.call(unzip + self.package, stderr=subprocess.STDOUT, shell=True)
                 if zip_res != "" :
                     #TODO Error log / stop task / notify controller of the failure
@@ -421,7 +444,9 @@ class WorkerThread(Thread) :
         except Exception as err:
             runningOutput = err.message
             has_error = -1
-        self.message_queue.put(Notice(self.project_id, self.task_name, runningOutput, has_error, self.outputs))
+        notice = Notice(self.project_id, self.task_name, runningOutput, has_error, self.outputs)
+        self.message_queue.put(notice)
+        logging.debug("notice {0} : {1} send to collector".format(self.project_id, self.task_name))
 
 
 class WorkerProcess(Process) :
@@ -458,6 +483,7 @@ class WorkerProcess(Process) :
             elif self.package.endswith(".bz2") :
                 unzip = "bzip2 -dq "
             if unzip != "" :
+                logging.debug("found zip file, try to unzip : " + self.package)
                 zip_res = subprocess.call(unzip + self.package, stderr=subprocess.STDOUT, shell=True)
                 if zip_res != "" :
                     #TODO Error log / stop task / notify controller of the failure
@@ -474,7 +500,9 @@ class WorkerProcess(Process) :
         except Exception as err:
             runningOutput = err.message
             has_error = -1
-        self.message_queue.put(Notice(self.project_id, self.task_name, runningOutput, has_error, self.outputs))
+        notice = Notice(self.project_id, self.task_name, runningOutput, has_error, self.outputs)
+        self.message_queue.put(notice)
+        logging.debug("notice {0} : {1} send to collector".format(self.project_id, self.task_name))
 
 
 class EmailNotifier(Thread) :

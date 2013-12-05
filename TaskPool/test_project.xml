@@ -75,7 +75,7 @@
                 <file id="sin">sdata.dat</file>
             </stage_input>
             <stage_output>
-                <file id="out6" type="data">total.csv</file>
+                <file id="out6" type="output">total.csv</file>
             </stage_output>
         </stage>
     </stages>

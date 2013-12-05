@@ -1,6 +1,6 @@
 import sys
 
-lines = ""
+lines = []
 for item in sys.argv[1:-1] :
     for line in open(item) :
         lines.append(line)

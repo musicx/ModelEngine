@@ -422,17 +422,17 @@ class Message:
         self.status = int(mconfig['status'])
         self.message = mconfig['message']
         self.outputs = []
-        if 'output' in mconfig :
-            if 'file' in mconfig['output'] and type(mconfig['output']['file']) == list :
-                for item in mconfig['output']['file'] :
+        if 'outputs' in mconfig :
+            if 'file' in mconfig['outputs'] and type(mconfig['outputs']['file']) == list :
+                for item in mconfig['outputs']['file'] :
                     self.outputs.append(DataFile(item, is_output=True))
-            elif 'file' in mconfig['output'] :
-                self.outputs.append(DataFile(mconfig['output']['file'], is_output=True))
-            if 'folder' in mconfig['output'] and type(mconfig['output']['folder']) == list :
-                for item in mconfig['output']['folder'] :
+            elif 'file' in mconfig['outputs'] :
+                self.outputs.append(DataFile(mconfig['outputs']['file'], is_output=True))
+            if 'folder' in mconfig['outputs'] and type(mconfig['outputs']['folder']) == list :
+                for item in mconfig['outputs']['folder'] :
                     self.outputs.append(DataFile(item, is_output=True, is_folder=True))
-            elif 'folder' in mconfig['output'] :
-                self.outputs.append(DataFile(mconfig['output']['folder'], is_output=True, is_folder=True))            
+            elif 'folder' in mconfig['outputs'] :
+                self.outputs.append(DataFile(mconfig['outputs']['folder'], is_output=True, is_folder=True))
 
 
 class Command:
@@ -456,7 +456,7 @@ class Notice :
     this is the class for internal info transfer, message collector will get this from the message queue, and
     then create message xml to send back to controller.
     """
-    def __init__(self, project_id, task_name, message, status, outputs):
+    def __init__(self, project_id, task_name, message="", status=0, outputs=None):
         """
         status : 0 if success, -1 if error
         """
