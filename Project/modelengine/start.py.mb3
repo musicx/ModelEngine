@@ -2,7 +2,6 @@ import glob
 import logging
 from multiprocessing import Process, JoinableQueue, Event
 import os
-import shutil
 import subprocess
 import sys
 import xmltodict
@@ -89,7 +88,7 @@ class TaskScanner(Thread):
                     fetcher.start()
                     finish_events.append(finished)
                 worker_process = WorkerProcess(worktask.project_id, worktask.task_name, worktask.script, worktask.outputs,
-                                               self.message_queue, finish_events, worktask.package)
+                                               self.message_queue, events=finish_events, package=worktask.package)
                 # maintain a worktask dict for different projects
                 self.engine.worktasks[worktask.project_id].append(worker_process)
                 worker_process.start()
@@ -312,7 +311,6 @@ class Fetcher(Thread) :
             source_path = self.source
         else :
             source_path = "{0}@{1}:{2}".format(self.remote.username, self.remote.address, self.source)
-        #TODO refine this lock
         if source_path in self.local.fetchings :
             while self.local.fetchings[source_path] :
                 time.sleep(5)
@@ -347,22 +345,17 @@ class Fetcher(Thread) :
             runningOutput = ""
         else :
             logging.info("fetch file {0} from remote server {1}".format(self.source, self.remote.address))
-            if self.is_folder :
-                runningOutput = subprocess.check_output("scp -i {0} -q -r {1} {2}".format(self.local.rsa_key, source_path, target_path) + "; exit 0",
-                                                        stderr=subprocess.STDOUT, shell=True)
-                logging.debug("copy remote folder from {0} to {1}".format(source_path, target_path))
-            else :
-                #logging.debug("running command: " + "scp -i {0} -q {1} {2}".format(self.local.rsa_key, source_path, target_path))
-                runningOutput = subprocess.check_output("scp -i {0} -q {1} {2}".format(self.local.rsa_key, source_path, target_path) + "; exit 0",
-                                                        stderr=subprocess.STDOUT, shell=True)
-                #logging.debug("command done")
+            try :
+                runningOutput = subprocess.check_call(["scp", "-i", self.local.rsa_key, "-q", "-r", source_path, target_path])
                 logging.debug("copy remote file from {0} to {1}".format(source_path, target_path))
+            except subprocess.CalledProcessError as err :
+                logging.error("return code: {0}\ncmd: {1}\noutput: {2}".format(err.returncode, err.cmd, err.output))
         self.local.fetchings[source_path] = False
-        if runningOutput != "" :
+        logging.debug("file controller updated: {0}".format(self.local.fetchings[source_path]))
+        #if runningOutput != "" :
             #TODO: COPY ERROR
-            print "copy error"
-        else :
-            self.finished.set()
+            #print "copy error"
+        self.finished.set()
 
 
 class MessageCollector(Thread) :
@@ -493,34 +486,38 @@ class WorkerProcess(Process) :
             for item in self.events:
                 while not item.is_set():
                     item.wait(1)
-        if self.package is not None :
-            unzip = ""
-            if self.package.endswith(".zip") :
-                unzip = "unzip -q "
-            elif self.package.endswith(".tar.gz") :
-                unzip = "tar xzf "
-            elif self.package.endswith(".tar.bz2") :
-                unzip = "tar xjf "
-            elif self.package.endswith(".gz") :
-                unzip = "gunzip -q "
-            elif self.package.endswith(".bz2") :
-                unzip = "bzip2 -dq "
-            if unzip != "" :
-                logging.debug("found zip file, try to unzip : " + self.package)
-                zip_res = subprocess.call(unzip + self.package, stderr=subprocess.STDOUT, shell=True)
-                if zip_res != "" :
-                    #TODO Error log / stop task / notify controller of the failure
-                    self.message_queue.put(Notice(self.project_id, self.task_name, zip_res, -1))
-                    return
-        logging.debug("running command is {0}".format(self.script))
+        print "event all done"
+        #if self.package is not None :
+            #print "check package for zipping"
+            #unzip = ""
+            #if self.package.endswith(".zip") :
+                #unzip = "unzip -q "
+            #elif self.package.endswith(".tar.gz") :
+                #unzip = "tar xzf "
+            #elif self.package.endswith(".tar.bz2") :
+                #unzip = "tar xjf "
+            #elif self.package.endswith(".gz") :
+                #unzip = "gunzip -q "
+            #elif self.package.endswith(".bz2") :
+                #unzip = "bzip2 -dq "
+            #if unzip != "" :
+                #logging.debug("found zip file, try to unzip : " + self.package)
+                #zip_res = subprocess.call(unzip + self.package, stderr=subprocess.STDOUT, shell=True)
+                #if zip_res != "" :
+                    ##TODO Error log / stop task / notify controller of the failure
+                    #self.message_queue.put(Notice(self.project_id, self.task_name, zip_res, -1))
+                    #return
+        print self.script
+        logging.debug("command : " + self.script)
         try :
             if sys.platform.startswith("win") :
                 runningOutput = subprocess.check_output(["cmd /C " + self.script + "& exit 0"],
                                                         stderr=subprocess.STDOUT, shell=True)
             else :
-                runningOutput = subprocess.check_output([self.script + "; exit 0"],
-                                                        stderr=subprocess.STDOUT, shell=True)
+                runningOutput = subprocess.check_call(self.script, shell=True)
             has_error = (runningOutput.find("error") >= 0) * -1
+        except subprocess.CalledProcessError as err :
+            print "{0} : {1} : {2}".format(err.returncode, err.cmd, err.output)
         except Exception as err:
             runningOutput = err.message
             has_error = -1
@@ -542,7 +539,7 @@ class EmailNotifier(Thread) :
 
 
 if __name__ == '__main__':
-    config_path = r'c:\work\python\modelengine\configuration\engine_config.xml'
+    config_path = r'/x/home/yijiliu/work/modelengine/configuration/engine_config.xml'
     logging.basicConfig(level=logging.DEBUG, format='%(levelname)s - %(processName)s : %(threadName)s - %(message)s')
     system = System(config_path)
     system.stopper = Event()        # used to kill the system if shutdown command is found

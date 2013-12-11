@@ -2,42 +2,6 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="7614d203-ba21-4be5-8496-1ea3e2dba989" name="Default" comment="">
-      <change type="DELETED" beforePath="C:\Work\Python\ModelEngine\Delivery\del_1386231210_shutdown.xml" afterPath="" />
-      <change type="DELETED" beforePath="C:\Work\Python\ModelEngine\Delivery\pure_test_1386231059\clean_1386231076.xml" afterPath="" />
-      <change type="DELETED" beforePath="C:\Work\Python\ModelEngine\Delivery\pure_test_1386231059\del_1386231059_test_project.xml" afterPath="" />
-      <change type="DELETED" beforePath="C:\Work\Python\ModelEngine\Delivery\pure_test_1386231059\del_1386231061_tsk_first_sum_1386231059.xml" afterPath="" />
-      <change type="DELETED" beforePath="C:\Work\Python\ModelEngine\Delivery\pure_test_1386231059\del_1386231061_tsk_second_sum_1386231059.xml" afterPath="" />
-      <change type="DELETED" beforePath="C:\Work\Python\ModelEngine\Delivery\pure_test_1386231059\del_1386231063_pure_test_1386231059_tsk_first_sum_message_0_1386231062.xml" afterPath="" />
-      <change type="DELETED" beforePath="C:\Work\Python\ModelEngine\Delivery\pure_test_1386231059\del_1386231064_pure_test_1386231059_tsk_second_sum_message_0_1386231062.xml" afterPath="" />
-      <change type="DELETED" beforePath="C:\Work\Python\ModelEngine\Delivery\pure_test_1386231059\del_1386231066_stg_stage1_1386231064.xml" afterPath="" />
-      <change type="DELETED" beforePath="C:\Work\Python\ModelEngine\Delivery\pure_test_1386231059\del_1386231068_pure_test_1386231059_stg_stage1_message_0_1386231066.xml" afterPath="" />
-      <change type="DELETED" beforePath="C:\Work\Python\ModelEngine\Delivery\pure_test_1386231059\del_1386231070_tsk_multiply_time1_1386231068.xml" afterPath="" />
-      <change type="DELETED" beforePath="C:\Work\Python\ModelEngine\Delivery\pure_test_1386231059\del_1386231070_tsk_multiply_time2_1386231068.xml" afterPath="" />
-      <change type="DELETED" beforePath="C:\Work\Python\ModelEngine\Delivery\pure_test_1386231059\del_1386231072_pure_test_1386231059_tsk_multiply_time1_message_0_1386231070.xml" afterPath="" />
-      <change type="DELETED" beforePath="C:\Work\Python\ModelEngine\Delivery\pure_test_1386231059\del_1386231072_pure_test_1386231059_tsk_multiply_time2_message_0_1386231070.xml" afterPath="" />
-      <change type="DELETED" beforePath="C:\Work\Python\ModelEngine\Delivery\pure_test_1386231059\del_1386231074_stg_stage2_1386231072.xml" afterPath="" />
-      <change type="DELETED" beforePath="C:\Work\Python\ModelEngine\Delivery\pure_test_1386231059\del_1386231076_pure_test_1386231059_stg_stage2_message_0_1386231074.xml" afterPath="" />
-      <change type="DELETED" beforePath="C:\Work\Python\ModelEngine\Delivery\pure_test_1386231059\del_1386231078_clean_1386231076.xml" afterPath="" />
-      <change type="DELETED" beforePath="C:\Work\Python\ModelEngine\Delivery\pure_test_1386231059\pure_test_1386231059_stg_stage1_message_0_1386231066.xml" afterPath="" />
-      <change type="DELETED" beforePath="C:\Work\Python\ModelEngine\Delivery\pure_test_1386231059\pure_test_1386231059_stg_stage2_message_0_1386231074.xml" afterPath="" />
-      <change type="DELETED" beforePath="C:\Work\Python\ModelEngine\Delivery\pure_test_1386231059\pure_test_1386231059_tsk_first_sum_message_0_1386231062.xml" afterPath="" />
-      <change type="DELETED" beforePath="C:\Work\Python\ModelEngine\Delivery\pure_test_1386231059\pure_test_1386231059_tsk_multiply_time1_message_0_1386231070.xml" afterPath="" />
-      <change type="DELETED" beforePath="C:\Work\Python\ModelEngine\Delivery\pure_test_1386231059\pure_test_1386231059_tsk_multiply_time2_message_0_1386231070.xml" afterPath="" />
-      <change type="DELETED" beforePath="C:\Work\Python\ModelEngine\Delivery\pure_test_1386231059\pure_test_1386231059_tsk_second_sum_message_0_1386231062.xml" afterPath="" />
-      <change type="DELETED" beforePath="C:\Work\Python\ModelEngine\Delivery\pure_test_1386231059\stg_stage1_1386231064.xml" afterPath="" />
-      <change type="DELETED" beforePath="C:\Work\Python\ModelEngine\Delivery\pure_test_1386231059\stg_stage2_1386231072.xml" afterPath="" />
-      <change type="DELETED" beforePath="C:\Work\Python\ModelEngine\Delivery\pure_test_1386231059\tsk_first_sum_1386231059.xml" afterPath="" />
-      <change type="DELETED" beforePath="C:\Work\Python\ModelEngine\Delivery\pure_test_1386231059\tsk_multiply_time1_1386231068.xml" afterPath="" />
-      <change type="DELETED" beforePath="C:\Work\Python\ModelEngine\Delivery\pure_test_1386231059\tsk_multiply_time2_1386231068.xml" afterPath="" />
-      <change type="DELETED" beforePath="C:\Work\Python\ModelEngine\Delivery\pure_test_1386231059\tsk_second_sum_1386231059.xml" afterPath="" />
-      <change type="DELETED" beforePath="C:\Work\Python\ModelEngine\Output\pure_test_1386231059\mul1.dat" afterPath="" />
-      <change type="DELETED" beforePath="C:\Work\Python\ModelEngine\Output\pure_test_1386231059\mul2.dat" afterPath="" />
-      <change type="DELETED" beforePath="C:\Work\Python\ModelEngine\Output\pure_test_1386231059\printed1.dat" afterPath="" />
-      <change type="DELETED" beforePath="C:\Work\Python\ModelEngine\Output\pure_test_1386231059\sum1.dat" afterPath="" />
-      <change type="DELETED" beforePath="C:\Work\Python\ModelEngine\Output\pure_test_1386231059\sum2.dat" afterPath="" />
-      <change type="DELETED" beforePath="C:\Work\Python\ModelEngine\Output\pure_test_1386231059\total.csv" afterPath="" />
-      <change type="DELETED" beforePath="C:\Work\Python\ModelEngine\TaskPool\test_project.xml" afterPath="" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/Project/modelengine/engine.py" afterPath="$PROJECT_DIR$/Project/modelengine/engine.py" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/Project/modelengine/project.py" afterPath="$PROJECT_DIR$/Project/modelengine/project.py" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/Project/modelengine/start.py" afterPath="$PROJECT_DIR$/Project/modelengine/start.py" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
@@ -63,10 +27,10 @@
   </component>
   <component name="FileEditorManager">
     <leaf>
-      <file leaf-file-name="project.py" pinned="false" current="true" current-in-tab="true">
+      <file leaf-file-name="project.py" pinned="false" current="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/Project/modelengine/project.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="434" column="41" selection-start="20895" selection-end="20895" vertical-scroll-proportion="1.326087" vertical-offset="5656" max-vertical-offset="7650">
+            <state line="143" column="68" selection-start="6152" selection-end="6152" vertical-scroll-proportion="0.0" vertical-offset="4057" max-vertical-offset="7635">
               <folding>
                 <element signature="e#0#35#0" expanded="true" />
               </folding>
@@ -77,7 +41,7 @@
       <file leaf-file-name="start.py" pinned="false" current="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/Project/modelengine/start.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="513" column="13" selection-start="25118" selection-end="25118" vertical-scroll-proportion="-26.509804" vertical-offset="6343" max-vertical-offset="8415">
+            <state line="179" column="41" selection-start="9804" selection-end="9804" vertical-scroll-proportion="36.6" vertical-offset="3600" max-vertical-offset="8445">
               <folding>
                 <element signature="e#0#11#0" expanded="true" />
               </folding>
@@ -85,10 +49,10 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="engine.py" pinned="false" current="false" current-in-tab="false">
+      <file leaf-file-name="engine.py" pinned="false" current="true" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/Project/modelengine/engine.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="85" column="27" selection-start="3428" selection-end="3428" vertical-scroll-proportion="0.0" vertical-offset="805" max-vertical-offset="1530">
+            <state line="69" column="13" selection-start="2643" selection-end="2643" vertical-scroll-proportion="0.7194245" vertical-offset="535" max-vertical-offset="1530">
               <folding>
                 <element signature="e#0#48#0" expanded="true" />
               </folding>
@@ -137,8 +101,8 @@
         <option value="$PROJECT_DIR$/Project/modelengine/engine.py" />
         <option value="$PROJECT_DIR$/Configuration/engine_config.xml" />
         <option value="$PROJECT_DIR$/TaskPool/simple_project.xml" />
-        <option value="$PROJECT_DIR$/Project/modelengine/start.py" />
         <option value="$PROJECT_DIR$/Project/modelengine/project.py" />
+        <option value="$PROJECT_DIR$/Project/modelengine/start.py" />
       </list>
     </option>
   </component>
@@ -492,7 +456,11 @@
       <created>1386229008897</created>
       <updated>1386229008897</updated>
     </task>
-    <option name="localTasksCounter" value="10" />
+    <task id="LOCAL-00010" summary="add more log, scp not work properly, package script replacement commented">
+      <created>1386755714756</created>
+      <updated>1386755714756</updated>
+    </task>
+    <option name="localTasksCounter" value="11" />
     <servers />
   </component>
   <component name="TodoView" selected-index="0">
@@ -519,6 +487,7 @@
     <frame x="-8" y="-8" width="1616" height="876" extended-state="6" />
     <editor active="true" />
     <layout>
+      <window_info id="Messages" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Changes" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32930845" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Terminal" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32930845" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32930845" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
@@ -533,7 +502,6 @@
       <window_info id="Cvs" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="4" side_tool="false" content_ui="tabs" />
       <window_info id="Message" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
       <window_info id="Ant Build" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
-      <window_info id="Messages" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Commander" active="false" anchor="right" auto_hide="false" internal_type="SLIDING" type="SLIDING" visible="false" weight="0.4" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
       <window_info id="Hierarchy" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.24967825" sideWeight="0.68654644" order="2" side_tool="false" content_ui="combo" />
       <window_info id="Inspection" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.4" sideWeight="0.5" order="5" side_tool="false" content_ui="tabs" />
@@ -553,19 +521,20 @@
     <MESSAGE value="datafile changed. create boolean variable for input / output / folder / package" />
     <MESSAGE value="message class changed, outputs are now attached in the message." />
     <MESSAGE value="add multiple debug level logging into the script" />
-    <option name="LAST_COMMIT_MESSAGE" value="add multiple debug level logging into the script" />
+    <MESSAGE value="add more log, scp not work properly, package script replacement commented" />
+    <option name="LAST_COMMIT_MESSAGE" value="add more log, scp not work properly, package script replacement commented" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
       <breakpoints>
         <line-breakpoint enabled="true" type="python-line">
           <url>file://$PROJECT_DIR$/Project/modelengine/start.py</url>
-          <line>57</line>
+          <line>58</line>
           <option name="timeStamp" value="23" />
         </line-breakpoint>
         <line-breakpoint enabled="true" type="python-line">
           <url>file://$PROJECT_DIR$/Project/modelengine/project.py</url>
-          <line>44</line>
+          <line>43</line>
           <option name="timeStamp" value="28" />
         </line-breakpoint>
       </breakpoints>
@@ -625,15 +594,6 @@
         <state line="12" column="0" selection-start="181" selection-end="181" vertical-scroll-proportion="0.38379532" vertical-offset="0" max-vertical-offset="469" />
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/Project/modelengine/engine.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="85" column="27" selection-start="3428" selection-end="3428" vertical-scroll-proportion="0.0" vertical-offset="805" max-vertical-offset="1530">
-          <folding>
-            <element signature="e#0#48#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/TaskPool/test_project.xmla">
       <provider selected="true" editor-type-id="text-editor">
         <state line="21" column="23" selection-start="823" selection-end="823" vertical-scroll-proportion="0.0" vertical-offset="405" max-vertical-offset="1320">
@@ -655,20 +615,29 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/Project/modelengine/project.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="143" column="68" selection-start="6152" selection-end="6152" vertical-scroll-proportion="0.0" vertical-offset="1897" max-vertical-offset="7635">
+          <folding>
+            <element signature="e#0#35#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/Project/modelengine/start.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="513" column="13" selection-start="25118" selection-end="25118" vertical-scroll-proportion="-26.509804" vertical-offset="6343" max-vertical-offset="8415">
+        <state line="179" column="41" selection-start="9804" selection-end="9804" vertical-scroll-proportion="36.6" vertical-offset="3600" max-vertical-offset="8445">
           <folding>
             <element signature="e#0#11#0" expanded="true" />
           </folding>
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/Project/modelengine/project.py">
+    <entry file="file://$PROJECT_DIR$/Project/modelengine/engine.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="434" column="41" selection-start="20895" selection-end="20895" vertical-scroll-proportion="1.326087" vertical-offset="5656" max-vertical-offset="7650">
+        <state line="69" column="13" selection-start="2643" selection-end="2643" vertical-scroll-proportion="0.7194245" vertical-offset="535" max-vertical-offset="1530">
           <folding>
-            <element signature="e#0#35#0" expanded="true" />
+            <element signature="e#0#48#0" expanded="true" />
           </folding>
         </state>
       </provider>

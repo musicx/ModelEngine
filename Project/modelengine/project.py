@@ -1,7 +1,6 @@
 from collections import OrderedDict
 import logging
 import os
-import shutil
 import re
 import time
 import xmlwitch

@@ -1,0 +1,82 @@
+<project>
+    <name>pure_test</name>
+    <email>yijiliu@ebay.com</email>
+    <project_input>
+        <file id="base">/x/home/yijiliu/modelengine/input/data1.dat</file>
+    </project_input>
+    <clean_after_success></clean_after_success>
+    <stages>
+        <stage>
+            <name>stage1</name>
+            <tasks>
+                <task>
+                    <name>first_sum</name>
+                    <job_type>python</job_type>
+                    <script>python sum.py %base %out1</script>
+                    <package>/x/home/yijiliu/modelengine/input/sum.py</package>
+                    <skip_task></skip_task>
+                    <task_input></task_input>
+                    <task_output>
+                        <file id="out1" type="data">sum1.dat</file>
+                    </task_output>
+                </task>
+                <task>
+                    <name>second_sum</name>
+                    <job_type>python</job_type>
+                    <script>python sum.py %in1 %out2</script>
+                    <package>/x/home/yijiliu/modelengine/input/sum.py</package>
+                    <skip_task></skip_task>
+                    <task_input>
+                        <file id="in1">/x/home/yijiliu/modelengine/input/data2.dat</file>
+                    </task_input>
+                    <task_output>
+                        <file id="out2" type="data">sum2.dat</file>
+                    </task_output>
+                </task>
+            </tasks>
+            <stage_script>python print.py %out1 %out2 %out3</stage_script>
+            <stage_package>/x/home/yijiliu/modelengine/input/print.py</stage_package>
+            <skip_stage></skip_stage>
+            <stage_input></stage_input>
+            <stage_output>
+                <file id="out3">printed1.dat</file>
+            </stage_output>
+        </stage>
+        <stage>
+            <name>stage2</name>
+            <tasks>
+                <task>
+                    <name>multiply_time1</name>
+                    <job_type>python</job_type>
+                    <script>python multiply.py %out3 %out4</script>
+                    <package>/x/home/yijiliu/modelengine/input/multiply.py</package>
+                    <skip_task></skip_task>
+                    <task_input></task_input>
+                    <task_output>
+                        <file id="out4" type="data">mul1.dat</file>
+                    </task_output>
+                </task>
+                <task>
+                    <name>multiply_time2</name>
+                    <job_type>python</job_type>
+                    <script>python multiply.py %out3 %out5</script>
+                    <package>/x/home/yijiliu/modelengine/input/multiply.py</package>
+                    <skip_task></skip_task>
+                    <task_input></task_input>
+                    <task_output>
+                        <file id="out5" type="data">mul2.dat</file>
+                    </task_output>
+                </task>
+            </tasks>
+            <stage_script>cat %out4 %out5 %sin > %out6</stage_script>
+            <stage_package></stage_package>
+            <skip_stage></skip_stage>
+            <stage_input>
+                <file id="sin">/x/home/yijiliu/modelengine/input/sdata.dat</file>
+            </stage_input>
+            <stage_output>
+                <file id="out6" type="output">total.csv</file>
+            </stage_output>
+        </stage>
+    </stages>
+</project>

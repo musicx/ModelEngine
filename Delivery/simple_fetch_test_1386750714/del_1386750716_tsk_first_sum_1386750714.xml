@@ -1,0 +1,12 @@
+<worktask>
+  <project_id>simple_fetch_test_1386750714</project_id>
+  <task_name>tsk_first_sum</task_name>
+  <script>cat %base &gt; %out1</script>
+  <package></package>
+  <input>
+    <file id="base">c:\work\python\modelengine\input\input.dat</file>
+  </input>
+  <output>
+    <file type="output" id="out1">out.dat</file>
+  </output>
+</worktask>

@@ -1,0 +1,10 @@
+<message>
+  <project_id>pure_test_1386646030</project_id>
+  <worker>localhost</worker>
+  <task_name>stg_stage2</task_name>
+  <status>0</status>
+  <message></message>
+  <outputs>
+    <file type="output" id="out6">c:\work\python\modelengine\temp\pure_test_1386646030\total.csv</file>
+  </outputs>
+</message>
