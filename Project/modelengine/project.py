@@ -51,8 +51,8 @@ class Task:
     def __init__(self, tconfig):
         self.name = "tsk_" + tconfig['name']
         self.jobtype = tconfig['job_type'].lower()
-        self.script = tconfig['script']
-        self.package = tconfig['package']
+        self.script = tconfig.get('script', None)
+        self.package = tconfig.get('package', None)
         skip = tconfig.get('skip_task', 'no')
         self.skip = skip is not None and skip.lower() == 'yes'
         self.input = []
@@ -85,8 +85,8 @@ class Stage:
     def __init__(self, sconfig):
         self.name = "stg_" + sconfig['name']
         self.tasks = {}
-        self.script = sconfig['stage_script']
-        self.package = sconfig['stage_package']
+        self.script = sconfig.get('stage_script', None)
+        self.package = sconfig.get('stage_package', None)
         skip = sconfig.get('skip_stage', 'no')
         self.skip = skip is not None and skip.lower() == 'yes'
         self.delievered = False if self.script is not None else True
@@ -99,7 +99,7 @@ class Stage:
                 for item in sconfig['stage_input']['file'] :
                     self.input.append(DataFile(item, is_input=True))
         self.output = None
-        if sconfig['stage_output'] is not None :
+        if 'stage_output' in sconfig and sconfig['stage_output'] is not None :
             self.output = []
             if 'file' in sconfig['stage_output'] :
                 if type(sconfig['stage_output']['file']) is not list :
@@ -113,13 +113,14 @@ class Stage:
                 else :
                     for item in sconfig['stage_output']['folder'] :
                         self.output.append(DataFile(item, is_folder=True))
-        if type(sconfig['tasks']['task']) is not list :
-            task = Task(sconfig['tasks']['task'])
-            self.tasks[task.name] = task
-        else :
-            for item in sconfig['tasks']['task'] :
-                task = Task(item)
+        if 'tasks' in sconfig and 'task' in sconfig['tasks'] :
+            if type(sconfig['tasks']['task']) is not list :
+                task = Task(sconfig['tasks']['task'])
                 self.tasks[task.name] = task
+            else :
+                for item in sconfig['tasks']['task'] :
+                    task = Task(item)
+                    self.tasks[task.name] = task
 
     def allTaskDelievered(self):
         for task in self.tasks.itervalues() :
@@ -156,10 +157,13 @@ class Project:
         #if 'report_var_list' in pconfig and os.path.exists(pconfig['report_var_list']) :
         #    for line in open(pconfig['report_var_list']) :
         #        self.datameta.report_vars.append(line.strip())
-
-        for item in pconfig['stages']['stage'] :
-            stage = Stage(item)
+        if type(pconfig['stages']['stage']) is not list :
+            stage = Stage(pconfig['stages']['stage'])
             self.stages[stage.name] = stage
+        else :
+            for item in pconfig['stages']['stage'] :
+                stage = Stage(item)
+                self.stages[stage.name] = stage
         self.datafiles = []
         if 'file' in pconfig['project_input'] and type(pconfig['project_input']['file']) is not list:
             self.datafiles.append(DataFile(pconfig['project_input']['file']))
@@ -201,6 +205,8 @@ class Project:
                         task.input.append(files[0])
                     else :
                         logging.error("file replacer error : {0}".format(repr(files)))
+            if stage.script is None or stage.script == "":
+                continue
             for file_id in re.findall(r'%\w+', stage.script):
                 files = [x for x in self.datafiles if x.id == file_id[1:]]
                 if len(files) == 1:
@@ -262,8 +268,8 @@ class Project:
             if task.package is not None:
                 package = self.findAbsolutePath(task.package, engine)
                 if not package:
-                    # TODO: handle error
-                    pass
+                    logging.error("cannot find package file : " + task.package)
+                    raise IOError("file not exist")
                 work_task_xml.package(task.package)
             else :
                 work_task_xml.package("")
@@ -271,8 +277,8 @@ class Project:
                 for item in task.input:
                     path = self.findAbsolutePath(item.path, engine)
                     if not path :
-                        # TODO : handle error
-                        pass
+                        logging.error("cannot find input file : " + item.path)
+                        raise IOError("file not exist")
                     if item.is_folder:
                         work_task_xml.folder(path, id=item.id)
                     else :
@@ -318,10 +324,14 @@ class Project:
             # ERROR log
             logging.error("Cannot find corresponding task to update!")
             self.deactivate = True
-        result = self.nextTasks()
-        if result == 0 :
-            # TODO: clean the whole project and send command to all slaves
-            self.clean()
+        try :
+            result = self.nextTasks()
+            if result == 0 :
+                # TODO: clean the whole project and send command to all slaves
+                self.clean()
+        except IOError as err :
+            #TODO : file not found error
+            pass
 
     def clean(self):
         clean_xml = xmlwitch.Builder()
@@ -406,13 +416,13 @@ class WorkTask:
             else :
                 self.package = package_output_path
         # replace the package path in the script
-        script_part = self.script.split(" ")[1]
-        candidate_script_path = os.sep.join([engine.temp, self.project_id, script_part]) if package_missing_flag \
-                                else self.package
-        if not os.path.exists(script_part) :
-            file_pattern = re.compile(r'\w+\.\w+')
-            if file_pattern.search(script_part) is not None :
-                self.script = self.script.replace(script_part, candidate_script_path, 1)
+        #script_part = self.script.split(" ")[1]
+        #candidate_script_path = os.sep.join([engine.temp, self.project_id, script_part]) \
+        #                        if package_missing_flag else self.package
+        #if not os.path.exists(script_part) :
+        #    file_pattern = re.compile(r'\w+\.\w+')
+        #    if file_pattern.search(script_part) is not None :
+        #        self.script = self.script.replace(script_part, candidate_script_path, 1)
         return missing_files
 
 

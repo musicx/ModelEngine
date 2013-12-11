@@ -1,14 +1,15 @@
 import glob
 import logging
-from multiprocessing import Process, JoinableQueue
+from multiprocessing import Process, JoinableQueue, Event
 import os
 import subprocess
 import sys
 import xmltodict
 import time
+import distutils.dir_util
 from project import *
 from engine import *
-from threading import Thread, Event
+from threading import Thread
 
 __author__ = 'yijiliu'
 
@@ -37,7 +38,7 @@ class TaskScanner(Thread):
         self.message_queue = out_queue
 
     def run(self):
-        while not self.stopped.isSet():
+        while not self.stopped.is_set():
             self.stopped.wait(self.interval)
             self.checkTaskPool()
 
@@ -62,10 +63,12 @@ class TaskScanner(Thread):
                     self.checkFolder(project.project_id)
                     project.nextTasks()
                     logging.debug("task generated for project " + project.project_id)
+                    self.moveTask(filename, project.project_id)
                 except ValueError as err:
                     #TODO: find email address in the xml and send error message to him/her.
-                    pass
-                finally:
+                    self.moveTask(filename, None)
+                except IOError as err :
+                    #TODO: find email address in the xml and send error message to him/her.
                     self.moveTask(filename, project.project_id)
 
             elif "worktask" in doc:
@@ -80,7 +83,8 @@ class TaskScanner(Thread):
                 for item in missing_list :
                     finished = Event()
                     fetcher = Fetcher(self.engine, self.system.controller, item.path,
-                                      self.engine.temp, finished, item.is_folder)
+                                      os.sep.join([self.engine.temp, worktask.project_id]),
+                                      finished, is_folder=item.is_folder, is_output=item.is_output)
                     fetcher.start()
                     finish_events.append(finished)
                 worker_process = WorkerProcess(worktask.project_id, worktask.task_name, worktask.script, worktask.outputs,
@@ -110,18 +114,18 @@ class TaskScanner(Thread):
                         for engine in self.system.engines.itervalues() :
                             if engine.address == self.system.controller.address :
                                 continue
-                            distributor = Distributer(self.engine, os.sep.join([self.engine.delivery, project_id]),
+                            distributer = Distributer(self.engine, os.sep.join([self.engine.delivery, project_id]),
                                                       "dup_" + command.command, str(controller_command),
                                                       "{0}@{1}:{2}".format(engine.username, engine.address, engine.taskpool))
-                            distributor.start()
+                            distributer.start()
                     if len(command.projects) == 0 :
                         for engine in self.system.engines.itervalues() :
                             if engine.address == self.system.controller.address :
                                 continue
-                            distributor = Distributer(self.engine, self.engine.delivery,
+                            distributer = Distributer(self.engine, self.engine.delivery,
                                                       "dup_" + command.command, str(controller_command),
                                                       "{0}@{1}:{2}".format(engine.username, engine.address, engine.taskpool))
-                            distributor.start()
+                            distributer.start()
                     logging.debug("command has been distributed")
                 # do the project level command, such as stop task, stage or shut the proj down
                 # close engine
@@ -162,10 +166,12 @@ class TaskScanner(Thread):
                     for item in message.outputs :
                         finished = Event()
                         source_path = item.path
-                        target_folder = os.sep.join([self.engine.output, message.project_id])
+                        target_folder = self.engine.output if item.is_output else self.engine.temp
+                        target_folder = os.sep.join([target_folder, message.project_id])
                         if item.is_folder and not os.path.exists(item.relative_path):
                             target_folder = os.sep.join([target_folder, item.relative_path])
-                        fetcher = Fetcher(self.engine, self.system.engines[message.worker], source_path, target_folder, finished)
+                        fetcher = Fetcher(self.engine, self.system.engines[message.worker], source_path,
+                                          target_folder, finished, is_output=item.is_output)
                         fetcher.start()
                         finish_events.append(finished)
                     statusUpdater = StatusUpdater(self.system.projects[message.project_id], message.task_name,
@@ -286,7 +292,8 @@ class Distributer(Thread) :
 
 
 class Fetcher(Thread) :
-    def __init__(self, local_engine, remote_engine, source_path, target_folder, finished, is_folder=False):
+    def __init__(self, local_engine, remote_engine, source_path, target_folder,
+                 finished, is_folder=False, is_output=False):
         Thread.__init__(self)
         self.local = local_engine
         self.remote = remote_engine
@@ -294,6 +301,7 @@ class Fetcher(Thread) :
         self.target = target_folder
         self.finished = finished
         self.is_folder = is_folder
+        self.is_output = is_output
         self.is_local = self.local.address == self.remote.address
 
     def run(self) :
@@ -301,8 +309,17 @@ class Fetcher(Thread) :
         target_path = self.target + os.sep if not self.target.endswith(os.sep) else self.target
         if self.is_local :
             source_path = self.source
+        else :
+            source_path = "{0}@{1}:{2}".format(self.remote.username, self.remote.address, self.source)
+        if source_path in self.local.fetchings :
+            while self.local.fetchings[source_path] :
+                time.sleep(5)
+            self.finished.set()
+            return
+        self.local.fetchings[source_path] = True
+        if self.is_local :
             logging.info("fetch file {0} from local server".format(self.source))
-            if source_path.find(self.local.temp) >= 0 :
+            if source_path.find(self.local.temp) >= 0 and self.is_output:
                 # in the temp folder, move to output folder
                 if self.is_folder :
                     if not os.path.exists(target_path) :
@@ -313,28 +330,32 @@ class Fetcher(Thread) :
                     target_path = os.sep.join([target_path, os.path.basename(source_path)])
                     os.rename(source_path, target_path)
                     logging.debug("move local file from {0} to {1}".format(source_path, target_path))
+            elif os.path.dirname(source_path) == os.path.dirname(target_path) :
+                logging.debug("source and target are the same : " + source_path)
             else :
                 # not in temp folder, copy to output folder
                 if self.is_folder :
-                    if os.path.exists(target_path) :
-                        shutil.rmtree(target_path, ignore_errors=True)
-                    shutil.copytree(source_path, target_path)
+                    #if os.path.exists(target_path) :
+                    #    shutil.rmtree(target_path, ignore_errors=True)
+                    distutils.dir_util.copy_tree(source_path, target_path)
                     logging.debug("copy local folder from {0} to {1}".format(source_path, target_path))
                 else :
                     shutil.copy(source_path, target_path)
                     logging.debug("copy local file from {0} to {1}".format(source_path, target_path))
             runningOutput = ""
         else :
-            source_path = "{0}@{1}:{2}".format(self.remote.username, self.remote.address, self.source)
             logging.info("fetch file {0} from remote server {1}".format(self.source, self.remote.address))
             if self.is_folder :
-                runningOutput = subprocess.check_output(["scp -i {0} -q -r {1} {2}".format(self.local.rsa_key, source_path, target_path) + "; exit 0"],
+                runningOutput = subprocess.check_output("scp -i {0} -q -r {1} {2}".format(self.local.rsa_key, source_path, target_path) + "; exit 0",
                                                         stderr=subprocess.STDOUT, shell=True)
                 logging.debug("copy remote folder from {0} to {1}".format(source_path, target_path))
             else :
-                runningOutput = subprocess.check_output(["scp -i {0} -q {1} {2}".format(self.local.rsa_key, source_path, target_path) + "; exit 0"],
+                #logging.debug("running command: " + "scp -i {0} -q {1} {2}".format(self.local.rsa_key, source_path, target_path))
+                runningOutput = subprocess.check_output("scp -i {0} -q {1} {2}".format(self.local.rsa_key, source_path, target_path) + "; exit 0",
                                                         stderr=subprocess.STDOUT, shell=True)
+                #logging.debug("command done")
                 logging.debug("copy remote file from {0} to {1}".format(source_path, target_path))
+        self.local.fetchings[source_path] = False
         if runningOutput != "" :
             #TODO: COPY ERROR
             print "copy error"
@@ -388,7 +409,7 @@ class StatusUpdater(Thread) :
     def run(self):
         if self.events is not None :
             for event in self.events :
-                if not event.isSet() :
+                if not event.is_set() :
                     event.wait(1)
         self.project.updateStatus(self.taskname, self.status)
 
@@ -412,7 +433,7 @@ class WorkerThread(Thread) :
     def run(self):
         if self.events is not None:
             for item in self.events:
-                while not item.isSet():
+                while not item.is_set():
                     item.wait(1)
         if self.package is not None :
             unzip = ""
@@ -468,7 +489,7 @@ class WorkerProcess(Process) :
     def run(self):
         if self.events is not None:
             for item in self.events:
-                while not item.isSet():
+                while not item.is_set():
                     item.wait(1)
         if self.package is not None :
             unzip = ""
@@ -489,6 +510,7 @@ class WorkerProcess(Process) :
                     #TODO Error log / stop task / notify controller of the failure
                     self.message_queue.put(Notice(self.project_id, self.task_name, zip_res, -1))
                     return
+        logging.debug("running command is {0}".format(self.script))
         try :
             if sys.platform.startswith("win") :
                 runningOutput = subprocess.check_output(["cmd /C " + self.script + "& exit 0"],
@@ -528,6 +550,6 @@ if __name__ == '__main__':
     timer.start()
     message_collector = MessageCollector(message_queue, system.engine, system.controller)
     message_collector.start()
-    while not system.stopper.isSet():
+    while not system.stopper.is_set():
         system.stopper.wait(15)
     stopper.set()

@@ -1,4 +1,4 @@
-from collections import defaultdict
+from collections import defaultdict, OrderedDict
 import logging
 from os import path
 import os
@@ -30,7 +30,7 @@ class System:
         self.interval = int(float(doc['configuration']['check_interval']))
         self.engines = {}
         self.username = doc['configuration']['username']
-        if type(doc['configuration']['engines']) is not list :
+        if type(doc['configuration']['engines']['server']) is not list :
             engine = Engine(doc['configuration']['engines']['server'], self.username)
             self.engines[engine.name] = engine
             if engine.name == doc['configuration']['engine_name'] :
@@ -56,6 +56,7 @@ class System:
             if jobtype.lower() in engine.types :
                 candidates.append(engine)
         ind = random.randint(0, len(candidates) - 1)
+        logging.debug("find candidate {0} for jobtype {1}".format(candidates[ind].name, jobtype))
         return candidates[ind], candidates[ind].name == self.engine.name
 
 
@@ -76,12 +77,13 @@ class Engine:
         self.temp = engine_config['temp']
         self.output = engine_config['output']
         if type(engine_config['job_types']['type']) in (str, unicode) :
-            self.types = set(engine_config['job_types']['type'].lower())
+            self.types = set([engine_config['job_types']['type'].lower()])
         else :
             self.types = set([x.lower() for x in engine_config['job_types']['type']])
         self.username = username
         self.rsa_key = engine_config['rsa_key']
         self.worktasks = {}
+        self.fetchings = {}
 
     def check(self):
         if not os.path.exists(self.temp) :
