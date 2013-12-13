@@ -2,6 +2,10 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="7614d203-ba21-4be5-8496-1ea3e2dba989" name="Default" comment="">
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/Project/modelengine/scp.py" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/Project/modelengine/scp_test.py" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/Project/modelengine/start.py.linux" />
+      <change type="DELETED" beforePath="C:\Work\Python\ModelEngine\Project\modelengine\start.py.mb3" afterPath="" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/Project/modelengine/project.py" afterPath="$PROJECT_DIR$/Project/modelengine/project.py" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/Project/modelengine/start.py" afterPath="$PROJECT_DIR$/Project/modelengine/start.py" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
@@ -30,18 +34,36 @@
       <file leaf-file-name="project.py" pinned="false" current="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/Project/modelengine/project.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="143" column="68" selection-start="6152" selection-end="6152" vertical-scroll-proportion="0.0" vertical-offset="4057" max-vertical-offset="7635">
+            <state line="429" column="92" selection-start="21224" selection-end="21224" vertical-scroll-proportion="0.0" vertical-offset="5722" max-vertical-offset="7635">
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="scp_test.py" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/Project/modelengine/scp_test.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state line="137" column="39" selection-start="4414" selection-end="4421" vertical-scroll-proportion="0.0" vertical-offset="1585" max-vertical-offset="2280">
               <folding>
-                <element signature="e#0#35#0" expanded="true" />
+                <element signature="e#24#33#0" expanded="true" />
               </folding>
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="start.py" pinned="false" current="false" current-in-tab="false">
+      <file leaf-file-name="scp.py" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/Project/modelengine/scp.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state line="116" column="75" selection-start="4460" selection-end="4460" vertical-scroll-proportion="0.0" vertical-offset="1912" max-vertical-offset="5835">
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="start.py" pinned="false" current="true" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/Project/modelengine/start.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="179" column="41" selection-start="9804" selection-end="9804" vertical-scroll-proportion="36.6" vertical-offset="3600" max-vertical-offset="8445">
+            <state line="393" column="27" selection-start="19492" selection-end="19492" vertical-scroll-proportion="0.4532374" vertical-offset="5580" max-vertical-offset="9630">
               <folding>
                 <element signature="e#0#11#0" expanded="true" />
               </folding>
@@ -49,13 +71,11 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="engine.py" pinned="false" current="true" current-in-tab="true">
+      <file leaf-file-name="engine.py" pinned="false" current="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/Project/modelengine/engine.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="69" column="13" selection-start="2643" selection-end="2643" vertical-scroll-proportion="0.7194245" vertical-offset="535" max-vertical-offset="1530">
-              <folding>
-                <element signature="e#0#48#0" expanded="true" />
-              </folding>
+            <state line="57" column="52" selection-start="2172" selection-end="2172" vertical-scroll-proportion="0.0" vertical-offset="855" max-vertical-offset="1530">
+              <folding />
             </state>
           </provider>
         </entry>
@@ -63,7 +83,7 @@
       <file leaf-file-name="engine_config.xml" pinned="false" current="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/Configuration/engine_config.xml">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="19" column="17" selection-start="733" selection-end="733" vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="405">
+            <state line="19" column="17" selection-start="733" selection-end="733" vertical-scroll-proportion="0.0" vertical-offset="285" max-vertical-offset="405">
               <folding />
             </state>
           </provider>
@@ -87,8 +107,6 @@
   <component name="IdeDocumentHistory">
     <option name="changedFiles">
       <list>
-        <option value="$PROJECT_DIR$/TaskPool/readme.txt" />
-        <option value="$PROJECT_DIR$/Input/readme.txt" />
         <option value="$PROJECT_DIR$/TaskPool/Task1.xml" />
         <option value="$PROJECT_DIR$/TaskPool/Task2.xml" />
         <option value="$PROJECT_DIR$/TaskPool/message.xml" />
@@ -102,6 +120,8 @@
         <option value="$PROJECT_DIR$/Configuration/engine_config.xml" />
         <option value="$PROJECT_DIR$/TaskPool/simple_project.xml" />
         <option value="$PROJECT_DIR$/Project/modelengine/project.py" />
+        <option value="$PROJECT_DIR$/Project/modelengine/scp_test.py" />
+        <option value="$PROJECT_DIR$/Project/modelengine/scp.py" />
         <option value="$PROJECT_DIR$/Project/modelengine/start.py" />
       </list>
     </option>
@@ -119,7 +139,7 @@
     <OptionsSetting value="true" id="Update" />
     <OptionsSetting value="true" id="Status" />
     <OptionsSetting value="true" id="Edit" />
-    <ConfirmationsSetting value="0" id="Add" />
+    <ConfirmationsSetting value="2" id="Add" />
     <ConfirmationsSetting value="0" id="Remove" />
   </component>
   <component name="ProjectReloadState">
@@ -138,7 +158,6 @@
       <sortByType />
     </navigator>
     <panes>
-      <pane id="Scope" />
       <pane id="ProjectPane">
         <subPane>
           <PATH>
@@ -219,17 +238,18 @@
           </PATH>
         </subPane>
       </pane>
+      <pane id="Scope" />
     </panes>
   </component>
   <component name="PropertiesComponent">
     <property name="options.splitter.main.proportions" value="0.3" />
-    <property name="recentsLimit" value="5" />
     <property name="options.lastSelected" value="http.proxy" />
+    <property name="recentsLimit" value="5" />
     <property name="last_opened_file_path" value="$PROJECT_DIR$/.." />
     <property name="FullScreen" value="false" />
     <property name="DefaultHtmlFileTemplate" value="Xhtml" />
-    <property name="options.splitter.details.proportions" value="0.2" />
     <property name="options.searchVisible" value="true" />
+    <property name="options.splitter.details.proportions" value="0.2" />
   </component>
   <component name="PyConsoleOptionsProvider">
     <option name="myPythonConsoleState">
@@ -487,21 +507,21 @@
     <frame x="-8" y="-8" width="1616" height="876" extended-state="6" />
     <editor active="true" />
     <layout>
-      <window_info id="Messages" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Changes" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32930845" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Terminal" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32930845" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32930845" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
-      <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32871014" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
       <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
-      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.17121115" sideWeight="0.68793344" order="0" side_tool="false" content_ui="combo" />
+      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.17121115" sideWeight="0.67128986" order="0" side_tool="false" content_ui="combo" />
       <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.31206658" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="Favorites" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="2" side_tool="true" content_ui="tabs" />
       <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.3370319" sideWeight="0.5" order="7" side_tool="true" content_ui="tabs" />
       <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.41608876" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
-      <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
+      <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32871014" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Cvs" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="4" side_tool="false" content_ui="tabs" />
       <window_info id="Message" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
       <window_info id="Ant Build" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
+      <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32871014" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
+      <window_info id="Messages" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Commander" active="false" anchor="right" auto_hide="false" internal_type="SLIDING" type="SLIDING" visible="false" weight="0.4" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
       <window_info id="Hierarchy" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.24967825" sideWeight="0.68654644" order="2" side_tool="false" content_ui="combo" />
       <window_info id="Inspection" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.4" sideWeight="0.5" order="5" side_tool="false" content_ui="tabs" />
@@ -529,7 +549,7 @@
       <breakpoints>
         <line-breakpoint enabled="true" type="python-line">
           <url>file://$PROJECT_DIR$/Project/modelengine/start.py</url>
-          <line>58</line>
+          <line>60</line>
           <option name="timeStamp" value="23" />
         </line-breakpoint>
         <line-breakpoint enabled="true" type="python-line">
@@ -545,21 +565,9 @@
     </breakpoint-manager>
   </component>
   <component name="editorHistoryManager">
-    <entry file="file://$PROJECT_DIR$/TaskPool/readme.txt">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="4" column="0" selection-start="172" selection-end="172" vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="150" />
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/Input/readme.txt">
       <provider selected="true" editor-type-id="text-editor">
         <state line="12" column="0" selection-start="664" selection-end="664" vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="270" />
-      </provider>
-    </entry>
-    <entry file="file://C:/Anaconda/Lib/threading.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="813" column="28" selection-start="29172" selection-end="29172" vertical-scroll-proportion="0.5245203" vertical-offset="11949" max-vertical-offset="20025">
-          <folding />
-        </state>
       </provider>
     </entry>
     <entry file="file://C:/Anaconda/Lib/multiprocessing/forking.py">
@@ -569,9 +577,7 @@
     </entry>
     <entry file="file://C:/Anaconda/Lib/multiprocessing/process.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="260" column="37" selection-start="7675" selection-end="7675" vertical-scroll-proportion="0.42857143" vertical-offset="3654" max-vertical-offset="4890">
-          <folding />
-        </state>
+        <state line="260" column="37" selection-start="7675" selection-end="7675" vertical-scroll-proportion="0.42857143" vertical-offset="3654" max-vertical-offset="4890" />
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/TaskPool/Test/worktask.xml">
@@ -596,9 +602,7 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/TaskPool/test_project.xmla">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="21" column="23" selection-start="823" selection-end="823" vertical-scroll-proportion="0.0" vertical-offset="405" max-vertical-offset="1320">
-          <folding />
-        </state>
+        <state line="21" column="23" selection-start="823" selection-end="823" vertical-scroll-proportion="0.0" vertical-offset="405" max-vertical-offset="1320" />
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/Configuration/engine_config.xml">
@@ -610,34 +614,51 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/TaskPool/test_project_linux.xmla">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="0" column="0" selection-start="0" selection-end="0" vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="1320">
+        <state line="0" column="0" selection-start="0" selection-end="0" vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="1320" />
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Project/modelengine/engine.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="57" column="52" selection-start="2172" selection-end="2172" vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="1530">
           <folding />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/Project/modelengine/project.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="143" column="68" selection-start="6152" selection-end="6152" vertical-scroll-proportion="0.0" vertical-offset="1897" max-vertical-offset="7635">
+        <state line="429" column="92" selection-start="21224" selection-end="21224" vertical-scroll-proportion="0.0" vertical-offset="5812" max-vertical-offset="7725">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://C:/Anaconda/Lib/threading.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="749" column="8" selection-start="26528" selection-end="26528" vertical-scroll-proportion="0.3323741" vertical-offset="11004" max-vertical-offset="20025">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Project/modelengine/scp.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="116" column="75" selection-start="4460" selection-end="4460" vertical-scroll-proportion="0.0" vertical-offset="1237" max-vertical-offset="5835">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Project/modelengine/scp_test.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="137" column="39" selection-start="4414" selection-end="4421" vertical-scroll-proportion="0.0" vertical-offset="1585" max-vertical-offset="2280">
           <folding>
-            <element signature="e#0#35#0" expanded="true" />
+            <element signature="e#24#33#0" expanded="true" />
           </folding>
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/Project/modelengine/start.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="179" column="41" selection-start="9804" selection-end="9804" vertical-scroll-proportion="36.6" vertical-offset="3600" max-vertical-offset="8445">
+        <state line="393" column="27" selection-start="19492" selection-end="19492" vertical-scroll-proportion="0.4532374" vertical-offset="5580" max-vertical-offset="9630">
           <folding>
             <element signature="e#0#11#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/Project/modelengine/engine.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="69" column="13" selection-start="2643" selection-end="2643" vertical-scroll-proportion="0.7194245" vertical-offset="535" max-vertical-offset="1530">
-          <folding>
-            <element signature="e#0#48#0" expanded="true" />
           </folding>
         </state>
       </provider>

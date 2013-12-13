@@ -2,6 +2,7 @@ import glob
 import logging
 from multiprocessing import Process, JoinableQueue, Event
 import os
+import shutil
 import subprocess
 import sys
 import xmltodict
@@ -311,6 +312,7 @@ class Fetcher(Thread) :
             source_path = self.source
         else :
             source_path = "{0}@{1}:{2}".format(self.remote.username, self.remote.address, self.source)
+        #TODO refine this lock
         if source_path in self.local.fetchings :
             while self.local.fetchings[source_path] :
                 time.sleep(5)
@@ -347,15 +349,18 @@ class Fetcher(Thread) :
             logging.info("fetch file {0} from remote server {1}".format(self.source, self.remote.address))
             try :
                 runningOutput = subprocess.check_call(["scp", "-i", self.local.rsa_key, "-q", "-r", source_path, target_path])
+                print "copy finish"
                 logging.debug("copy remote file from {0} to {1}".format(source_path, target_path))
             except subprocess.CalledProcessError as err :
                 logging.error("return code: {0}\ncmd: {1}\noutput: {2}".format(err.returncode, err.cmd, err.output))
         self.local.fetchings[source_path] = False
+        print "update fetchings"
         logging.debug("file controller updated: {0}".format(self.local.fetchings[source_path]))
         #if runningOutput != "" :
             #TODO: COPY ERROR
             #print "copy error"
         self.finished.set()
+        print "set event"
 
 
 class MessageCollector(Thread) :
@@ -486,35 +491,36 @@ class WorkerProcess(Process) :
             for item in self.events:
                 while not item.is_set():
                     item.wait(1)
-        print "event all done"
-        #if self.package is not None :
-            #print "check package for zipping"
-            #unzip = ""
-            #if self.package.endswith(".zip") :
-                #unzip = "unzip -q "
-            #elif self.package.endswith(".tar.gz") :
-                #unzip = "tar xzf "
-            #elif self.package.endswith(".tar.bz2") :
-                #unzip = "tar xjf "
-            #elif self.package.endswith(".gz") :
-                #unzip = "gunzip -q "
-            #elif self.package.endswith(".bz2") :
-                #unzip = "bzip2 -dq "
-            #if unzip != "" :
+        print "all events set, command start"
+        if self.package is not None and self.package != "" :
+            unzip = ""
+            if self.package.endswith(".zip") :
+                unzip = "unzip -q "
+            elif self.package.endswith(".tar.gz") :
+                unzip = "tar xzf "
+            elif self.package.endswith(".tar.bz2") :
+                unzip = "tar xjf "
+            elif self.package.endswith(".gz") :
+                unzip = "gunzip -q "
+            elif self.package.endswith(".bz2") :
+                unzip = "bzip2 -dq "
+            if unzip != "" :
                 #logging.debug("found zip file, try to unzip : " + self.package)
-                #zip_res = subprocess.call(unzip + self.package, stderr=subprocess.STDOUT, shell=True)
-                #if zip_res != "" :
-                    ##TODO Error log / stop task / notify controller of the failure
-                    #self.message_queue.put(Notice(self.project_id, self.task_name, zip_res, -1))
-                    #return
-        print self.script
-        logging.debug("command : " + self.script)
+                print("found zip file, try to unzip : " + self.package)
+                zip_res = subprocess.call(unzip + self.package, stderr=subprocess.STDOUT, shell=True)
+                if zip_res != "" :
+                    #TODO Error log / stop task / notify controller of the failure
+                    self.message_queue.put(Notice(self.project_id, self.task_name, zip_res, -1))
+                    return
+        #logging.debug("running command is {0}".format(self.script))
+        print("running command is {0}".format(self.script))
         try :
             if sys.platform.startswith("win") :
                 runningOutput = subprocess.check_output(["cmd /C " + self.script + "& exit 0"],
                                                         stderr=subprocess.STDOUT, shell=True)
             else :
-                runningOutput = subprocess.check_call(self.script, shell=True)
+                runningOutput = subprocess.check_output([self.script + "; exit 0"],
+                                                        stderr=subprocess.STDOUT, shell=True)
             has_error = (runningOutput.find("error") >= 0) * -1
         except subprocess.CalledProcessError as err :
             print "{0} : {1} : {2}".format(err.returncode, err.cmd, err.output)
@@ -523,7 +529,7 @@ class WorkerProcess(Process) :
             has_error = -1
         notice = Notice(self.project_id, self.task_name, runningOutput, has_error, self.outputs)
         self.message_queue.put(notice)
-        logging.debug("notice {0} : {1} send to collector".format(self.project_id, self.task_name))
+        #logging.debug("notice {0} : {1} send to collector".format(self.project_id, self.task_name))
 
 
 class EmailNotifier(Thread) :

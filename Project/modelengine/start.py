@@ -5,9 +5,11 @@ import os
 import shutil
 import subprocess
 import sys
+import paramiko
 import xmltodict
 import time
 import distutils.dir_util
+from scp import SCPClient
 from project import *
 from engine import *
 from threading import Thread
@@ -347,6 +349,22 @@ class Fetcher(Thread) :
             runningOutput = ""
         else :
             logging.info("fetch file {0} from remote server {1}".format(self.source, self.remote.address))
+            try :
+                transport = self.create_transport()
+
+
+                scp = SCPClient(t)
+                print "scp client established"
+                #scp.put(dir_local, os.sep.join([dir_remote, 'xxxbinner.py']))
+                #print "put complete"
+                scp.get(source_path, target_path, recursive=self.is_folder)
+                print "get complete"
+            except :
+                pass
+            finally :
+                transport.close()
+
+
             if self.is_folder :
                 runningOutput = subprocess.check_output("scp -i {0} -q -r {1} {2}".format(self.local.rsa_key, source_path, target_path) + "; exit 0",
                                                         stderr=subprocess.STDOUT, shell=True)
@@ -363,6 +381,64 @@ class Fetcher(Thread) :
             print "copy error"
         else :
             self.finished.set()
+
+    def create_transport(self):
+        hostkeytype = None
+        hostkey = None
+        try:
+            host_keys = paramiko.util.load_host_keys(os.path.expanduser('~/.ssh/known_hosts'))
+        except IOError:
+            try:
+                # try ~/ssh/ too, e.g. on windows
+                host_keys = paramiko.util.load_host_keys(os.path.expanduser('~/ssh/known_hosts'))
+            except IOError:
+                print '*** Unable to open host keys file'
+                host_keys = {}
+
+        if host_keys.has_key(self.remote.address):
+            hostkeytype = host_keys[self.remote.address].keys()[0]
+            hostkey = host_keys[self.remote.address][hostkeytype]
+            print 'Using host key of type %s' % hostkeytype
+
+        # now, connect and use paramiko Transport to negotiate SSH2 across the connection
+
+        print 'Establishing SSH connection to:', self.remote.address, 22, '...'
+        transport = paramiko.Transport((self.remote.address, 22))
+        transport.start_client()
+
+        self.agent_auth(transport, self.local.username)
+
+        if not transport.is_authenticated():
+            print 'RSA key auth failed! Trying password login...'
+            transport.connect(username=self.local.username, password="Oct$2013", hostkey=hostkey)
+
+        return transport
+
+    def agent_auth(self, transport, username):
+        """
+        Attempt to authenticate to the given transport using any of the private
+        keys available from an SSH agent or from a local private RSA key file (assumes no pass phrase).
+        """
+        ki = None
+        try:
+            ki = paramiko.RSAKey.from_private_key_file(self.local.rsa_key)
+        except Exception, e:
+            logging.error('Failed loading: %s: %s' % (self.local.rsa_key, e))
+
+        agent = paramiko.Agent()
+        agent_keys = agent.get_keys() + (ki,)
+        if len(agent_keys) == 0:
+            return
+
+        for key in agent_keys:
+            print 'Trying ssh-agent key %s' % key.get_fingerprint().encode('hex'),
+            try:
+                transport.auth_publickey(username, key)
+                print '... success!'
+                return
+            except paramiko.SSHException, e:
+                print '... failed!', e
+
 
 
 class MessageCollector(Thread) :
@@ -493,7 +569,8 @@ class WorkerProcess(Process) :
             for item in self.events:
                 while not item.is_set():
                     item.wait(1)
-        if self.package is not None :
+        print "all events set, command start"
+        if self.package is not None and self.package != "" :
             unzip = ""
             if self.package.endswith(".zip") :
                 unzip = "unzip -q "
@@ -506,13 +583,15 @@ class WorkerProcess(Process) :
             elif self.package.endswith(".bz2") :
                 unzip = "bzip2 -dq "
             if unzip != "" :
-                logging.debug("found zip file, try to unzip : " + self.package)
+                #logging.debug("found zip file, try to unzip : " + self.package)
+                print("found zip file, try to unzip : " + self.package)
                 zip_res = subprocess.call(unzip + self.package, stderr=subprocess.STDOUT, shell=True)
                 if zip_res != "" :
                     #TODO Error log / stop task / notify controller of the failure
                     self.message_queue.put(Notice(self.project_id, self.task_name, zip_res, -1))
                     return
-        logging.debug("running command is {0}".format(self.script))
+        #logging.debug("running command is {0}".format(self.script))
+        print("running command is {0}".format(self.script))
         try :
             if sys.platform.startswith("win") :
                 runningOutput = subprocess.check_output(["cmd /C " + self.script + "& exit 0"],
@@ -526,7 +605,7 @@ class WorkerProcess(Process) :
             has_error = -1
         notice = Notice(self.project_id, self.task_name, runningOutput, has_error, self.outputs)
         self.message_queue.put(notice)
-        logging.debug("notice {0} : {1} send to collector".format(self.project_id, self.task_name))
+        #logging.debug("notice {0} : {1} send to collector".format(self.project_id, self.task_name))
 
 
 class EmailNotifier(Thread) :

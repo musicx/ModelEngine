@@ -414,14 +414,20 @@ class WorkTask:
                     self.package = package_temp_path
             else :
                 self.package = package_output_path
-        # replace the package path in the script
-        #script_part = self.script.split(" ")[1]
-        #candidate_script_path = os.sep.join([engine.temp, self.project_id, script_part]) \
-        #                        if package_missing_flag else self.package
-        #if not os.path.exists(script_part) :
-        #    file_pattern = re.compile(r'\w+\.\w+')
-        #    if file_pattern.search(script_part) is not None :
-        #        self.script = self.script.replace(script_part, candidate_script_path, 1)
+            # replace the package path in the script
+            script_part = [x for x in self.script.split(" ") \
+                            if not x.startswith("-") and os.path.basename(x) not in ['python', '.', 'sh',
+                                                                                     'rscript', 'sas',
+                                                                                     'mbsh', 'java']][0]
+            temp_script_part = os.path.basename(script_part) if script_part.startswith(os.sep) or script_part[1] == ':' \
+                                                             else script_part
+            #NOTE: check if this works when there is a relative path in the script part
+            candidate_script_path = os.sep.join([engine.temp, self.project_id, temp_script_part]) \
+                                    if package_missing_flag else self.package
+            if not os.path.exists(script_part) :
+                file_pattern = re.compile(r'\w+\.\w+')
+                if file_pattern.search(script_part) is not None :
+                    self.script = self.script.replace(script_part, candidate_script_path, 1)
         return missing_files
 
 
