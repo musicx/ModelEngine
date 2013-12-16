@@ -229,18 +229,18 @@ class Project:
             if task.skip or task.delievered:
                 continue
             target_engine, same_engine = self.system.findEngineByType(task.jobtype)
-            target_path = "" if same_engine else target_engine.username + "@" + target_engine.address + ":"
-            target_path += target_engine.taskpool
+            #target_path = "" if same_engine else target_engine.username + "@" + target_engine.address + ":"
+            #target_path += target_engine.taskpool
             taskcontent = self.createWorkTask(task, self.system.engine)
             distributor = Distributer(self.system.engine, os.sep.join([self.system.engine.delivery, self.project_id]),
-                                      taskname, taskcontent, target_path, same_engine)
+                                      target_engine, target_engine.taskpool, taskname, taskcontent)
             #distributor.setDaemon(True)
             distributor.start()
             task.delievered = True
         if stage.allTaskComplete() and not stage.skip and not stage.delievered:
             script_task_content = self.createWorkTask(stage, self.system.engine)
             distributor = Distributer(self.system.engine, os.sep.join([self.system.engine.delivery, self.project_id]),
-                                      stage.name, script_task_content, self.system.engine.taskpool, True)
+                                      self.system.engine, self.system.engine.taskpool, stage.name, script_task_content)
             distributor.start()
             stage.delievered = True
         return 1
@@ -338,11 +338,8 @@ class Project:
             clean_xml.project_id(self.project_id)
             clean_xml.command("clean")
         for engine in self.system.engines.itervalues() :
-            same_engine = engine.address == self.system.engine.address
-            target_folder = "{0}@{1}:{2}".format(engine.username, engine.address, engine.taskpool) \
-                            if not same_engine else engine.taskpool
             distributor = Distributer(self.system.engine, os.sep.join([self.system.engine.delivery, self.project_id]),
-                                      "clean", str(clean_xml), target_folder, same_engine)
+                                      engine, engine.taskpool, "clean", str(clean_xml))
             distributor.start()
 
 

@@ -39,6 +39,7 @@ class TaskScanner(Thread):
         self.interval = current_system.interval
         self.engine = current_system.engine
         self.message_queue = out_queue
+        self.email_pattern = re.compile(r"[^>]+?@[^<]+")
 
     def run(self):
         while not self.stopped.is_set():
@@ -55,7 +56,11 @@ class TaskScanner(Thread):
                 doc = xmltodict.parse(lines)
             except Exception:
                 logging.error("Please make sure the task configuration file has a proper format : {0}".format(filename))
-                #TODO: find email address in the xml and send error message to him/her.
+                bad_email = self.findEmail(lines)
+                message = "Your project configuration file {0} is not readable".format(filename)
+                if bad_email is not None :
+                    emailer = EmailNotifier("Unknown", bad_email, message)
+                    emailer.start()
                 continue
 
             if "project" in doc:
@@ -68,10 +73,17 @@ class TaskScanner(Thread):
                     logging.debug("task generated for project " + project.project_id)
                     self.moveTask(filename, project.project_id)
                 except ValueError as err:
-                    #TODO: find email address in the xml and send error message to him/her.
                     self.moveTask(filename, None)
+                    bad_email = self.findEmail(lines)
+                    message = "Your project configuration file {0} has a un-readable format".format(filename)
+                    if bad_email is not None :
+                        emailer = EmailNotifier("Unknown", bad_email, message)
+                        emailer.start()
                 except IOError as err :
-                    #TODO: find email address in the xml and send error message to him/her.
+                    message = "Your project configuration file {0} has a un-readable format".format(filename)
+                    if project.email is not None :
+                        emailer = EmailNotifier(project.name, project.email, message)
+                        emailer.start()
                     self.moveTask(filename, project.project_id)
 
             elif "worktask" in doc:
@@ -118,16 +130,14 @@ class TaskScanner(Thread):
                             if engine.address == self.system.controller.address :
                                 continue
                             distributer = Distributer(self.engine, os.sep.join([self.engine.delivery, project_id]),
-                                                      "dup_" + command.command, str(controller_command),
-                                                      "{0}@{1}:{2}".format(engine.username, engine.address, engine.taskpool))
+                                                      engine, engine.taskpool, "dup_" + command.command, str(controller_command))
                             distributer.start()
                     if len(command.projects) == 0 :
                         for engine in self.system.engines.itervalues() :
                             if engine.address == self.system.controller.address :
                                 continue
-                            distributer = Distributer(self.engine, self.engine.delivery,
-                                                      "dup_" + command.command, str(controller_command),
-                                                      "{0}@{1}:{2}".format(engine.username, engine.address, engine.taskpool))
+                            distributer = Distributer(self.engine, self.engine.delivery, engine, engine.taskpool,
+                                                      "dup_" + command.command, str(controller_command))
                             distributer.start()
                     logging.debug("command has been distributed")
                 # do the project level command, such as stop task, stage or shut the proj down
@@ -186,8 +196,18 @@ class TaskScanner(Thread):
             else:
                 logging.warning("unknown root command found in the task configuration file : {0}".format(filename))
                 os.rename(filename, filename[:-4])
-                #TODO: find email address in the xml and send error message to him/her.
+                bad_email = self.findEmail(lines)
+                message = "Your project configuration file {0} is not readable".format(filename)
+                if bad_email is not None :
+                    emailer = EmailNotifier("Unknown", bad_email, message)
+                    emailer.start()
 
+    def findEmail(self, lines):
+        match = self.email_pattern.search(lines)
+        if match :
+            return match.group()
+        else :
+            return None
 
     def moveTask(self, filename, project_id):
         """
@@ -251,15 +271,15 @@ class TaskScanner(Thread):
 
 
 class Distributer(Thread) :
-    def __init__(self, cur_engine, source_folder, task_name, xml_content, target_folder, is_local=False):
+    def __init__(self, local_engine, source_folder, remote_engine, target_folder, task_name, xml_content):
         Thread.__init__(self)
-        self.engine = cur_engine
-        self.target = target_folder
+        self.local = local_engine
         self.source = source_folder
+        self.remote = remote_engine
+        self.target = target_folder
         self.task_name = task_name
         self.xml = xml_content
-        self.is_local = is_local
-        #self.setDaemon(True)
+        self.is_local = self.local.address == self.remote.address
 
     def run(self) :
         filename = self.generateTaskFile()
@@ -277,6 +297,7 @@ class Distributer(Thread) :
         return file_path
 
     def deliver(self, filename):
+        returncode = 0
         target_path = os.sep.join((self.target, os.path.basename(filename)))
         if self.is_local :
             logging.info("move to taskpool of local server")
@@ -285,13 +306,68 @@ class Distributer(Thread) :
             shutil.copyfile(filename, target_path)
         else :
             logging.info("copy to remote server: {0}".format(self.target))
-            logging.debug("file copied from {0} to {1}".format(filename, self.target))
-            runningOutput = subprocess.check_output(["scp -i {0} -q {1} {2}".format(self.engine.rsa_key, filename, self.target) + "; exit 0"],
-                                                    stderr=subprocess.STDOUT, shell=True)
-            if runningOutput != "" :
-                logging.error("cannot copy file to remote location")
-                return -1
-        return 0
+            transport = None
+            try :
+                transport = self.create_transport()
+                scp = SCPClient(transport)
+                scp.put(filename, target_path)
+                logging.debug("file copied from {0} to {1}".format(filename, self.target))
+            except Exception as err:
+                logging.error("SCP error : " + err.message)
+                returncode = 1
+            finally :
+                if transport :
+                    transport.close()
+        return returncode
+
+    def create_transport(self):
+        hostkeytype = None
+        hostkey = None
+        try:
+            host_keys = paramiko.util.load_host_keys(os.path.expanduser('~/.ssh/known_hosts'))
+        except IOError:
+            try:
+                # try ~/ssh/ too, e.g. on windows
+                host_keys = paramiko.util.load_host_keys(os.path.expanduser('~/ssh/known_hosts'))
+            except IOError:
+                print '*** Unable to open host keys file'
+                host_keys = {}
+        if host_keys.has_key(self.remote.address):
+            hostkeytype = host_keys[self.remote.address].keys()[0]
+            hostkey = host_keys[self.remote.address][hostkeytype]
+            print 'Using host key of type %s' % hostkeytype
+        # now, connect and use paramiko Transport to negotiate SSH2 across the connection
+        print 'Establishing SSH connection to:', self.remote.address, 22, '...'
+        transport = paramiko.Transport((self.remote.address, 22))
+        transport.start_client()
+        self.agent_auth(transport, self.local.username)
+        if not transport.is_authenticated():
+            print 'RSA key auth failed! Trying password login...'
+            transport.connect(username=self.local.username, password="Oct$2013", hostkey=hostkey)
+        return transport
+
+    def agent_auth(self, transport, username):
+        """
+        Attempt to authenticate to the given transport using any of the private
+        keys available from an SSH agent or from a local private RSA key file (assumes no pass phrase).
+        """
+        ki = None
+        try:
+            ki = paramiko.RSAKey.from_private_key_file(self.local.rsa_key)
+        except Exception, e:
+            logging.error('Failed loading: %s: %s' % (self.local.rsa_key, e))
+        agent = paramiko.Agent()
+        agent_keys = agent.get_keys() + (ki,)
+        if len(agent_keys) == 0:
+            return
+        for key in agent_keys:
+            print 'Trying ssh-agent key %s' % key.get_fingerprint().encode('hex'),
+            try:
+                transport.auth_publickey(username, key)
+                print '... success!'
+                return
+            except paramiko.SSHException, e:
+                print '... failed!', e
 
 
 class Fetcher(Thread) :
@@ -310,17 +386,15 @@ class Fetcher(Thread) :
     def run(self) :
         # add move mechanism if it is local fetcher
         target_path = self.target + os.sep if not self.target.endswith(os.sep) else self.target
-        if self.is_local :
-            source_path = self.source
-        else :
-            source_path = "{0}@{1}:{2}".format(self.remote.username, self.remote.address, self.source)
+        source_path = self.source
+        #source_path = "{0}@{1}:{2}".format(self.remote.username, self.remote.address, self.source)
         #TODO refine this lock
-        if source_path in self.local.fetchings :
-            while self.local.fetchings[source_path] :
+        if (source_path, target_path) in self.local.fetchings :
+            while self.local.fetchings[(source_path, target_path)] :
                 time.sleep(5)
             self.finished.set()
             return
-        self.local.fetchings[source_path] = True
+        self.local.fetchings[(source_path, target_path)] = True
         if self.is_local :
             logging.info("fetch file {0} from local server".format(self.source))
             if source_path.find(self.local.temp) >= 0 and self.is_output:
@@ -346,41 +420,33 @@ class Fetcher(Thread) :
                 else :
                     shutil.copy(source_path, target_path)
                     logging.debug("copy local file from {0} to {1}".format(source_path, target_path))
-            runningOutput = ""
         else :
             logging.info("fetch file {0} from remote server {1}".format(self.source, self.remote.address))
+            transport = None
             try :
                 transport = self.create_transport()
-
-
-                scp = SCPClient(t)
+                scp = SCPClient(transport)
                 print "scp client established"
-                #scp.put(dir_local, os.sep.join([dir_remote, 'xxxbinner.py']))
-                #print "put complete"
                 scp.get(source_path, target_path, recursive=self.is_folder)
-                print "get complete"
-            except :
-                pass
-            finally :
-                transport.close()
-
-
-            if self.is_folder :
-                runningOutput = subprocess.check_output("scp -i {0} -q -r {1} {2}".format(self.local.rsa_key, source_path, target_path) + "; exit 0",
-                                                        stderr=subprocess.STDOUT, shell=True)
-                logging.debug("copy remote folder from {0} to {1}".format(source_path, target_path))
-            else :
-                #logging.debug("running command: " + "scp -i {0} -q {1} {2}".format(self.local.rsa_key, source_path, target_path))
-                runningOutput = subprocess.check_output("scp -i {0} -q {1} {2}".format(self.local.rsa_key, source_path, target_path) + "; exit 0",
-                                                        stderr=subprocess.STDOUT, shell=True)
-                #logging.debug("command done")
                 logging.debug("copy remote file from {0} to {1}".format(source_path, target_path))
-        self.local.fetchings[source_path] = False
-        if runningOutput != "" :
-            #TODO: COPY ERROR
-            print "copy error"
-        else :
-            self.finished.set()
+            except Exception as err:
+                logging.error("SCP error : " + err.message)
+            finally :
+                if transport :
+                    transport.close()
+
+            #if self.is_folder :
+            #    runningOutput = subprocess.check_output("scp -i {0} -q -r {1} {2}".format(self.local.rsa_key, source_path, target_path) + "; exit 0",
+            #                                            stderr=subprocess.STDOUT, shell=True)
+            #    logging.debug("copy remote folder from {0} to {1}".format(source_path, target_path))
+            #else :
+            #    #logging.debug("running command: " + "scp -i {0} -q {1} {2}".format(self.local.rsa_key, source_path, target_path))
+            #    runningOutput = subprocess.check_output("scp -i {0} -q {1} {2}".format(self.local.rsa_key, source_path, target_path) + "; exit 0",
+            #                                            stderr=subprocess.STDOUT, shell=True)
+            #    #logging.debug("command done")
+            #    logging.debug("copy remote file from {0} to {1}".format(source_path, target_path))
+        self.local.fetchings[(source_path, target_path)] = False
+        self.finished.set()
 
     def create_transport(self):
         hostkeytype = None
@@ -394,24 +460,18 @@ class Fetcher(Thread) :
             except IOError:
                 print '*** Unable to open host keys file'
                 host_keys = {}
-
         if host_keys.has_key(self.remote.address):
             hostkeytype = host_keys[self.remote.address].keys()[0]
             hostkey = host_keys[self.remote.address][hostkeytype]
             print 'Using host key of type %s' % hostkeytype
-
         # now, connect and use paramiko Transport to negotiate SSH2 across the connection
-
         print 'Establishing SSH connection to:', self.remote.address, 22, '...'
         transport = paramiko.Transport((self.remote.address, 22))
         transport.start_client()
-
         self.agent_auth(transport, self.local.username)
-
         if not transport.is_authenticated():
             print 'RSA key auth failed! Trying password login...'
             transport.connect(username=self.local.username, password="Oct$2013", hostkey=hostkey)
-
         return transport
 
     def agent_auth(self, transport, username):
@@ -424,12 +484,10 @@ class Fetcher(Thread) :
             ki = paramiko.RSAKey.from_private_key_file(self.local.rsa_key)
         except Exception, e:
             logging.error('Failed loading: %s: %s' % (self.local.rsa_key, e))
-
         agent = paramiko.Agent()
         agent_keys = agent.get_keys() + (ki,)
         if len(agent_keys) == 0:
             return
-
         for key in agent_keys:
             print 'Trying ssh-agent key %s' % key.get_fingerprint().encode('hex'),
             try:
@@ -438,7 +496,6 @@ class Fetcher(Thread) :
                 return
             except paramiko.SSHException, e:
                 print '... failed!', e
-
 
 
 class MessageCollector(Thread) :
@@ -453,13 +510,10 @@ class MessageCollector(Thread) :
         target_engine: the Engine of target machine / CONTROLLER engine
         """
         Thread.__init__(self)
-        self.engine = source_engine
+        self.local = source_engine
+        self.remote = target_engine
         self.notice_queue = notice_queue
         self.is_local = source_engine.address == target_engine.address
-        if self.is_local :
-            self.target = target_engine.taskpool
-        else :
-            self.target = "{0}@{1}:{2}".format(target_engine.username, target_engine.address, target_engine.taskpool)
         self.setDaemon(True)
 
     def run(self):
@@ -467,10 +521,11 @@ class MessageCollector(Thread) :
             notice = self.notice_queue.get()
             logging.debug("notice received for {0} : {1}".format(notice.project_id, notice.message))
             #send to controller
-            xml_content = notice.createMessage(self.engine.name)
-            message_sender = Distributer(self.engine, os.sep.join([self.engine.delivery, notice.project_id]),
+            xml_content = notice.createMessage(self.local.name)
+            message_sender = Distributer(self.local, os.sep.join([self.local.delivery, notice.project_id]),
+                                         self.remote, self.remote.taskpool,
                                          "{0}_{1}_message_{2}".format(notice.project_id, notice.task_name, notice.status),
-                                         xml_content, self.target, self.is_local)
+                                         xml_content)
             message_sender.start()
             logging.debug("notice {0} : {1} send via message".format(notice.project_id, notice.message))
             #self.notice_queue.task_done()
@@ -527,7 +582,8 @@ class WorkerThread(Thread) :
                 unzip = "bzip2 -dq "
             if unzip != "" :
                 logging.debug("found zip file, try to unzip : " + self.package)
-                zip_res = subprocess.call(unzip + self.package, stderr=subprocess.STDOUT, shell=True)
+                zip_res = subprocess.call(unzip + self.package, stderr=subprocess.STDOUT,
+                                          shell=True, cwd=os.path.dirname(self.package))
                 if zip_res != "" :
                     #TODO Error log / stop task / notify controller of the failure
                     self.message_queue.put(Notice(self.project_id, self.task_name, zip_res, -1))
@@ -535,10 +591,12 @@ class WorkerThread(Thread) :
         try :
             if sys.platform.startswith("win") :
                 runningOutput = subprocess.check_output(["cmd /C " + self.script + "& exit 0"],
-                                                        stderr=subprocess.STDOUT, shell=True)
+                                                        stderr=subprocess.STDOUT, shell=True,
+                                                        cwd=os.path.dirname(self.script))
             else :
                 runningOutput = subprocess.check_output([self.script + "; exit 0"],
-                                                        stderr=subprocess.STDOUT, shell=True)
+                                                        stderr=subprocess.STDOUT, shell=True,
+                                                        cwd=os.path.dirname(self.script))
             has_error = (runningOutput.find("error") >= 0) * -1
         except Exception as err:
             runningOutput = err.message
@@ -585,7 +643,8 @@ class WorkerProcess(Process) :
             if unzip != "" :
                 #logging.debug("found zip file, try to unzip : " + self.package)
                 print("found zip file, try to unzip : " + self.package)
-                zip_res = subprocess.call(unzip + self.package, stderr=subprocess.STDOUT, shell=True)
+                zip_res = subprocess.call(unzip + self.package, stderr=subprocess.STDOUT,
+                                          shell=True, cwd=os.path.dirname(self.package))
                 if zip_res != "" :
                     #TODO Error log / stop task / notify controller of the failure
                     self.message_queue.put(Notice(self.project_id, self.task_name, zip_res, -1))
@@ -595,11 +654,17 @@ class WorkerProcess(Process) :
         try :
             if sys.platform.startswith("win") :
                 runningOutput = subprocess.check_output(["cmd /C " + self.script + "& exit 0"],
-                                                        stderr=subprocess.STDOUT, shell=True)
+                                                        stderr=subprocess.STDOUT, shell=True,
+                                                        cwd=os.path.dirname(self.script))
             else :
                 runningOutput = subprocess.check_output([self.script + "; exit 0"],
-                                                        stderr=subprocess.STDOUT, shell=True)
+                                                        stderr=subprocess.STDOUT, shell=True,
+                                                        cwd=os.path.dirname(self.script))
             has_error = (runningOutput.find("error") >= 0) * -1
+        except subprocess.CalledProcessError as err :
+            print "{0} ; {1} ; {2} ; {3}".format(err.message, err.cmd, err.output, err.returncode)
+            runningOutput = err.message
+            has_error = -1
         except Exception as err:
             runningOutput = err.message
             has_error = -1
@@ -616,8 +681,10 @@ class EmailNotifier(Thread) :
 
     def run(self):
         if not sys.platform.startswith("win") :
-            result = subprocess.check_call([self.script + "; exit 0"], stderr=subprocess.STDOUT, shell=True)
-            #TODO : ERROR handle
+            try :
+                result = subprocess.check_call([self.script + "; exit 0"], stderr=subprocess.STDOUT, shell=True)
+            except subprocess.CalledProcessError as err :
+                logging.error("Email cannot be send : " + err.message)
 
 
 if __name__ == '__main__':
