@@ -75,12 +75,14 @@ class TaskScanner(Thread):
                 except ValueError as err:
                     self.moveTask(filename, None)
                     bad_email = self.findEmail(lines)
-                    message = "Your project configuration file {0} has a un-readable format".format(filename)
+                    message = err.message + "\n"
+                    message += "Your project configuration file {0} has a un-readable format".format(filename)
                     if bad_email is not None :
                         emailer = EmailNotifier("Unknown", bad_email, message)
                         emailer.start()
                 except IOError as err :
-                    message = "Your project configuration file {0} has a un-readable format".format(filename)
+                    message = err.message + "\n"
+                    message += "Your project configuration file {0} has a un-readable format".format(filename)
                     if project.email is not None :
                         emailer = EmailNotifier(project.name, project.email, message)
                         emailer.start()
@@ -164,7 +166,10 @@ class TaskScanner(Thread):
                         project = self.system.projects.pop(project_id, None)
                         if project is None :
                             continue
-                        # TODO: remove the temp / delievery / output folder if necessary
+                        # remove the temp / delievery / output folder if necessary
+                        if project.clean_after :
+                            shutil.rmtree(os.sep.join([self.engine.delivery, project.project_id]), ignore_errors=True)
+                            shutil.rmtree(os.sep.join([self.engine.temp, project.project_id]), ignore_errors=True)
 
 
             elif "message" in doc:
@@ -190,8 +195,14 @@ class TaskScanner(Thread):
                     statusUpdater = StatusUpdater(self.system.projects[message.project_id], message.task_name,
                                                   message.status, finish_events)
                     statusUpdater.start()
+                    emailer = EmailNotifier(message.project_id, self.system.projects[message.project_id].email,
+                                            "Task {0} has successfully finished!".format(message.task_name))
+                    emailer.start()
                 elif message.status == -1 :
                     logging.error(message.message)
+                    emailer = EmailNotifier(message.project_id, self.system.projects[message.project_id].email,
+                                            message.message)
+                    emailer.start()
 
             else:
                 logging.warning("unknown root command found in the task configuration file : {0}".format(filename))
@@ -284,9 +295,10 @@ class Distributer(Thread) :
     def run(self) :
         filename = self.generateTaskFile()
         res = self.deliver(filename)
-        if res < 0 :
-            #TODO: COPY ERROR
-            print "copy error"
+        if res != 0 :
+            logging.error("Copy Error! From {0}:{1} to {2}:{3}".format(self.local.address, self.source,
+                                                                       self.remote.address, self.target))
+            #TODO: send email to sys controller about this failure
 
     def generateTaskFile(self):
         base_name = "{0}_{1}.xml".format(self.task_name, long(time.time()))
@@ -330,19 +342,19 @@ class Distributer(Thread) :
                 # try ~/ssh/ too, e.g. on windows
                 host_keys = paramiko.util.load_host_keys(os.path.expanduser('~/ssh/known_hosts'))
             except IOError:
-                print '*** Unable to open host keys file'
+                logging.error('*** Unable to open host keys file')
                 host_keys = {}
         if host_keys.has_key(self.remote.address):
             hostkeytype = host_keys[self.remote.address].keys()[0]
             hostkey = host_keys[self.remote.address][hostkeytype]
-            print 'Using host key of type %s' % hostkeytype
+            logging.debug('Using host key of type %s' % hostkeytype)
         # now, connect and use paramiko Transport to negotiate SSH2 across the connection
-        print 'Establishing SSH connection to:', self.remote.address, 22, '...'
+        logging.debug('Establishing SSH connection to:', self.remote.address, 22, '...')
         transport = paramiko.Transport((self.remote.address, 22))
         transport.start_client()
         self.agent_auth(transport, self.local.username)
         if not transport.is_authenticated():
-            print 'RSA key auth failed! Trying password login...'
+            logging.info('RSA key auth failed! Trying password login...')
             transport.connect(username=self.local.username, password="Oct$2013", hostkey=hostkey)
         return transport
 
@@ -361,13 +373,12 @@ class Distributer(Thread) :
         if len(agent_keys) == 0:
             return
         for key in agent_keys:
-            print 'Trying ssh-agent key %s' % key.get_fingerprint().encode('hex'),
+            logging.debug('Trying ssh-agent key %s' % key.get_fingerprint().encode('hex'))
             try:
                 transport.auth_publickey(username, key)
-                print '... success!'
                 return
-            except paramiko.SSHException, e:
-                print '... failed!', e
+            except paramiko.SSHException as e:
+                logging.error('authorization failed! ' + e.message)
 
 
 class Fetcher(Thread) :
@@ -388,7 +399,6 @@ class Fetcher(Thread) :
         target_path = self.target + os.sep if not self.target.endswith(os.sep) else self.target
         source_path = self.source
         #source_path = "{0}@{1}:{2}".format(self.remote.username, self.remote.address, self.source)
-        #TODO refine this lock
         if (source_path, target_path) in self.local.fetchings :
             while self.local.fetchings[(source_path, target_path)] :
                 time.sleep(5)
@@ -426,7 +436,7 @@ class Fetcher(Thread) :
             try :
                 transport = self.create_transport()
                 scp = SCPClient(transport)
-                print "scp client established"
+                #print "scp client established"
                 scp.get(source_path, target_path, recursive=self.is_folder)
                 logging.debug("copy remote file from {0} to {1}".format(source_path, target_path))
             except Exception as err:
@@ -458,19 +468,19 @@ class Fetcher(Thread) :
                 # try ~/ssh/ too, e.g. on windows
                 host_keys = paramiko.util.load_host_keys(os.path.expanduser('~/ssh/known_hosts'))
             except IOError:
-                print '*** Unable to open host keys file'
+                logging.error('*** Unable to open host keys file')
                 host_keys = {}
         if host_keys.has_key(self.remote.address):
             hostkeytype = host_keys[self.remote.address].keys()[0]
             hostkey = host_keys[self.remote.address][hostkeytype]
-            print 'Using host key of type %s' % hostkeytype
+            logging.debug('Using host key of type %s' % hostkeytype)
         # now, connect and use paramiko Transport to negotiate SSH2 across the connection
-        print 'Establishing SSH connection to:', self.remote.address, 22, '...'
+        logging.debug('Establishing SSH connection to:', self.remote.address, 22, '...')
         transport = paramiko.Transport((self.remote.address, 22))
         transport.start_client()
         self.agent_auth(transport, self.local.username)
         if not transport.is_authenticated():
-            print 'RSA key auth failed! Trying password login...'
+            logging.info('RSA key auth failed! Trying password login...')
             transport.connect(username=self.local.username, password="Oct$2013", hostkey=hostkey)
         return transport
 
@@ -489,13 +499,12 @@ class Fetcher(Thread) :
         if len(agent_keys) == 0:
             return
         for key in agent_keys:
-            print 'Trying ssh-agent key %s' % key.get_fingerprint().encode('hex'),
+            logging.debug('Trying ssh-agent key %s' % key.get_fingerprint().encode('hex'))
             try:
                 transport.auth_publickey(username, key)
-                print '... success!'
                 return
-            except paramiko.SSHException, e:
-                print '... failed!', e
+            except paramiko.SSHException as e:
+                logging.error('authorization failed! ' + e.message)
 
 
 class MessageCollector(Thread) :
@@ -582,11 +591,12 @@ class WorkerThread(Thread) :
                 unzip = "bzip2 -dq "
             if unzip != "" :
                 logging.debug("found zip file, try to unzip : " + self.package)
-                zip_res = subprocess.call(unzip + self.package, stderr=subprocess.STDOUT,
-                                          shell=True, cwd=os.path.dirname(self.package))
-                if zip_res != "" :
-                    #TODO Error log / stop task / notify controller of the failure
-                    self.message_queue.put(Notice(self.project_id, self.task_name, zip_res, -1))
+                try :
+                    zip_res = subprocess.check_output([unzip + self.package], stderr=subprocess.STDOUT,
+                                                      shell=True, cwd=os.path.dirname(self.package))
+                except subprocess.CalledProcessError as err :
+                    self.message_queue.put(Notice(self.project_id, self.task_name,
+                                                  "\n".join([err.message, err.output]), -1))
                     return
         try :
             if sys.platform.startswith("win") :
@@ -597,7 +607,11 @@ class WorkerThread(Thread) :
                 runningOutput = subprocess.check_output([self.script + "; exit 0"],
                                                         stderr=subprocess.STDOUT, shell=True,
                                                         cwd=os.path.dirname(self.script))
-            has_error = (runningOutput.find("error") >= 0) * -1
+            has_error = 0
+        except subprocess.CalledProcessError as err :
+            print "{0} ; {1} ; {2} ; {3}".format(err.message, err.cmd, err.output, err.returncode)
+            runningOutput = err.message
+            has_error = -1
         except Exception as err:
             runningOutput = err.message
             has_error = -1
@@ -627,7 +641,7 @@ class WorkerProcess(Process) :
             for item in self.events:
                 while not item.is_set():
                     item.wait(1)
-        print "all events set, command start"
+        #print "all events set, command start"
         if self.package is not None and self.package != "" :
             unzip = ""
             if self.package.endswith(".zip") :
@@ -643,11 +657,12 @@ class WorkerProcess(Process) :
             if unzip != "" :
                 #logging.debug("found zip file, try to unzip : " + self.package)
                 print("found zip file, try to unzip : " + self.package)
-                zip_res = subprocess.call(unzip + self.package, stderr=subprocess.STDOUT,
-                                          shell=True, cwd=os.path.dirname(self.package))
-                if zip_res != "" :
-                    #TODO Error log / stop task / notify controller of the failure
-                    self.message_queue.put(Notice(self.project_id, self.task_name, zip_res, -1))
+                try :
+                    zip_res = subprocess.check_output([unzip + self.package], stderr=subprocess.STDOUT,
+                                                      shell=True, cwd=os.path.dirname(self.package))
+                except subprocess.CalledProcessError as err :
+                    self.message_queue.put(Notice(self.project_id, self.task_name,
+                                                  "\n".join([err.message, err.output]), -1))
                     return
         #logging.debug("running command is {0}".format(self.script))
         print("running command is {0}".format(self.script))
@@ -657,13 +672,12 @@ class WorkerProcess(Process) :
                                                         stderr=subprocess.STDOUT, shell=True,
                                                         cwd=os.path.dirname(self.script))
             else :
-                runningOutput = subprocess.check_output([self.script + "; exit 0"],
-                                                        stderr=subprocess.STDOUT, shell=True,
-                                                        cwd=os.path.dirname(self.script))
-            has_error = (runningOutput.find("error") >= 0) * -1
+                runningOutput = subprocess.check_output([self.script], cwd=os.path.dirname(self.script),
+                                                        stderr=subprocess.STDOUT, shell=True)
+            has_error = 0
         except subprocess.CalledProcessError as err :
             print "{0} ; {1} ; {2} ; {3}".format(err.message, err.cmd, err.output, err.returncode)
-            runningOutput = err.message
+            runningOutput = "\n".join([err.message, err.output])
             has_error = -1
         except Exception as err:
             runningOutput = err.message
