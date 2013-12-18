@@ -59,7 +59,7 @@ class TaskScanner(Thread):
                 bad_email = self.findEmail(lines)
                 message = "Your project configuration file {0} is not readable".format(filename)
                 if bad_email is not None :
-                    emailer = EmailNotifier("Unknown", bad_email, message)
+                    emailer = EmailNotifier("Unknown", bad_email, message, self.engine.delivery)
                     emailer.start()
                 continue
 
@@ -78,13 +78,14 @@ class TaskScanner(Thread):
                     message = err.message + "\n"
                     message += "Your project configuration file {0} has a un-readable format".format(filename)
                     if bad_email is not None :
-                        emailer = EmailNotifier("Unknown", bad_email, message)
+                        emailer = EmailNotifier("Unknown", bad_email, message, self.engine.delivery)
                         emailer.start()
                 except IOError as err :
                     message = err.message + "\n"
                     message += "Your project configuration file {0} has a un-readable format".format(filename)
                     if project.email is not None :
-                        emailer = EmailNotifier(project.name, project.email, message)
+                        emailer = EmailNotifier(project.name, project.email, message,
+                                                os.sep.join([self.engine.delivery, project.project_id]))
                         emailer.start()
                     self.moveTask(filename, project.project_id)
 
@@ -104,8 +105,9 @@ class TaskScanner(Thread):
                                       finished, is_folder=item.is_folder, is_output=item.is_output)
                     fetcher.start()
                     finish_events.append(finished)
-                worker_process = WorkerProcess(worktask.project_id, worktask.task_name, worktask.script, worktask.outputs,
-                                               self.message_queue, finish_events, worktask.package)
+                worker_process = WorkerProcess(worktask.project_id, worktask.task_name, worktask.script,
+                                               os.sep.join([self.engine.temp, worktask.project_id]),
+                                               worktask.outputs, self.message_queue, finish_events, worktask.package)
                 # maintain a worktask dict for different projects
                 self.engine.worktasks[worktask.project_id].append(worker_process)
                 worker_process.start()
@@ -166,6 +168,8 @@ class TaskScanner(Thread):
                         project = self.system.projects.pop(project_id, None)
                         if project is None :
                             continue
+                        finish_message = "Your project {0} has finished, output files can be found in {1}".format(project.project_id,
+                                                                                                                  os.sep.join([self.engine.output, project.project_id]))
                         # remove the temp / delievery / output folder if necessary
                         if project.clean_after :
                             shutil.rmtree(os.sep.join([self.engine.delivery, project.project_id]), ignore_errors=True)
@@ -196,12 +200,13 @@ class TaskScanner(Thread):
                                                   message.status, finish_events)
                     statusUpdater.start()
                     emailer = EmailNotifier(message.project_id, self.system.projects[message.project_id].email,
-                                            "Task {0} has successfully finished!".format(message.task_name))
+                                            "Task {0} has successfully finished!".format(message.task_name),
+                                            os.sep.join([self.system.engine.delivery, message.project_id]))
                     emailer.start()
                 elif message.status == -1 :
                     logging.error(message.message)
                     emailer = EmailNotifier(message.project_id, self.system.projects[message.project_id].email,
-                                            message.message)
+                                            message.message, os.sep.join([self.system.engine.delivery, message.project_id]))
                     emailer.start()
 
             else:
@@ -210,7 +215,7 @@ class TaskScanner(Thread):
                 bad_email = self.findEmail(lines)
                 message = "Your project configuration file {0} is not readable".format(filename)
                 if bad_email is not None :
-                    emailer = EmailNotifier("Unknown", bad_email, message)
+                    emailer = EmailNotifier("Unknown", bad_email, message, self.engine.delivery)
                     emailer.start()
 
     def findEmail(self, lines):
@@ -299,6 +304,7 @@ class Distributer(Thread) :
             logging.error("Copy Error! From {0}:{1} to {2}:{3}".format(self.local.address, self.source,
                                                                        self.remote.address, self.target))
             #TODO: send email to sys controller about this failure
+            # possible solution: add a sys controller field in engine_config, and give every engine a copy of that field
 
     def generateTaskFile(self):
         base_name = "{0}_{1}.xml".format(self.task_name, long(time.time()))
@@ -347,9 +353,9 @@ class Distributer(Thread) :
         if host_keys.has_key(self.remote.address):
             hostkeytype = host_keys[self.remote.address].keys()[0]
             hostkey = host_keys[self.remote.address][hostkeytype]
-            logging.debug('Using host key of type %s' % hostkeytype)
+            logging.debug('Using host key of type {0}'.format(hostkeytype))
         # now, connect and use paramiko Transport to negotiate SSH2 across the connection
-        logging.debug('Establishing SSH connection to:', self.remote.address, 22, '...')
+        logging.debug('Establishing SSH connection to: {0}:{1}'.format(self.remote.address, 22))
         transport = paramiko.Transport((self.remote.address, 22))
         transport.start_client()
         self.agent_auth(transport, self.local.username)
@@ -367,7 +373,7 @@ class Distributer(Thread) :
         try:
             ki = paramiko.RSAKey.from_private_key_file(self.local.rsa_key)
         except Exception, e:
-            logging.error('Failed loading: %s: %s' % (self.local.rsa_key, e))
+            logging.error('Failed loading: %s: %s' % (self.local.rsa_key, e.message))
         agent = paramiko.Agent()
         agent_keys = agent.get_keys() + (ki,)
         if len(agent_keys) == 0:
@@ -473,9 +479,9 @@ class Fetcher(Thread) :
         if host_keys.has_key(self.remote.address):
             hostkeytype = host_keys[self.remote.address].keys()[0]
             hostkey = host_keys[self.remote.address][hostkeytype]
-            logging.debug('Using host key of type %s' % hostkeytype)
+            logging.debug('Using host key of type {0}'.format(hostkeytype))
         # now, connect and use paramiko Transport to negotiate SSH2 across the connection
-        logging.debug('Establishing SSH connection to:', self.remote.address, 22, '...')
+        logging.debug('Establishing SSH connection to: {0}:{1}'.format(self.remote.address, 22))
         transport = paramiko.Transport((self.remote.address, 22))
         transport.start_client()
         self.agent_auth(transport, self.local.username)
@@ -493,7 +499,7 @@ class Fetcher(Thread) :
         try:
             ki = paramiko.RSAKey.from_private_key_file(self.local.rsa_key)
         except Exception, e:
-            logging.error('Failed loading: %s: %s' % (self.local.rsa_key, e))
+            logging.error('Failed loading: %s: %s' % (self.local.rsa_key, e.message))
         agent = paramiko.Agent()
         agent_keys = agent.get_keys() + (ki,)
         if len(agent_keys) == 0:
@@ -557,7 +563,7 @@ class StatusUpdater(Thread) :
 
 
 class WorkerThread(Thread) :
-    def __init__(self, project_id, task_name, script, outputs, out_queue, events=None, package=None):
+    def __init__(self, project_id, task_name, script, work_folder, outputs, out_queue, events=None, package=None):
         """
         wait for all the Events in events are set, then start the script
         before script is run, un-package any zip files if given
@@ -567,6 +573,7 @@ class WorkerThread(Thread) :
         self.project_id = project_id
         self.task_name = task_name
         self.script = script
+        self.work_folder = work_folder
         self.outputs = outputs
         self.message_queue = out_queue
         self.events = events
@@ -593,7 +600,7 @@ class WorkerThread(Thread) :
                 logging.debug("found zip file, try to unzip : " + self.package)
                 try :
                     zip_res = subprocess.check_output([unzip + self.package], stderr=subprocess.STDOUT,
-                                                      shell=True, cwd=os.path.dirname(self.package))
+                                                      shell=True, cwd=self.work_folder)
                 except subprocess.CalledProcessError as err :
                     self.message_queue.put(Notice(self.project_id, self.task_name,
                                                   "\n".join([err.message, err.output]), -1))
@@ -602,15 +609,15 @@ class WorkerThread(Thread) :
             if sys.platform.startswith("win") :
                 runningOutput = subprocess.check_output(["cmd /C " + self.script + "& exit 0"],
                                                         stderr=subprocess.STDOUT, shell=True,
-                                                        cwd=os.path.dirname(self.script))
+                                                        cwd=self.work_folder)
             else :
                 runningOutput = subprocess.check_output([self.script + "; exit 0"],
                                                         stderr=subprocess.STDOUT, shell=True,
-                                                        cwd=os.path.dirname(self.script))
+                                                        cwd=self.work_folder)
             has_error = 0
         except subprocess.CalledProcessError as err :
-            print "{0} ; {1} ; {2} ; {3}".format(err.message, err.cmd, err.output, err.returncode)
-            runningOutput = err.message
+            runningOutput = "error occur: {0}\ncmd: {1}\nreturn code: {2}\noutput: {3}".format(err.message, err.cmd, err.returncode, err.output)
+            print runningOutput
             has_error = -1
         except Exception as err:
             runningOutput = err.message
@@ -621,7 +628,7 @@ class WorkerThread(Thread) :
 
 
 class WorkerProcess(Process) :
-    def __init__(self, project_id, task_name, script, outputs, out_queue, events=None, package=None):
+    def __init__(self, project_id, task_name, script, work_folder, outputs, out_queue, events=None, package=None):
         """
         wait for all the Events in events are set, then start the script
         before script is run, un-package any zip files if given
@@ -631,6 +638,7 @@ class WorkerProcess(Process) :
         self.project_id = project_id
         self.task_name = task_name
         self.script = script
+        self.work_folder = work_folder
         self.outputs = outputs
         self.message_queue = out_queue
         self.events = events
@@ -659,7 +667,7 @@ class WorkerProcess(Process) :
                 print("found zip file, try to unzip : " + self.package)
                 try :
                     zip_res = subprocess.check_output([unzip + self.package], stderr=subprocess.STDOUT,
-                                                      shell=True, cwd=os.path.dirname(self.package))
+                                                      shell=True, cwd=self.work_folder)
                 except subprocess.CalledProcessError as err :
                     self.message_queue.put(Notice(self.project_id, self.task_name,
                                                   "\n".join([err.message, err.output]), -1))
@@ -670,14 +678,14 @@ class WorkerProcess(Process) :
             if sys.platform.startswith("win") :
                 runningOutput = subprocess.check_output(["cmd /C " + self.script + "& exit 0"],
                                                         stderr=subprocess.STDOUT, shell=True,
-                                                        cwd=os.path.dirname(self.script))
+                                                        cwd=self.work_folder)
             else :
-                runningOutput = subprocess.check_output([self.script], cwd=os.path.dirname(self.script),
+                runningOutput = subprocess.check_output([self.script], cwd=self.work_folder,
                                                         stderr=subprocess.STDOUT, shell=True)
             has_error = 0
         except subprocess.CalledProcessError as err :
-            print "{0} ; {1} ; {2} ; {3}".format(err.message, err.cmd, err.output, err.returncode)
-            runningOutput = "\n".join([err.message, err.output])
+            runningOutput = "error occur: {0}\ncmd: {1}\nreturn code: {2}\noutput: {3}".format(err.message, err.cmd, err.returncode, err.output)
+            print runningOutput
             has_error = -1
         except Exception as err:
             runningOutput = err.message
@@ -688,10 +696,15 @@ class WorkerProcess(Process) :
 
 
 class EmailNotifier(Thread) :
-    def __init__(self, project_name, email, message):
+    def __init__(self, project_name, email, message, folder):
         Thread.__init__(self)
         subject = "Update on project {0}".format(project_name)
-        self.script = "printf {0} | mail -s {1} {2}".format(repr(message), repr(subject), email)
+        message = "" if message is None else message
+        temp_file_name = "email_{0}_{1}_{2}.msg".format(project_name, long(time.time()), random.randint(1,10000))
+        temp_path = os.sep.join([folder, temp_file_name])
+        with open(temp_path, 'w') as fn :
+            fn.write(message)
+        self.script = "cat {0} | mail -s {1} {2}".format(temp_path, repr(subject), email)
 
     def run(self):
         if not sys.platform.startswith("win") :
@@ -715,3 +728,5 @@ if __name__ == '__main__':
     while not system.stopper.is_set():
         system.stopper.wait(15)
     stopper.set()
+
+

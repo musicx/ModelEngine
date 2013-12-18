@@ -426,6 +426,8 @@ class WorkTask:
                     self.script = self.script.replace(script_part, candidate_script_path, 1)
         self.script.replace("%TEMP", os.sep.join([engine.temp, self.project_id]))
         self.script.replace("%OUTPUT", os.sep.join([engine.output, self.project_id]))
+        if self.script.startswith("sas ") :
+            self.script = self.script.replace("sas", "/sasadmin/sas92home/SASFoundation/9.2/sas", 1)
         return missing_files
 
 
