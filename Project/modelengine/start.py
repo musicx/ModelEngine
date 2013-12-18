@@ -170,6 +170,9 @@ class TaskScanner(Thread):
                             continue
                         finish_message = "Your project {0} has finished, output files can be found in {1}".format(project.project_id,
                                                                                                                   os.sep.join([self.engine.output, project.project_id]))
+                        emailer = EmailNotifier(project.project_id, project.email, finish_message,
+                                                os.sep.join([self.engine.delivery, project.project_id]))
+                        emailer.start()
                         # remove the temp / delievery / output folder if necessary
                         if project.clean_after :
                             shutil.rmtree(os.sep.join([self.engine.delivery, project.project_id]), ignore_errors=True)
