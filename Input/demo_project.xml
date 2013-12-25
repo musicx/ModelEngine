@@ -1,0 +1,83 @@
+<project>
+    <name>pure_test</name>
+    <email>yijiliu@ebay.com</email>
+    <project_input>
+        <file id="base">/x/home/yijiliu/work/modelengine/input/raw.dat</file>
+    </project_input>
+    <clean_after_success></clean_after_success>
+    <stages>
+        <stage>
+            <name>first_stage</name>
+            <tasks>
+                <task>
+                    <name>python_task_one</name>
+                    <job_type>python</job_type>
+                    <script>python sum.py %base %out1</script>
+                    <package>/x/home/yijiliu/work/modelengine/input/sum.py</package>
+                    <skip_task></skip_task>
+                    <task_input></task_input>
+                    <task_output>
+                        <file id="out1" type="data">sum.dat</file>
+                    </task_output>
+                </task>
+                <task>
+                    <name>sas_task</name>
+                    <job_type>sas</job_type>
+                    <script>sas -noterminal negative.sas</script>
+                    <package>/x/home/yijiliu/work/modelengine/input/negative.sas</package>
+                    <skip_task></skip_task>
+                    <task_input>
+                        <file>/x/home/yijiliu/work/modelengine/input/data2.dat</file>
+                        <file>/x/home/yijiliu/work/modelengine/input/config.sas</file>
+                    </task_input>
+                    <task_output>
+                        <file id="out2" type="data">neg.dat</file>
+                    </task_output>
+                </task>
+            </tasks>
+            <stage_script>python print.py %out2 %out1 %out3</stage_script>
+            <stage_package>/x/home/yijiliu/work/modelengine/input/print.py</stage_package>
+            <skip_stage></skip_stage>
+            <stage_input></stage_input>
+            <stage_output>
+                <file id="out3">stage1_output.csv</file>
+            </stage_output>
+        </stage>
+        <stage>
+            <name>second_stage</name>
+            <tasks>
+                <task>
+                    <name>python_task_two</name>
+                    <job_type>python</job_type>
+                    <script>python square.py %out3 %out4</script>
+                    <package>/x/home/yijiliu/work/modelengine/input/square.py</package>
+                    <skip_task></skip_task>
+                    <task_input></task_input>
+                    <task_output>
+                        <file id="out4" type="data">square.dat</file>
+                    </task_output>
+                </task>
+                <task>
+                    <name>model_builder_task</name>
+                    <job_type>mb</job_type>
+                    <script>$MBSH mbsh_pipe_test.mb %out3 %out5</script>
+                    <package>/x/home/yijiliu/work/modelengine/input/mbsh_pipe_test.mb</package>
+                    <skip_task></skip_task>
+                    <task_input></task_input>
+                    <task_output>
+                        <file id="out5" type="data">top3.dat</file>
+                    </task_output>
+                </task>
+            </tasks>
+            <stage_script>cat %out5 %out4 %sin > %out6</stage_script>
+            <stage_package></stage_package>
+            <skip_stage></skip_stage>
+            <stage_input>
+                <file id="sin">/x/home/yijiliu/work/modelengine/input/sdata.dat</file>
+            </stage_input>
+            <stage_output>
+                <file id="out6" type="output">total.csv</file>
+            </stage_output>
+        </stage>
+    </stages>
+</project>

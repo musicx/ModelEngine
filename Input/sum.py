@@ -5,7 +5,10 @@ outputfile = sys.argv[2]
 
 sum = 0
 for line in open(inputfile) :
-    sum += int(line)
+    try :
+        sum += int(line)
+    except :
+        pass
 
 fn = open(outputfile, 'w')
 fn.write("%d" % sum)
