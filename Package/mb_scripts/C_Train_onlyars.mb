@@ -1,0 +1,119 @@
+import com.fairisaac.mb.api.job.launch.LaunchedJob
+import com.fairisaac.mb.common.data.base.BaseTable
+import java.awt.Color 
+/********************************************************************************
+User input
+********************************************************************************/
+requires (heap:'10G') // Allocates RAM for running this script
+String pathToData = '../data/'
+String datasetName = 'dev_nn_r_f_setid_zscl' // Name of MB datafile without the .mbd
+String targetVariable = 'ato_bad'
+String targetLowStates = '0'
+String targetLowScoreLabel = 'Good'
+String targetHighStates = '1'
+String targetHighScoreLabel = 'Bad'
+
+//String inputVariables = '*_zscl *_MV*'
+String inputVariables = ' wmock_ARS_v31_shi_007_20CF_s2_zscl wARS_v3_account_age_sm_s2_zscl wmock_ARS_v35_ato_019_53E0_s2_zscl wARS_v35_sent_amt__1d_C763_s2_zscl wARS_v21_acct_age_by_cc_s2_zscl wARS_v2_acct_peeking_worst_s2_zscl wmock_ARS_v31_ip__009_4E93_s2_zscl wmock_ARS_v35_ato_001_1FF4_s2_zscl wARS_v2_acct_ip_new_ctry_s2_zscl wARS_v35_ip_ph_geo_worst_s2_zscl wARS_v31_ip_hopping_s2_zscl wARS_v35_third_pa_rns_E3FD_s2_zscl wARS_v3_browser_lang_match_s2_zscl wARS_v2_beacon_la_net_2BE7_s2_zscl wARS_AccountConsi_ric_784B_s2_zscl wmock_ARS_v2_beac_022_CBBA_s2_zscl wmock_ARS_v2_acct_002_E667_s2_zscl wARS_v35_counterp_age_8479_s2_zscl wmock_ARS_v2_beac_021_B667_s2_zscl wmock_ARS_v2_beac_028_DE5A_s2_zscl wARS_v35_ip_conn__ive_5ED3_s2_zscl wARS_v35_sf_classifier_s2_zscl wARS_v2_ip_bin_ct_rst_BD9F_s2_zscl wARS_v21_ip_many__any_5178_s2_zscl wARS_v2_ip_net_score_worst_s2_zscl wARS_v31_trigger__ted_5B1E_s2_zscl wARS_v3_ip_ad_dis_ric_F1B6_s2_zscl wARS_v2_ad_type_indicative_s2_zscl wmock_ARS_v3_ip_a_017_0FA0_s2_zscl wARS_v31_ip_country_match_s2_zscl wmock_ARS_Account_004_AE29_s2_zscl wARS_v35_ip_conn_type_s2_zscl wmock_ARS_v31_ato_008_F2CB_s2_zscl wARS_v35_ph_indicative_s2_zscl wARS_CounterParty_num_231B_s2_zscl wARS_v3_ip_ad_dist_best_s2_zscl wmock_ARS_v35_tri_027_E802_s2_zscl wARS_v3_account_age_3d_s2_zscl wARS_v21_ip_simil_est_FDD3_s2_zscl wARS_v21_e_dom_score_worst_s2_zscl wmock_ARS_v35_ip__012_3497_s2_zscl wARS_v31_ip_hopping_strict_s2_zscl wmock_ARS_Counter_018_A8BF_s2_zscl wv40_bcn_lat_indc_s2_zscl wv40_ship_bill_sy_tch_3357_s2_zscl wv40_nums_in_ship_counter_s2_zscl wv40_zips_in_ship_counter_s2_zscl wv36_ip_login_cnt_24h_s2_zscl wv3_ip_ad_dist_in_ric_53DC_s2_zscl wv40_ship_internal_avs_s2_zscl wv36_indc_login_exces_1h_s2_zscl wv40_multi_cc_ad_avs_conf_s2_zscl wv40_ip_conn_type_s2_zscl wv36_diff_vid_1d_s2_zscl wv31_debug_trigge__ip_EE27_s2_zscl '
+String sampleWeight = null //'e.g. sampleWeight3'
+String setidVariable = 'setid' //'e.g. trainTestEval'
+int numConcurrentJobs = 3 // number of simultaneous training jobs
+List numHiddenNodesToTry = [15,18,20]
+List numHiddenLayersToTry = [1]
+String prepareModelForReasonCodes = 'trainOnly' // trainOnly trainAndReasonCode
+
+String myExclude=''
+
+
+/********************************************************************************
+Create Directories
+********************************************************************************/
+new File('../scripts/properties').mkdir()  
+new File('../scripts/models').mkdir()
+new File('../scripts/reports').mkdir()
+
+/********************************************************************************
+Get Logs from Child Jobs
+********************************************************************************/
+app.settings.'mb.job.logChildOutput' = true
+
+/********************************************************************************
+Get a handle to the data and transform the target to {0,1}
+********************************************************************************/
+Dataset ds = app.data.open(in:pathToData+datasetName+'.mbd'){
+    binaryTarget(
+        vars: targetVariable+'=binaryTargetNN',
+        low: targetLowStates,
+        lowLabel: targetLowScoreLabel,
+        high: targetHighStates,
+        highLabel: targetHighScoreLabel,
+        otherGroupLabel: 'Other')}
+Dataset dstemp = app.data.create()
+app.data.copy(in:ds,out:dstemp)
+Dataset ds1 = app.data.open(in:dstemp,filter:app.filter.where('binaryTargetNN < 2.0'))
+/********************************************************************************
+Train model with all variables and optimize network architecture
+********************************************************************************/
+// Get lists of variables to include and exclude.
+List allVariables = ds1.getDatasetInfo().getVariableNames()
+List predictorVarInfos = ds1.getDatasetInfo().getVariableInfos(inputVariables)
+List include = []
+predictorVarInfos.each(){
+    include += it.name}
+String excludedVariables = (allVariables-include).join(' ') + myExclude
+String includedVariables = include.join(' ')
+app.logger.info(includedVariables)
+
+// Create the properties files
+String fileName
+List propertyFiles = []
+
+numHiddenNodesToTry.each(){nodes->
+    numHiddenLayersToTry.each(){layers->
+        fileName = '../scripts/properties/properties_'+nodes+layers+'.groovy'
+        ConfigObject properties = new ConfigObject()
+        properties.pathToData = pathToData
+        properties.datasetName = datasetName
+        properties.targetVariable = targetVariable
+        properties.targetLowStates = targetLowStates
+        properties.targetLowScoreLabel = targetLowScoreLabel
+        properties.targetHighStates = targetHighStates
+        properties.targetHighScoreLabel = targetHighScoreLabel
+        properties.sampleWeight = sampleWeight
+        properties.setidVariable = setidVariable
+        properties.numNodes = nodes
+        properties.numLayers = layers
+        properties.prepareModelForReasonCodes = prepareModelForReasonCodes
+        properties.excludedVariables = excludedVariables
+        properties.includedVariables = includedVariables
+        new File(fileName).withWriter{writer->properties.writeTo(writer)}
+        propertyFiles.add(fileName)
+    }
+}
+// Launch the jobs numConcurrentJobs at a time
+String propFile = ''
+while (propertyFiles.size()>0){
+    for (i in 0..numConcurrentJobs-1) {
+        propFile = propertyFiles.pop()
+        LaunchedJob job1 = app.job.submit(script:'D_TrainWorker.mb',arguments:['-DPropFile='+propFile])
+    }
+    // Wait for the jobs to finish.
+    app.job.waitForChildren()
+}
+
+	        
+	        
+	       // Plot sensititivity results
+numHiddenNodesToTry.each(){nodes->
+    numHiddenLayersToTry.each(){layers->
+                String tablePathAndFile = '../scripts/models/Sensitivity'+nodes+layers+'.tbl'
+                String outputPathAndFile = '../scripts/reports/SensitivityPlot'+nodes+layers+'.html'
+               // U_PlotSensitivity.run(tablePathAndFile,outputPathAndFile)
+    }
+}
+ 
+	        
+	        
+	        
+	        
+	        

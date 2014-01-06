@@ -1,0 +1,7 @@
+/** 
+ * Created by SRL Variable Library Wizard
+ * on Wed Sep 07 10:54:36 CDT 2011
+ *
+ * NOTE: Changes to this file may be lost or cause the editor to fail.
+ */
+varLib = app.varlib.getLibrary(lib: "SRL", repository: "../variableLibrary", project: "NNVariables")

@@ -1,0 +1,106 @@
+
+
+/** 
+ * Created by Model Performance Editor by user yanzzhou
+ * on Sun Jan 27 15:54:35 PST 2013
+ * Version 7.3
+ *
+ * NOTE: Changes to this file may be lost or cause the editor to fail.
+ */
+
+requires(heap:'6024M')
+
+//Load all models_nograph, and set default names for them
+model2 = app.model.load('./models_nograph/Nn151.pmml')
+model2.name = 'model2'
+model3 = app.model.load('./models_nograph/Nn181.pmml')
+model3.name = 'model3'
+model4 = app.model.load('./models_nograph/Nn201.pmml')
+model4.name = 'model4'
+// Load the dataset and apply transforms: e.g. score, rename, and binary target
+/*Dataset ds_perf = app.data.create()
+Dataset ds_pre = app.data.open(source: '../data/dev_nn_r_f_tmp_zscl.mbd',filter:app.filter.where("cc_control==1"))
+app.data.copy(in:ds_pre, out:ds_perf)
+ds_perf.each() {Record rec ->
+        if (rec['dim_usd_amount']==null || rec['u_cg_3pc_weight']==null)
+        {       rec['ctrl_dol_wgt'] =  0 }
+        else
+        {       rec['ctrl_dol_wgt'] = -rec['dim_usd_amount']*rec['u_cg_3pc_weight']}
+}*/
+Dataset ds = app.data.open(source: '../data/oot_r_f_zscl.mbd')
+{
+    score(model: model2)
+    score(model: model3)
+    score(model: model4)
+    rename(vars: 'model2_score=Model151_score')
+    rename(vars: 'model3_score=Model181_score')
+    rename(vars: 'model4_score=Model201_score')
+
+}
+
+//Dataset dsout = app.data.create()
+app.data.copy(in:ds, out:'../data/oot_r_f_zscl_scr.mbd')
+
+//String keepvars='trans_id setid  ato_bad  Model151_score Model181_score Model201_score'
+//app.task.exportData(in: app.data.open(in:dsout, vars:keepvars) , out:'../data/dev_score_r.sas7bdat', fileType:'SASv7', overwrite:true)
+
+
+////////////////////////////////////////////////////////////////
+// Run the model performance task  ---unit
+/*TaskResult result_u = app.task.performance(
+    in: ds,
+    target: 'ato_bad_1',
+    weight: 'u_cg_3pc_weight',
+    setid: 'setid',
+    scores: 'u_vbase_ato_score_1 u_atom_2013_nn_score_1 Model151_score Model181_score Model201_score',
+    numBins: 100,
+    maxRecs: 10000000)
+
+app.report.performance(
+    model: ' Model181, Model201, Model151',
+    version: '0, 0, 0, 0, 0',
+    in: result_u,
+    out: './perf/ModelPerformance_unit_nowgt.pdf')
+
+{
+    stat(name: 'divergence', label: 'Divergence', format: '##0.000')
+    stat(name: 'ROC', label: 'ROC area', format: '##0.000')
+    stat(name: 'Gini', label: 'Gini', format: '##0.000')
+    stat(name: 'KS', label: 'KS', format: '##0.000')
+    stat(name: 'KS_score', label: 'KS score', format: '##0.000')
+    stat(name: 'KS%', label: 'KS percentile', format: "##0.0'%'")
+    stat(name: 'rsquared', label: 'R-squared', format: '##0.000')
+
+}
+*/
+////////////////////////////////////////////////////////////////
+// Run the model performance task  ---dollar
+/*TaskResult result_d = app.task.performance(
+    in: ds,
+    target: 'cc_bad_1',
+    weight: 'dol_wgt',
+    setid: 'setid',
+    scores: 'Model151_score Model181_score Model201_score',
+    numBins: 1000,
+    maxRecs: 10000000)
+
+
+new File('./perf').mkdir()  
+// Generate report
+app.report.performance(
+    model: ' Model181, Model201, Model151',
+    version: '0, 0, 0, 0, 0',
+    in: result_d,
+    out: './perf/ModelPerformance_dol_nowgt.pdf')
+
+{
+    stat(name: 'divergence', label: 'Divergence', format: '##0.000')
+    stat(name: 'ROC', label: 'ROC area', format: '##0.000')
+    stat(name: 'Gini', label: 'Gini', format: '##0.000')
+    stat(name: 'KS', label: 'KS', format: '##0.000')
+    stat(name: 'KS_score', label: 'KS score', format: '##0.000')
+    stat(name: 'KS%', label: 'KS percentile', format: "##0.0'%'")
+    stat(name: 'rsquared', label: 'R-squared', format: '##0.000')
+
+}
+*/

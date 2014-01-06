@@ -1,0 +1,119 @@
+import com.fairisaac.mb.api.job.launch.LaunchedJob
+import com.fairisaac.mb.common.data.base.BaseTable
+import java.awt.Color 
+/********************************************************************************
+User input
+********************************************************************************/
+requires (heap:'10G') // Allocates RAM for running this script
+String pathToData = '../data/'
+String datasetName = 'dev_score_score' // Name of MB datafile without the .mbd
+String targetVariable = 'ato_bad'
+String targetLowStates = '0'
+String targetLowScoreLabel = 'Good'
+String targetHighStates = '1'
+String targetHighScoreLabel = 'Bad'
+
+//String inputVariables = '*_zscl *_MV*'
+String inputVariables = ' scr_no_gm scr_gm_201  '
+String sampleWeight = null //'e.g. sampleWeight3'
+String setidVariable = 'setid' //'e.g. trainTestEval'
+int numConcurrentJobs = 3 // number of simultaneous training jobs
+List numHiddenNodesToTry = [15,18,20]
+List numHiddenLayersToTry = [1]
+String prepareModelForReasonCodes = 'trainOnly' // trainOnly trainAndReasonCode
+
+String myExclude=''
+
+
+/********************************************************************************
+Create Directories
+********************************************************************************/
+new File('../scripts/properties').mkdir()  
+new File('../scripts/models').mkdir()
+new File('../scripts/reports').mkdir()
+
+/********************************************************************************
+Get Logs from Child Jobs
+********************************************************************************/
+app.settings.'mb.job.logChildOutput' = true
+
+/********************************************************************************
+Get a handle to the data and transform the target to {0,1}
+********************************************************************************/
+Dataset ds = app.data.open(in:pathToData+datasetName+'.mbd'){
+    binaryTarget(
+        vars: targetVariable+'=binaryTargetNN',
+        low: targetLowStates,
+        lowLabel: targetLowScoreLabel,
+        high: targetHighStates,
+        highLabel: targetHighScoreLabel,
+        otherGroupLabel: 'Other')}
+Dataset dstemp = app.data.create()
+app.data.copy(in:ds,out:dstemp)
+Dataset ds1 = app.data.open(in:dstemp,filter:app.filter.where('binaryTargetNN < 2.0'))
+/********************************************************************************
+Train model with all variables and optimize network architecture
+********************************************************************************/
+// Get lists of variables to include and exclude.
+List allVariables = ds1.getDatasetInfo().getVariableNames()
+List predictorVarInfos = ds1.getDatasetInfo().getVariableInfos(inputVariables)
+List include = []
+predictorVarInfos.each(){
+    include += it.name}
+String excludedVariables = (allVariables-include).join(' ') + myExclude
+String includedVariables = include.join(' ')
+app.logger.info(includedVariables)
+
+// Create the properties files
+String fileName
+List propertyFiles = []
+
+numHiddenNodesToTry.each(){nodes->
+    numHiddenLayersToTry.each(){layers->
+        fileName = '../scripts/properties/properties_'+nodes+layers+'.groovy'
+        ConfigObject properties = new ConfigObject()
+        properties.pathToData = pathToData
+        properties.datasetName = datasetName
+        properties.targetVariable = targetVariable
+        properties.targetLowStates = targetLowStates
+        properties.targetLowScoreLabel = targetLowScoreLabel
+        properties.targetHighStates = targetHighStates
+        properties.targetHighScoreLabel = targetHighScoreLabel
+        properties.sampleWeight = sampleWeight
+        properties.setidVariable = setidVariable
+        properties.numNodes = nodes
+        properties.numLayers = layers
+        properties.prepareModelForReasonCodes = prepareModelForReasonCodes
+        properties.excludedVariables = excludedVariables
+        properties.includedVariables = includedVariables
+        new File(fileName).withWriter{writer->properties.writeTo(writer)}
+        propertyFiles.add(fileName)
+    }
+}
+// Launch the jobs numConcurrentJobs at a time
+String propFile = ''
+while (propertyFiles.size()>0){
+    for (i in 0..numConcurrentJobs-1) {
+        propFile = propertyFiles.pop()
+        LaunchedJob job1 = app.job.submit(script:'D_TrainWorker.mb',arguments:['-DPropFile='+propFile])
+    }
+    // Wait for the jobs to finish.
+    app.job.waitForChildren()
+}
+
+	        
+	        
+	       // Plot sensititivity results
+numHiddenNodesToTry.each(){nodes->
+    numHiddenLayersToTry.each(){layers->
+                String tablePathAndFile = '../scripts/models/Sensitivity'+nodes+layers+'.tbl'
+                String outputPathAndFile = '../scripts/reports/SensitivityPlot'+nodes+layers+'.html'
+               // U_PlotSensitivity.run(tablePathAndFile,outputPathAndFile)
+    }
+}
+ 
+	        
+	        
+	        
+	        
+	        

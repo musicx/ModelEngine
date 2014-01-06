@@ -1,0 +1,28 @@
+/********************************************************************************
+User input
+********************************************************************************/
+requires (heap:'2G') // Allocates RAM for running the script
+String pathToData = '../data/'
+String datasetName = 'dev_nn_r_f_setid' // Name of MB datafile without the .mbd
+String pathToHoldLibrary = './variableLibrary'
+/********************************************************************************
+Replace missing and create dummies
+Cap numeric variables at X standard deviatio
+********************************************************************************/
+
+filter1 = app.filter.recs(10) // for Testing on 10 obs
+Dataset ds2 = app.data.open(in:pathToData+datasetName+'.mbd'
+//  , filter:filter1
+    ) {
+    varlib(lib: 'SRL',
+    vars:  '*_zscl', //*_MV*', //'*',
+    repository: pathToHoldLibrary,
+    project: 'NNVariables')
+}
+
+Dataset ds3 = app.task.copy(
+    in:ds2,
+    out:pathToData+datasetName+'_zscl.mbd',
+    overwrite:true).dataset
+/********************************************************************************
+********************************************************************************/
