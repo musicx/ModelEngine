@@ -13,6 +13,13 @@ $(document).ready(function(){
         }, 1000);
         return false;
     });
+    $('a.goto_sas').click(function(){
+        var $body = (window.opera) ? (document.compatMode == "CSS1Compat" ? $('html') : $('body')) : $('html,body');
+        $body.animate({
+            scrollTop: $('#sas').offset().top - 30
+        }, 1000);
+        return false;
+    });
     $('a.goto_nnmodel').click(function(){
         var $body = (window.opera) ? (document.compatMode == "CSS1Compat" ? $('html') : $('body')) : $('html,body');
         $body.animate({
@@ -24,6 +31,13 @@ $(document).ready(function(){
         var $body = (window.opera) ? (document.compatMode == "CSS1Compat" ? $('html') : $('body')) : $('html,body');
         $body.animate({
             scrollTop: $('#treenet').offset().top - 30
+        }, 1000);
+        return false;
+    });
+    $('a.goto_custom').click(function(){
+        var $body = (window.opera) ? (document.compatMode == "CSS1Compat" ? $('html') : $('body')) : $('html,body');
+        $body.animate({
+            scrollTop: $('#custom').offset().top - 30
         }, 1000);
         return false;
     });

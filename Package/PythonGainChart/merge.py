@@ -69,7 +69,7 @@ def parse_type(file_path) :
 if __name__ == '__main__':
     parser = OptionParser()
     parser.add_option("-k", "--key", dest="key", action="store", type="string",
-                      help="merging key variables separated with ',")
+                      help="merging key variables separated with ','")
     parser.add_option("-m", "--merge", dest="data", action="store", type="string",
                       help="data files separated with ';'")
     parser.add_option("-d", "--dlm", dest="dlm", action="store", type="string", default=",",

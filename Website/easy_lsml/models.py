@@ -1,6 +1,14 @@
 from django.db import models
 
 # Create your models here.
+class EasyProjectLog(models.Model) :
+    name = models.CharField(max_length=128)
+    owner = models.CharField(max_length=128)
+    config = models.CharField(max_length=65536)
+    time = models.DateTimeField(auto_now_add=True)
+    status = models.IntegerField(default=0)
+    output = models.CharField(max_length=65536)
+
 class EasyProject(models.Model) :
     name = models.CharField(max_length=128)
     owner = models.CharField(max_length=128)
@@ -21,6 +29,12 @@ class EasyProject(models.Model) :
     preproc_clustering = models.BooleanField(default=True)
     preproc_clusters = models.IntegerField(default=500)
 
+    has_sas = models.BooleanField(default=True)
+    sas_max_variable = models.IntegerField(default=50)
+    sas_max_corr = models.FloatField(default=0.5)
+    sas_output_scored = models.BooleanField(default=False)
+    sas_output_spec = models.BooleanField(default=True)
+
     has_nn = models.BooleanField(default=True)
     nn_validation_variable = models.CharField(max_length=128, default="setid")
     nn_hidden_node = models.CharField(max_length=20, default=20)
@@ -37,6 +51,17 @@ class EasyProject(models.Model) :
     tree_output_spec = models.BooleanField(default=True)
     tree_output_scored = models.BooleanField(default=False)
     tree_output_importance = models.BooleanField(default=False)
+
+    JOB_TYPES = (('python', 'Python'),
+                 ('mb', 'Model Builder'),
+                 ('r', 'R'),
+                 ('sas', 'SAS'))
+    has_custom = models.BooleanField(default=False)
+    custom_package = models.CharField(max_length=4096)
+    custom_script = models.CharField(max_length=4096)
+    custom_type = models.CharField(max_length=32, default='python', choices=JOB_TYPES)
+    custom_input = models.CharField(max_length=65536)
+    custom_output = models.CharField(max_length=65536)
 
     has_evaluation = models.BooleanField(default=True)
     eva_baseline = models.CharField(max_length=4096)

@@ -1,7 +1,50 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="7614d203-ba21-4be5-8496-1ea3e2dba989" name="Default" comment="" />
+    <list default="true" id="7614d203-ba21-4be5-8496-1ea3e2dba989" name="Default" comment="">
+      <change type="DELETED" beforePath="C:\Work\Python\ModelEngine\Delivery\del_1386649693_shutdown.xml" afterPath="" />
+      <change type="DELETED" beforePath="C:\Work\Python\ModelEngine\Delivery\pure_test_1386646030\clean_1386646047.xml" afterPath="" />
+      <change type="DELETED" beforePath="C:\Work\Python\ModelEngine\Delivery\pure_test_1386646030\del_1386646031_test_project.xml" afterPath="" />
+      <change type="DELETED" beforePath="C:\Work\Python\ModelEngine\Delivery\pure_test_1386646030\del_1386646033_tsk_first_sum_1386646030.xml" afterPath="" />
+      <change type="DELETED" beforePath="C:\Work\Python\ModelEngine\Delivery\pure_test_1386646030\del_1386646033_tsk_second_sum_1386646030.xml" afterPath="" />
+      <change type="DELETED" beforePath="C:\Work\Python\ModelEngine\Delivery\pure_test_1386646030\del_1386646035_pure_test_1386646030_tsk_first_sum_message_0_1386646033.xml" afterPath="" />
+      <change type="DELETED" beforePath="C:\Work\Python\ModelEngine\Delivery\pure_test_1386646030\del_1386646035_pure_test_1386646030_tsk_second_sum_message_0_1386646033.xml" afterPath="" />
+      <change type="DELETED" beforePath="C:\Work\Python\ModelEngine\Delivery\pure_test_1386646030\del_1386646037_stg_stage1_1386646035.xml" afterPath="" />
+      <change type="DELETED" beforePath="C:\Work\Python\ModelEngine\Delivery\pure_test_1386646030\del_1386646039_pure_test_1386646030_stg_stage1_message_0_1386646037.xml" afterPath="" />
+      <change type="DELETED" beforePath="C:\Work\Python\ModelEngine\Delivery\pure_test_1386646030\del_1386646041_tsk_multiply_time1_1386646039.xml" afterPath="" />
+      <change type="DELETED" beforePath="C:\Work\Python\ModelEngine\Delivery\pure_test_1386646030\del_1386646041_tsk_multiply_time2_1386646039.xml" afterPath="" />
+      <change type="DELETED" beforePath="C:\Work\Python\ModelEngine\Delivery\pure_test_1386646030\del_1386646043_pure_test_1386646030_tsk_multiply_time1_message_0_1386646041.xml" afterPath="" />
+      <change type="DELETED" beforePath="C:\Work\Python\ModelEngine\Delivery\pure_test_1386646030\del_1386646043_pure_test_1386646030_tsk_multiply_time2_message_0_1386646041.xml" afterPath="" />
+      <change type="DELETED" beforePath="C:\Work\Python\ModelEngine\Delivery\pure_test_1386646030\del_1386646045_stg_stage2_1386646043.xml" afterPath="" />
+      <change type="DELETED" beforePath="C:\Work\Python\ModelEngine\Delivery\pure_test_1386646030\del_1386646047_pure_test_1386646030_stg_stage2_message_0_1386646045.xml" afterPath="" />
+      <change type="DELETED" beforePath="C:\Work\Python\ModelEngine\Delivery\pure_test_1386646030\del_1386646049_clean_1386646047.xml" afterPath="" />
+      <change type="DELETED" beforePath="C:\Work\Python\ModelEngine\Delivery\pure_test_1386646030\pure_test_1386646030_stg_stage1_message_0_1386646037.xml" afterPath="" />
+      <change type="DELETED" beforePath="C:\Work\Python\ModelEngine\Delivery\pure_test_1386646030\pure_test_1386646030_stg_stage2_message_0_1386646045.xml" afterPath="" />
+      <change type="DELETED" beforePath="C:\Work\Python\ModelEngine\Delivery\pure_test_1386646030\pure_test_1386646030_tsk_first_sum_message_0_1386646033.xml" afterPath="" />
+      <change type="DELETED" beforePath="C:\Work\Python\ModelEngine\Delivery\pure_test_1386646030\pure_test_1386646030_tsk_multiply_time1_message_0_1386646041.xml" afterPath="" />
+      <change type="DELETED" beforePath="C:\Work\Python\ModelEngine\Delivery\pure_test_1386646030\pure_test_1386646030_tsk_multiply_time2_message_0_1386646041.xml" afterPath="" />
+      <change type="DELETED" beforePath="C:\Work\Python\ModelEngine\Delivery\pure_test_1386646030\pure_test_1386646030_tsk_second_sum_message_0_1386646033.xml" afterPath="" />
+      <change type="DELETED" beforePath="C:\Work\Python\ModelEngine\Delivery\pure_test_1386646030\stg_stage1_1386646035.xml" afterPath="" />
+      <change type="DELETED" beforePath="C:\Work\Python\ModelEngine\Delivery\pure_test_1386646030\stg_stage2_1386646043.xml" afterPath="" />
+      <change type="DELETED" beforePath="C:\Work\Python\ModelEngine\Delivery\pure_test_1386646030\tsk_first_sum_1386646030.xml" afterPath="" />
+      <change type="DELETED" beforePath="C:\Work\Python\ModelEngine\Delivery\pure_test_1386646030\tsk_multiply_time1_1386646039.xml" afterPath="" />
+      <change type="DELETED" beforePath="C:\Work\Python\ModelEngine\Delivery\pure_test_1386646030\tsk_multiply_time2_1386646039.xml" afterPath="" />
+      <change type="DELETED" beforePath="C:\Work\Python\ModelEngine\Delivery\pure_test_1386646030\tsk_second_sum_1386646030.xml" afterPath="" />
+      <change type="DELETED" beforePath="C:\Work\Python\ModelEngine\Delivery\simple_fetch_test_1386750714\clean_1386750718.xml" afterPath="" />
+      <change type="DELETED" beforePath="C:\Work\Python\ModelEngine\Delivery\simple_fetch_test_1386750714\del_1386750714_simple_project.xml" afterPath="" />
+      <change type="DELETED" beforePath="C:\Work\Python\ModelEngine\Delivery\simple_fetch_test_1386750714\del_1386750716_tsk_first_sum_1386750714.xml" afterPath="" />
+      <change type="DELETED" beforePath="C:\Work\Python\ModelEngine\Delivery\simple_fetch_test_1386750714\del_1386750718_simple_fetch_test_1386750714_tsk_first_sum_message_0_1386750717.xml" afterPath="" />
+      <change type="DELETED" beforePath="C:\Work\Python\ModelEngine\Delivery\simple_fetch_test_1386750714\del_1386750720_clean_1386750718.xml" afterPath="" />
+      <change type="DELETED" beforePath="C:\Work\Python\ModelEngine\Delivery\simple_fetch_test_1386750714\simple_fetch_test_1386750714_tsk_first_sum_message_0_1386750717.xml" afterPath="" />
+      <change type="DELETED" beforePath="C:\Work\Python\ModelEngine\Delivery\simple_fetch_test_1386750714\tsk_first_sum_1386750714.xml" afterPath="" />
+      <change type="DELETED" beforePath="C:\Work\Python\ModelEngine\Output\pure_test_1386646030\printed1.dat" afterPath="" />
+      <change type="DELETED" beforePath="C:\Work\Python\ModelEngine\Output\pure_test_1386646030\total.csv" afterPath="" />
+      <change type="DELETED" beforePath="C:\Work\Python\ModelEngine\Project\modelengine\start.py.linux" afterPath="" />
+      <change type="DELETED" beforePath="C:\Work\Python\ModelEngine\TaskPool\test_project.xmla" afterPath="" />
+      <change type="DELETED" beforePath="C:\Work\Python\ModelEngine\TaskPool\test_project_linux.xmla" afterPath="" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/Package/PythonGainChart/merge.py" afterPath="$PROJECT_DIR$/Package/PythonGainChart/merge.py" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
+    </list>
     <ignored path="ModelEngine.iws" />
     <ignored path=".idea/workspace.xml" />
     <option name="TRACKING_ENABLED" value="true" />
@@ -26,7 +69,7 @@
       <file leaf-file-name="project.py" pinned="false" current="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/Project/modelengine/project.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="429" column="39" selection-start="21192" selection-end="21192" vertical-scroll-proportion="0.0" vertical-offset="6085" max-vertical-offset="7725">
+            <state line="429" column="39" selection-start="21192" selection-end="21192" vertical-scroll-proportion="0.0" vertical-offset="6435" max-vertical-offset="7725">
               <folding />
             </state>
           </provider>
@@ -41,16 +84,47 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="start.py" pinned="false" current="true" current-in-tab="true">
+      <file leaf-file-name="start.py" pinned="false" current="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/Project/modelengine/start.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="221" column="35" selection-start="12763" selection-end="12763" vertical-scroll-proportion="2.3888092" vertical-offset="1650" max-vertical-offset="7155">
+            <state line="221" column="35" selection-start="12763" selection-end="12763" vertical-scroll-proportion="0.0" vertical-offset="3315" max-vertical-offset="7155">
               <folding>
                 <element signature="e#0#11#0" expanded="true" />
                 <element signature="e#15577#20107#0" expanded="false" />
                 <element signature="e#20138#26760#0" expanded="false" />
                 <element signature="e#26800#28338#0" expanded="false" />
                 <element signature="e#28375#28818#0" expanded="false" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="generate_mb.py" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/Package/PythonModelBuilder/generate_mb.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state line="24" column="41" selection-start="1395" selection-end="1395" vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="480">
+              <folding>
+                <element signature="e#0#33#0" expanded="true" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="nn_mb.sh.template" pinned="false" current="true" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/Package/PythonModelBuilder/nn_mb.sh.template">
+          <provider selected="true" editor-type-id="text-editor">
+            <state line="11" column="10" selection-start="627" selection-end="627" vertical-scroll-proportion="0.23672883" vertical-offset="0" max-vertical-offset="697">
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="merge.py" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/Package/PythonGainChart/merge.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state line="64" column="26" selection-start="1997" selection-end="1997" vertical-scroll-proportion="0.0" vertical-offset="690" max-vertical-offset="3195">
+              <folding>
+                <element signature="e#0#33#0" expanded="true" />
               </folding>
             </state>
           </provider>
@@ -92,9 +166,6 @@
   <component name="IdeDocumentHistory">
     <option name="changedFiles">
       <list>
-        <option value="$PROJECT_DIR$/TaskPool/Task1.xml" />
-        <option value="$PROJECT_DIR$/TaskPool/Task2.xml" />
-        <option value="$PROJECT_DIR$/TaskPool/message.xml" />
         <option value="$PROJECT_DIR$/TaskPool/worktask.xml" />
         <option value="$PROJECT_DIR$/TaskPool/Test/command.xml" />
         <option value="$PROJECT_DIR$/TaskPool/project.xml" />
@@ -108,6 +179,9 @@
         <option value="$PROJECT_DIR$/Project/modelengine/scp.py" />
         <option value="$PROJECT_DIR$/Project/modelengine/project.py" />
         <option value="$PROJECT_DIR$/Project/modelengine/start.py" />
+        <option value="$PROJECT_DIR$/Package/PythonGainChart/merge.py" />
+        <option value="$PROJECT_DIR$/Package/PythonModelBuilder/generate_mb.py" />
+        <option value="$PROJECT_DIR$/Package/PythonModelBuilder/nn_mb.sh.template" />
       </list>
     </option>
   </component>
@@ -204,7 +278,43 @@
               <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
             </PATH_ELEMENT>
             <PATH_ELEMENT>
-              <option name="myItemId" value="Input" />
+              <option name="myItemId" value="Package" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+          </PATH>
+          <PATH>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="ModelEngine" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="ModelEngine" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="Package" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="PythonModelBuilder" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+          </PATH>
+          <PATH>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="ModelEngine" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="ModelEngine" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="Package" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="PythonGainChart" />
               <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
             </PATH_ELEMENT>
           </PATH>
@@ -228,13 +338,13 @@
   </component>
   <component name="PropertiesComponent">
     <property name="options.splitter.main.proportions" value="0.3" />
-    <property name="options.lastSelected" value="project.propVCSSupport.Mappings" />
     <property name="recentsLimit" value="5" />
+    <property name="options.lastSelected" value="project.propVCSSupport.Mappings" />
     <property name="last_opened_file_path" value="$PROJECT_DIR$/.." />
     <property name="FullScreen" value="false" />
     <property name="DefaultHtmlFileTemplate" value="Xhtml" />
-    <property name="options.searchVisible" value="true" />
     <property name="options.splitter.details.proportions" value="0.2" />
+    <property name="options.searchVisible" value="true" />
   </component>
   <component name="PyConsoleOptionsProvider">
     <option name="myPythonConsoleState">
@@ -509,7 +619,7 @@
     </todo-panel>
   </component>
   <component name="ToolWindowManager">
-    <frame x="-8" y="-8" width="1616" height="876" extended-state="6" />
+    <frame x="-8" y="-8" width="1616" height="876" extended-state="7" />
     <editor active="true" />
     <layout>
       <window_info id="Changes" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32930845" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
@@ -580,11 +690,6 @@
     </breakpoint-manager>
   </component>
   <component name="editorHistoryManager">
-    <entry file="file://$PROJECT_DIR$/Input/readme.txt">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="12" column="0" selection-start="664" selection-end="664" vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="270" />
-      </provider>
-    </entry>
     <entry file="file://C:/Anaconda/Lib/multiprocessing/forking.py">
       <provider selected="true" editor-type-id="text-editor">
         <state line="390" column="11" selection-start="12277" selection-end="12277" vertical-scroll-proportion="0.0" vertical-offset="5559" max-vertical-offset="7695" />
@@ -615,21 +720,11 @@
         <state line="12" column="0" selection-start="181" selection-end="181" vertical-scroll-proportion="0.38379532" vertical-offset="0" max-vertical-offset="469" />
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/TaskPool/test_project.xmla">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="21" column="23" selection-start="823" selection-end="823" vertical-scroll-proportion="0.0" vertical-offset="405" max-vertical-offset="1320" />
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/Configuration/engine_config.xml">
       <provider selected="true" editor-type-id="text-editor">
         <state line="19" column="17" selection-start="733" selection-end="733" vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="405">
           <folding />
         </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/TaskPool/test_project_linux.xmla">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="0" column="0" selection-start="0" selection-end="0" vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="1320" />
       </provider>
     </entry>
     <entry file="file://C:/Anaconda/Lib/threading.py">
@@ -665,7 +760,7 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/Project/modelengine/start.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="221" column="35" selection-start="12763" selection-end="12763" vertical-scroll-proportion="2.3888092" vertical-offset="1650" max-vertical-offset="7155">
+        <state line="221" column="35" selection-start="12763" selection-end="12763" vertical-scroll-proportion="0.0" vertical-offset="3315" max-vertical-offset="7155">
           <folding>
             <element signature="e#0#11#0" expanded="true" />
             <element signature="e#15577#20107#0" expanded="false" />
@@ -673,6 +768,31 @@
             <element signature="e#26800#28338#0" expanded="false" />
             <element signature="e#28375#28818#0" expanded="false" />
           </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Package/PythonGainChart/merge.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="64" column="26" selection-start="1997" selection-end="1997" vertical-scroll-proportion="0.0" vertical-offset="690" max-vertical-offset="3195">
+          <folding>
+            <element signature="e#0#33#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Package/PythonModelBuilder/generate_mb.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="24" column="41" selection-start="1395" selection-end="1395" vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="480">
+          <folding>
+            <element signature="e#0#33#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Package/PythonModelBuilder/nn_mb.sh.template">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="11" column="10" selection-start="627" selection-end="627" vertical-scroll-proportion="0.23672883" vertical-offset="0" max-vertical-offset="697">
+          <folding />
         </state>
       </provider>
     </entry>

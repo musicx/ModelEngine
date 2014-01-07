@@ -1,0 +1,17 @@
+###prepare data and do stats
+/export/mb/share1/MB7.3.1/mbsh A_ReadData.mb {config[train]} -Dmb.logging.suppress=true -Xmx40g  > A_ReadTrain.log 2>&1
+/export/mb/share1/MB7.3.1/mbsh A_ReadData.mb {config[test]} -Dmb.logging.suppress=true -Xmx40g  > A_ReadTest.log 2>&1
+
+###modeling step
+/export/mb/share1/MB7.3.1/mbsh B_PrepareData.mb -Dmb.logging.suppress=true -Xmx40g > B_PrepareData.log 2>&1
+/export/mb/share1/MB7.3.1/mbsh C_TrainManager.mb -Dmb.logging.suppress=true -Xmx40g > C_Train.log 2>&1
+
+###scoring step
+/export/mb/share1/MB7.3.1/mbsh E_ScoreData.mb -Dmb.logging.suppress=true -Xmx40g >E_ScoreData.log 2>&1
+
+###package
+rm ./deliver/*.*
+cp ./models/*.* ./deliver
+cp ./perf/*.* ./deliver
+tar -cvzf {config[output]}.tar.gz ./deliver
+

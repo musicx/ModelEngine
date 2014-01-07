@@ -1,16 +1,15 @@
 from django.shortcuts import render, render_to_response
-#from django.http import HttpResponse
 from django.template import RequestContext
-from easy_lsml.models import EasyProject
+from easy_lsml.models import EasyProject, EasyProjectLog
 from easy_lsml.forms import EasyProjectForm
 import xmlwitch
 
 # Create your views here.
-def index(request) :
+def new_project(request) :
     context = RequestContext(request)
     form = EasyProjectForm()
-    context_dict = {'title' : "Large Scale Machine Learning", 'form' : form}
-    return render_to_response('easy_lsml/index.html', context_dict, context)
+    context_dict = {'form' : form}
+    return render_to_response('easy_lsml/new.html', context_dict, context)
 
 def generate_xml(request) :
     context = RequestContext(request)
@@ -91,10 +90,32 @@ def generate_xml(request) :
                                 project_xml.stage_input('')
                                 with project_xml.stage_output() :
                                     project_xml.file("gainchart.csv", type="output")
-            return render_to_response('easy_lsml/xml.html', {'xml':str(project_xml)}, context)
+            log = EasyProjectLog()
+            log.name = project.name
+            log.owner = project.owner
+            log.config = str(project_xml)
+            log.status = 0
+            log.output = ""
+            log.save()
+            project_list = EasyProjectLog.objects.order_by('-time')
+            context_dict = {'projects': project_list}
+            ind = 0
+            for project in project_list :
+                project.id = ind
+                ind += 1
+            return render_to_response('easy_lsml/index.html', context_dict, context)
         else :
             print form.errors
-    else :
-        form = EasyProjectForm()
-        context_dict = {'title' : "Large Scale Machine Learning", 'form' : form}
+    form = EasyProjectForm()
+    context_dict = {'form' : form}
+    return render_to_response('easy_lsml/new.html', context_dict, context)
+
+def index(request) :
+    context = RequestContext(request)
+    project_list = EasyProjectLog.objects.order_by('-time')
+    context_dict = {'projects': project_list}
+    ind = 0
+    for project in project_list :
+        project.id = ind
+        ind += 1
     return render_to_response('easy_lsml/index.html', context_dict, context)

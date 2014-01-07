@@ -10,9 +10,16 @@
     <title>Large Scale Machine Learning Project Configuration XML</title>
     <script src="{% static 'js/jquery-2.0.3.min.js' %}"></script>
     <script src="{% static 'js/bootstrap.min.js' %}"></script>
+    <script src="{% static "js/js_query.js" %}"></script>
 </head>
 
 <body>
+<header id="overview" class="jumbotron subhead">
+    <div class="container">
+        <h1>Large Scale Machine Learning Platform</h1>
+        <p class="lead">A simplified configuration interface</p>
+    </div>
+</header>
 <div class="container">
     <div class="span9 offset3">
         {{ xml }}

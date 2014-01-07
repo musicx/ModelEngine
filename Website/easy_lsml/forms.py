@@ -52,6 +52,17 @@ class EasyProjectForm(forms.ModelForm) :
             help_text="The number of clusters that the algorithm should look for",
             widget=forms.TextInput(attrs={'class': 'input-mini'}))
 
+    has_sas = forms.BooleanField(initial=True, label="Build SAS Logistic Regression Model", required=False,
+            help_text="Choose if you want to build a logistic regression model")
+    sas_max_variable = forms.IntegerField(initial=50, label="Maximum of Variables",
+            help_text="Maximum of variables that the spec should contain")
+    sas_max_corr = forms.FloatField(initial=0.5, label="Maximum of Correlation",
+            help_text="Maximum of correlation that is allowed among chosen variables")
+    sas_output_scored = forms.BooleanField(initial=False, label="Output Scored Dataset", required=False,
+            help_text='Choose if you want to output the scored datasets')
+    sas_output_spec = forms.BooleanField(initial=True, label="Output Model Specs", required=False,
+            help_text='Choose if you want to output the logistic regression model specs')
+
     has_nn = forms.BooleanField(initial=True, label='Build Neural Network Model', required=False,
             help_text='Choose if you want to build a neural network model')
     nn_validation_variable = forms.CharField(max_length=128, initial="setid", label="Validation Variable",
@@ -83,6 +94,31 @@ class EasyProjectForm(forms.ModelForm) :
             help_text='Choose if you want to output the scored datasets')
     tree_output_importance = forms.BooleanField(initial=False, label='Output Variable Importance', required=False,
             help_text='Choose if you want to output the variable importance for variable selection')
+
+    has_custom = forms.BooleanField(initial=False, label="Build Your Own Model", required=False,
+            help_text="Choose if you want to build model with your own package")
+    custom_package = forms.CharField(max_length=4096, label="Package", required=False,
+            help_text="The path to your package on server phxaidiedge3, zipped file is supported",
+            widget=forms.TextInput(attrs={'placeholder': '/path/to/your/package/package.tar.gz',
+                                          'class': 'input-xxlarge'}))
+    custom_script = forms.CharField(max_length=4096, label='Command Line Script', required=False,
+            help_text="The command line to use your package. Python and Shell are supported on all servers, others please specify",
+            widget=forms.TextInput(attrs={'placeholder': 'exeutable command.file argument1 argument2',
+                                          'class': 'input-xxlarge'}))
+    JOB_TYPES = (('python', 'Python'),
+                 ('mb', 'Model Builder'),
+                 ('r', 'R'),
+                 ('sas', 'SAS'))
+    custom_type = forms.ChoiceField(label="Type of Command", choices=JOB_TYPES, initial='python', required=False,
+            help_text="Please specify which tool you will use to train your model")
+    custom_input = forms.CharField(max_length=65536, label="Input Files", required=False,
+            help_text="All the input files should be accessable from phxaidiedge3. Files should be seperated with ';'",
+            widget=forms.TextInput(attrs={'placeholder': '/path/to/your/input.file;/path/to/your/another/input.file',
+                                          'class': 'input-xxlarge'}))
+    custom_output = forms.CharField(max_length=65536, label="Output Files / Folder", required=False,
+            help_text="The path to the output file or folder in relative path to your working directory",
+            widget=forms.TextInput(attrs={'placeholder': 'path/to/your/output/folder',
+                                          'class': 'input-xxlarge'}))
 
     has_evaluation = forms.BooleanField(initial=True, label='Generate Gain Charts', required=False,
             help_text='Choose if you want to generate unified model performance report')

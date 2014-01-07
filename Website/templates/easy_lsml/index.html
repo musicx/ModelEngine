@@ -6,14 +6,10 @@
     <link href="{% static 'css/bootstrap.min.css' %}" rel="stylesheet" media="screen">
     <link href="{% static 'css/bootstrap-responsive.css' %}" rel="stylesheet">
 
-    <!--<title>Easy Machine Learning Platform</title>-->
-    <title>{{ title }}</title>
-    <script src="{% static 'js/jquery-2.0.3.min.js' %}"></script>
-    <script src="{% static 'js/bootstrap.min.js' %}"></script>
-    <script src="{% static "js/js_query.js" %}"></script>
+    <title>Large Scale Machine Learning Platform</title>
 </head>
 
-<body data-spy="scroll" data-target=".ep-sidebar">
+<body>
 <header id="overview" class="jumbotron subhead">
     <div class="container">
         <h1>Large Scale Machine Learning Platform</h1>
@@ -21,398 +17,97 @@
     </div>
 </header>
 <div class="container">
-    <div class="row-fluid">
-        <div class="span3 ep-sidebar">
-            <ul data-spy="affix" data-offset-top="150" class="nav nav-pills nav-stacked ep-sidenav">
-                <li class="">
-                    <a href="#project" class="goto_project">Project</a>
-                </li>
-                <li class="">
-                    <a href="#pre_processing" class="goto_preproc">Pre-Processing</a>
-                </li>
-                <li class="">
-                    <a href="#neuralnetwork" class="goto_nnmodel">Neural Network Model</a>
-                </li>
-                <li class="">
-                    <a href="#treenet" class="goto_treemodel">TreeNet Model</a>
-                </li>
-                <li class="">
-                    <a href="#evaluation" class="goto_evaluate">Model Evaluation</a>
-                </li>
-            </ul>
-        </div>
+    <div class="row">
         <div class="span9">
-            <form id="easy_project" method="post" action="/easy_lsml/xml/" enctype="multipart/form-data">
-            {% csrf_token %}
-            <section id="project">
-                <div class="page-header">
-                    <h1>Project Settings</h1>
-                </div>
-                <table class="table table-hover">
-                    <thead>
-                        <tr><p class="well lead"> Please specify following project level infomation</p> </tr>
-                    </thead>
-                    <tbody> <tr>
-                        <td> {{ form.name.label }} </td>
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <td>Project Name</td>
+                        <td>Owner Email</td>
+                        <td>Created Time</td>
+                        <td>Status</td>
+                        <td>Configuration</td>
+                        <td>Output</td>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if projects %}
+                    {% for project in projects %}
+                    <tr>
+                        <td>{{ project.name }}</td>
+                        <td>{{ project.owner }}</td>
+                        <td>{{ project.time }}</td>
+                        <td>{{ project.status }}</td>
                         <td>
-                            {{ form.name.errors }}
-                            {{ form.name }}<br/>
-                            <small>{{ form.name.help_text }}</small>
+                            <a id="toggleModal{{project.id}}" class="btn" role="button">view</a>
                         </td>
-                    </tr>
-                    <tr>
-                        <td> {{ form.owner.label }} </td>
                         <td>
-                            {{ form.owner.errors }}
-                            {{ form.owner }}<br/>
-                            <small>{{ form.owner.help_text }}</small>
+                            <a id="toggleOutput{{project.id}}" class="btn" role="button">view</a>
                         </td>
                     </tr>
-                    <tr>
-                        <td> {{ form.input_data_train.label }} </td>
-                        <td>
-                            {{ form.input_data_train.errors }}
-                            {{ form.input_data_train }}<br/>
-                            <small>{{ form.input_data_train.help_text }}</small>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td> {{ form.input_data_test.label }} </td>
-                        <td>
-                            {{ form.input_data_test.errors }}
-                            {{ form.input_data_test }}<br/>
-                            <small>{{ form.input_data_test.help_text }}</small>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td> {{ form.delimiter.label }} </td>
-                        <td>
-                            {{ form.delimiter.errors }}
-                            {{ form.delimiter }}<br/>
-                            <small>{{ form.delimiter.help_text }}</small>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td> {{ form.target_var.label }} </td>
-                        <td>
-                            {{ form.target_var.errors }}
-                            {{ form.target_var }}<br/>
-                            <small>{{ form.target_var.help_text }}</small>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td> {{ form.weight_var.label }} </td>
-                        <td>
-                            {{ form.weight_var.errors }}
-                            {{ form.weight_var }}<br/>
-                            <small>{{ form.weight_var.help_text }}</small>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td> {{ form.model_variable_list.label }} </td>
-                        <td>
-                            {{ form.model_variable_list.errors }}
-                            {{ form.model_variable_list }}<br/>
-                            <small>{{ form.model_variable_list.help_text }}</small>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td> {{ form.preserve_variable_list.label }} </td>
-                        <td>
-                            {{ form.preserve_variable_list.errors }}
-                            {{ form.preserve_variable_list }}<br/>
-                            <small>{{ form.preserve_variable_list.help_text }}</small>
-                        </td>
-                    </tr>
-                </tbody> </table>
-            </section>
-            <section id="pre_processing">
-                <div class="page-header">
-                    <h1>Settings for Pre-Processing</h1>
-                </div>
-                <table class="table table-hover"> 
-                    <thead>
-                        <tr><p class="well lead"> Please provide configuration for pre-processingin this section. Pre-processing will be done before any modeling stages.</p></tr>
-                    </thead>
-                    <tbody> <tr>
-                        <td colspan="3">
-                            {{ form.has_preproc }} {{ form.has_preproc.label }}<br/>
-                            <small>{{ form.has_preproc.help_text }}</small>
-                        </td>
-                        <td class="span1">
-                            <button class="btn btn-info" type="button" data-toggle="collapse" data-target="#preproc_table">detail</button>
-                        </td>
-                    </tr>
-                </tbody> </table>
-                <div id="preproc_table" class="collapse">
-                <table class="table table-hover">
-                    <tbody> <tr>
-                        <td rowspan="3">
-                            WoE and Z-Scaling
-                        </td>
-                        <td colspan="2">
-                            {{ form.preproc_woe }} {{ form.preproc_woe.label }}<br/>
-                            <small>{{ form.preproc_woe.help_text }}</small>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td colspan="2">
-                            {{ form.preproc_zscl }} {{ form.preproc_zscl.label }}<br/>
-                            <small>{{ form.preproc_zscl.help_text }}</small>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td colspan="2">
-                            {{ form.preproc_woe_zscl }} {{ form.preproc_woe_zscl.label }}<br/>
-                            <small>{{ form.preproc_woe_zscl.help_text }}</small>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td rowspan="4">
-                            Variable Selection
-                        </td>
-                        <td> {{ form.preproc_min_iv.label }} </td>
-                        <td>
-                            {{ form.preproc_min_iv.errors }}
-                            {{ form.preproc_min_iv }}<br/>
-                            <small>{{ form.preproc_min_iv.help_text }}</small>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td> {{ form.preproc_max_missing.label }} </td>
-                        <td>
-                            {{ form.preproc_max_missing.errors }}
-                            {{ form.preproc_max_missing }}<br/>
-                            <small>{{ form.preproc_max_missing.help_text }}</small>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td colspan="2">
-                            {{ form.preproc_clustering }} {{ form.preproc_clustering.label }}<br/>
-                            <small>{{ form.preproc_clustering.help_text }}</small>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td> {{ form.preproc_clusters.label }} </td>
-                        <td>
-                            {{ form.preproc_clusters.errors }}
-                            {{ form.preproc_clusters }}<br/>
-                            <small>{{ form.preproc_clusters.help_text }}</small>
-                        </td>
-                    </tr>
+                    {% endfor %}
+                    {% else %}
+                    <tr><td colspan="6" class="text-center"> Currently not available </td></tr>
+                    {% endif %}
+                </tbody>
+            </table>
+            <div>
+            {% if projects %}
+            {% for project in projects %}
+                <div id="modal{{project.id}}" class="modal hide fade" tabindex="-1" role="dialog" aria-labelledby="modalLabel{{project.id}}" aria-hidden="true">
+                    <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                        <h3 id="modalLabel{{project.id}}">Configuration for {{project.name}} by {{project.owner}}</h3>
+                        <small>You can trigger the project again by copy this xml file to TASKPOOL on phxaidiedge3</small>
                     </div>
-                </tbody> </table>
-            </section>
-            <section id="neuralnetwork">
-                <div class="page-header">
-                    <h1>Settings to Build a Neural Network Model</h1>
+                    <div class="modal-body">
+                        <p>{{ project.config }}</p>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-primary" data-dismiss="modal" aria-hidden="true">Close</button>
+                    </div>
                 </div>
-                <table class="table table-hover"> 
-                    <thead>
-                        <tr><p class="well lead"> Please specify following configuration for Neural Network modeling</p> </tr>
-                    </thead>
-                    <tbody> <tr>
-                        <td colspan="3">
-                            {{ form.has_nn }} {{ form.has_nn.label }}<br/>
-                            <small>{{ form.has_nn.help_text }}</small>
-                        </td>
-                        <td class="span1">
-                            <button class="btn btn-info" type="button" data-toggle="collapse" data-target="#nn_table">detail</button>
-                        </td>
-                    </tr>
-                </tbody> </table>
-                <div id="nn_table" class="collapse">
-                <table class="table table-hover">
-                    <tbody> <tr>
-                        <td rowspan="2">
-                            Model Configuration
-                        </td>
-                        <td> {{ form.nn_hidden_node.label }} </td>
-                        <td>
-                            {{ form.nn_hidden_node.errors }}
-                            {{ form.nn_hidden_node }}<br/>
-                            <small>{{ form.nn_hidden_node.help_text }}</small>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td> {{ form.nn_validation_variable.label }} </td>
-                        <td>
-                            {{ form.nn_validation_variable.errors }}
-                            {{ form.nn_validation_variable }}<br/>
-                            <small>{{ form.nn_validation_variable.help_text }}</small>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td rowspan="3">
-                            Model Output
-                        </td>
-                        <td colspan="2">
-                            {{ form.nn_output_spec }} {{ form.nn_output_spec.label }}<br/>
-                            <small>{{ form.nn_output_spec.help_text }}</small>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td colspan="2">
-                            {{ form.nn_output_scored }} {{ form.nn_output_scored.label }}<br/>
-                            <small>{{ form.nn_output_scored.help_text }}</small>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td colspan="2">
-                            {{ form.nn_sensitivity }} {{ form.nn_sensitivity.label }}<br/>
-                            <small>{{ form.nn_sensitivity.help_text }}</small>
-                        </td>
-                    </tr>
-                </tbody> </table>
-            </section>
-            <section id="treenet">
-                <div class="page-header">
-                    <h1>Settings to Build a TreeNet Model</h1>
+                <div id="output{{project.id}}" class="modal hide fade" tabindex="-1" role="dialog" aria-labelledby="outputLabel{{project.id}}" aria-hidden="true">
+                    <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                        <h3 id="outputLabel{{project.id}}">Output for {{project.name}} by {{project.owner}}</h3>
+                    </div>
+                    <div class="modal-body">
+                        <p>
+                        {% autoescape off %}
+                        {{ project.output }}
+                        {% endautoescape %}
+                        </p>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-primary" data-dismiss="modal" aria-hidden="true">Close</button>
+                    </div>
                 </div>
-                <table class="table table-hover"> 
-                    <thead>
-                        <tr><p class="well lead"> Please specify following configuration for TreeNet modeling </p></tr>
-                    </thead>
-                    <tbody> <tr>
-                        <td colspan="3">
-                            {{ form.has_tree }} {{ form.has_tree.label }}<br/>
-                            <small>{{ form.has_tree.help_text }}</small>
-                        </td>
-                        <td class="span1">
-                            <button class="btn btn-info" type="button" data-toggle="collapse" data-target="#tree_table">detail</button>
-                        </td>
-                    </tr>
-                </tbody> </table>
-                <div id="tree_table" class="collapse">
-                <table class="table table-hover">
-                    <tbody> <tr>
-                        <td rowspan="5">
-                            Model Configuration
-                        </td>
-                        <td> {{ form.tree_number.label }} </td>
-                        <td>
-                            {{ form.tree_number.errors }}
-                            {{ form.tree_number }}<br/>
-                            <small>{{ form.tree_number.help_text }}</small>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td> {{ form.tree_depth.label }} </td>
-                        <td>
-                            {{ form.tree_depth.errors }}
-                            {{ form.tree_depth }}<br/>
-                            <small>{{ form.tree_depth.help_text }}</small>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td> {{ form.tree_leaf_size.label }} </td>
-                        <td>
-                            {{ form.tree_leaf_size.errors }}
-                            {{ form.tree_leaf_size }}<br/>
-                            <small>{{ form.tree_leaf_size.help_text }}</small>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td> {{ form.tree_sample_rate.label }} </td>
-                        <td>
-                            {{ form.tree_sample_rate.errors }}
-                            {{ form.tree_sample_rate }}<br/>
-                            <small>{{ form.tree_sample_rate.help_text }}</small>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td> {{ form.tree_learning_rate.label }} </td>
-                        <td>
-                            {{ form.tree_learning_rate.errors }}
-                            {{ form.tree_learning_rate }}<br/>
-                            <small>{{ form.tree_learning_rate.help_text }}</small>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td rowspan="3">
-                            Model Output
-                        </td>
-                        <td colspan="2">
-                            {{ form.tree_output_spec }} {{ form.tree_output_spec.label }}<br/>
-                            <small>{{ form.tree_output_spec.help_text }}</small>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td colspan="2">
-                            {{ form.tree_output_scored }} {{ form.tree_output_scored.label }}<br/>
-                            <small>{{ form.tree_output_scored.help_text }}</small>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td colspan="2">
-                            {{ form.tree_output_importance }} {{ form.tree_output_importance.label }}<br/>
-                            <small>{{ form.tree_output_importance.help_text }}</small>
-                        </td>
-                    </tr>
-                </tbody> </table>
-            </section>
-            <section id="evaluation">
-                <div class="page-header">
-                    <h1>Settings for Model Evaluation</h1>
-                </div>
-                <table class="table table-hover"> 
-                    <thead>
-                        <tr><p class="well lead"> Please specify following configuration for model performance evaluation </p></tr>
-                    </thead>
-                    <tbody> <tr>
-                        <td colspan="2">
-                            {{ form.has_evaluation }} {{ form.has_evaluation.label }}<br/>
-                            <small>{{ form.has_evaluation.help_text }}</small>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td> {{ form.eva_baseline.label }} </td>
-                        <td>
-                            {{ form.eva_baseline.errors }}
-                            {{ form.eva_baseline }}<br/>
-                            <small>{{ form.eva_baseline.help_text }}</small>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td> {{ form.eva_category.label }} </td>
-                        <td>
-                            {{ form.eva_category.errors }}
-                            {{ form.eva_category }}<br/>
-                            <small>{{ form.eva_category.help_text }}</small>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td> {{ form.eva_variable.label }} </td>
-                        <td>
-                            {{ form.eva_variable.errors }}
-                            {{ form.eva_variable }}<br/>
-                            <small>{{ form.eva_variable.help_text }}</small>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td> {{ form.eva_unit_weight.label }} </td>
-                        <td>
-                            {{ form.eva_unit_weight.errors }}
-                            {{ form.eva_unit_weight }}<br/>
-                            <small>{{ form.eva_unit_weight.help_text }}</small>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td> {{ form.eva_dollar_weight.label }} </td>
-                        <td>
-                            {{ form.eva_dollar_weight.errors }}
-                            {{ form.eva_dollar_weight }}<br/>
-                            <small>{{ form.eva_dollar_weight.help_text }}</small>
-                        </td>
-                    </tr>
-                </tbody> </table>
-            </section>
-            <div class="span3 offset3">
-                <button class="btn btn-large btn-block btn-primary" type="submit">Submit</button>
+            {% endfor %}
+            {% endif %}
             </div>
-            </form>
+        </div>
+        <div class="span3">
+            <a href="/easy_lsml/new/" class="btn btn-large btn-block btn-primary" role="button">Build Your Model</a>
         </div>
     </div>
 </div>
+<script src="{% static 'js/jquery-2.0.3.min.js' %}"></script>
+<script src="{% static 'js/bootstrap.min.js' %}"></script>
+<script src="{% static "js/js_query.js" %}"></script>
+<script>
+$(document).ready(function(){
+{% if projects %}
+{% for project in projects %}
+        $('a#toggleModal{{project.id}}').click(function(){
+            $('#modal{{project.id}}').modal()
+        });
+        $('a#toggleOutput{{project.id}}').click(function(){
+            $('#output{{project.id}}').modal()
+        });
+{% endfor %}
+{% endif %}
+});
+</script>
 </body>
 </html>
