@@ -1,8 +1,10 @@
 from django.shortcuts import render, render_to_response
 from django.template import RequestContext
+from django.db.models import Q
 from easy_lsml.models import EasyProject, EasyProjectLog
-from easy_lsml.forms import EasyProjectForm
+from easy_lsml.forms import EasyProjectForm, EasyProjectLogForm
 import xmlwitch
+import os
 
 # Create your views here.
 def new_project(request) :
@@ -55,6 +57,18 @@ def generate_xml(request) :
                         with project_xml.stage() :
                             project_xml.name("Modeling")
                             with project_xml.tasks():
+                                if project.has_sas :
+                                    with project_xml.task() :
+                                        project_xml.name("Build logistic regression model")
+                                        project_xml.job_type("sas")
+                                        project_xml.script("sas script") # TODO
+                                        project_xml.package("sas package path")
+                                        project_xml.skip_task('')
+                                        project_xml.task_input('')
+                                        with project_xml.task_output() :
+                                            project_xml.file("sas_spec.tar.gz", type="output" if project.sas_output_spec else "data")
+                                            project_xml.file("sas_scored_train.csv", id="sas_score_train", type="output" if project.sas_output_scored else "data")
+                                            project_xml.file("sas_scored_test.csv", id="sas_score_test", type="output" if project.sas_output_scored else "data")
                                 if project.has_nn :
                                     with project_xml.task() :
                                         project_xml.name("Build neural network model")
@@ -83,6 +97,24 @@ def generate_xml(request) :
                                             project_xml.file("tree_scored_test.csv", id="tree_score_test", type="output" if project.tree_output_scored else "data")
                                             if project.tree_output_importance :
                                                 project_xml.file("tree_importance.tar.gz", type="output")
+                                if project.has_custom :
+                                    with project_xml.task() :
+                                        project_xml.name("Build custom model")
+                                        project_xml.job_type(project.custom_type)
+                                        project_xml.script(project.custom_script) # TODO
+                                        project_xml.package(project.custom_package)
+                                        project_xml.skip_task('')
+                                        with project_xml.task_input() :
+                                            custom_inputs = project.custom_input.split(';')
+                                            for custom_ind in xrange(len(custom_inputs)):
+                                                project_xml.file(custom_inputs[custom_ind], id="cus_in{}".format(custom_ind))
+                                        with project_xml.task_output() :
+                                            custom_outputs = project.custom_output.split(';')
+                                            for custom_ind in xrange(len(custom_outputs)):
+                                                if custom_outputs[custom_ind].rfind('.') < custom_outputs[custom_ind].rfind(os.sep) :
+                                                    project_xml.folder(custom_outputs[custom_ind], type="output", id="cus_out{}".format(custom_ind))
+                                                else :
+                                                    project_xml.file(custom_outputs[custom_ind], type="output", id="cus_out{}".format(custom_ind))
                             if project.has_evaluation:
                                 project_xml.stage_script("evaluation script") #TODO
                                 project_xml.stage_package("evaluation package")
@@ -95,14 +127,22 @@ def generate_xml(request) :
             log.owner = project.owner
             log.config = str(project_xml)
             log.status = 0
-            log.output = ""
+            log.output = '<p class="lead">Please wait for the notification emails and then come back for output details</p>'
             log.save()
-            project_list = EasyProjectLog.objects.order_by('-time')
+            project_list = EasyProjectLog.objects.order_by('-time')[:20]
             context_dict = {'projects': project_list}
             ind = 0
             for project in project_list :
                 project.id = ind
                 ind += 1
+                if project.status == 0 :
+                    project.run_status = 'running'
+                elif project.status == 1:
+                    project.run_status = 'success'
+                elif project.status == 2:
+                    project.run_status = 'failed'
+                else :
+                    project.run_status = 'unknown'
             return render_to_response('easy_lsml/index.html', context_dict, context)
         else :
             print form.errors
@@ -112,10 +152,39 @@ def generate_xml(request) :
 
 def index(request) :
     context = RequestContext(request)
-    project_list = EasyProjectLog.objects.order_by('-time')
+    if request.method == 'POST' :
+        keywords = request.POST['keyword'].strip().split(" ")
+        q = Q()
+        for keyword in keywords :
+            q = q | Q(name__icontains=keyword) | Q(owner__icontains=keyword)
+        project_list = EasyProjectLog.objects.filter(q).order_by('-time')[:20]
+    else:
+        project_list = EasyProjectLog.objects.order_by('-time')[:20]
     context_dict = {'projects': project_list}
     ind = 0
     for project in project_list :
         project.id = ind
         ind += 1
+        if project.status == 0 :
+            project.run_status = 'running'
+        elif project.status == 1:
+            project.run_status = 'success'
+        elif project.status == 2:
+            project.run_status = 'failed'
+        else :
+            project.run_status = 'unknown'
     return render_to_response('easy_lsml/index.html', context_dict, context)
+
+def cheat(request) :
+    context = RequestContext(request)
+    if request.method == 'POST' :
+        form = EasyProjectLogForm(request.POST)
+        if form.is_valid() :
+            form.save(commit=True)
+        else :
+            print form.errors
+    form = EasyProjectLogForm()
+    context_dict = {'form' : form}
+    return render_to_response('easy_lsml/cheat.html', context_dict, context)
+
+

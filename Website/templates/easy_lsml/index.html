@@ -19,42 +19,49 @@
 <div class="container">
     <div class="row">
         <div class="span9">
-            <table class="table table-hover">
+            <p class="well lead"> Here lists the most recent 20 modeling projects. <br/>For earlier projects, please use the search tool on the right. </p>
+            <table class="table table-hover table-bordered">
                 <thead>
                     <tr>
-                        <td>Project Name</td>
-                        <td>Owner Email</td>
-                        <td>Created Time</td>
-                        <td>Status</td>
-                        <td>Configuration</td>
-                        <td>Output</td>
+                        <th>Project Name</th>
+                        <th>Owner Email</th>
+                        <th>Created Time</th>
+                        <th>Status</th>
+                        <th>Configuration</th>
+                        <th>Output</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% if projects %}
                     {% for project in projects %}
-                    <tr>
+                    <tr {% if project.status == 0 %} class="info"
+                        {% elif project.status == 1 %} class="success"
+                        {% elif project.status == 2 %} class="error"
+                        {% endif %}>
                         <td>{{ project.name }}</td>
                         <td>{{ project.owner }}</td>
                         <td>{{ project.time }}</td>
-                        <td>{{ project.status }}</td>
+                        <td>{{ project.run_status }}</td>
                         <td>
-                            <a id="toggleModal{{project.id}}" class="btn" role="button">view</a>
+                            <a id="toggleModal{{project.id}}" class="btn btn-small" role="button">view</a>
                         </td>
                         <td>
-                            <a id="toggleOutput{{project.id}}" class="btn" role="button">view</a>
+                            <a id="toggleOutput{{project.id}}" class="btn {% if project.status == 0 %} btn-info
+                                                                        {% elif project.status == 1 %} btn-success
+                                                                        {% elif project.status == 2 %} btn-danger
+                                                                        {% endif %} btn-small" role="button">view</a>
                         </td>
                     </tr>
                     {% endfor %}
                     {% else %}
-                    <tr><td colspan="6" class="text-center"> Currently not available </td></tr>
+                    <tr><td colspan="6" class="text-center lead"> No projects found </td></tr>
                     {% endif %}
                 </tbody>
             </table>
             <div>
             {% if projects %}
             {% for project in projects %}
-                <div id="modal{{project.id}}" class="modal hide fade" tabindex="-1" role="dialog" aria-labelledby="modalLabel{{project.id}}" aria-hidden="true">
+                <div id="modal{{project.id}}" class="modal hide fade" tabindex="-1" role="dialog" aria-labelledby="modalLabel{{project.id}}" aria-hidden="true"> <!--style="width:770px;margin-left:-385px;">-->
                     <div class="modal-header">
                         <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
                         <h3 id="modalLabel{{project.id}}">Configuration for {{project.name}} by {{project.owner}}</h3>
@@ -67,7 +74,7 @@
                         <button class="btn btn-primary" data-dismiss="modal" aria-hidden="true">Close</button>
                     </div>
                 </div>
-                <div id="output{{project.id}}" class="modal hide fade" tabindex="-1" role="dialog" aria-labelledby="outputLabel{{project.id}}" aria-hidden="true">
+                <div id="output{{project.id}}" class="modal hide fade" tabindex="-1" role="dialog" aria-labelledby="outputLabel{{project.id}}" aria-hidden="true"> <!--style="width:770px;margin-left:-385px;">-->
                     <div class="modal-header">
                         <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
                         <h3 id="outputLabel{{project.id}}">Output for {{project.name}} by {{project.owner}}</h3>
@@ -88,7 +95,75 @@
             </div>
         </div>
         <div class="span3">
+            <p></p>
+            <form class="form-search" id="filter_project" method="post" action="/easy_lsml/" enctype="multipart/form-data">
+                {% csrf_token %}
+                 <div class="input-append">
+                    <input type="text" name="keyword" class="input search-query" placeholder="project name or owner id">
+                    <button type="submit" class="btn"><i class="icon-search"></i></button>
+                </div>
+            </form>
+            <p/>
             <a href="/easy_lsml/new/" class="btn btn-large btn-block btn-primary" role="button">Build Your Model</a>
+            <p/>
+            <a href="/easy_lsml/" class="btn btn-large btn-block btn-warning" role="button">Refresh Status</a>
+
+            <!-- Modal 
+            <a href="#myModal" role="button" class="btn" data-toggle="modal">Launch demo modal</a>
+            <div id="myModal" class="modal hide fade" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true" style="width:770px;margin-left:-385px;">
+            <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+            <h3 id="myModalLabel">Modal header</h3>
+            </div>
+            <div class="modal-body">
+                <div>
+                    <h4>Output from SAS Logistic Regression module</h4>
+                    <table class="table table-condensed table-striped">
+                        <tr>
+                            <td>Specs</td>
+                            <td><a href="/static/file/sas/specs.tar.gz">zip file</a></td>
+                        </tr>
+                        <tr>
+                            <td>Gain Chart</td>
+                            <td><a href="/static/file/sas/gainchart.xls">gainchart.xls</a></td>
+                        </tr>
+                    </table>
+                    <hr/>
+                    <h4>Output from ModelBuilder Neural Network module</h4>
+                    <table class="table table-condensed table-striped">
+                        <tr>
+                            <td>Specs</td>
+                            <td><a href="/static/file/nn/specs.tar.gz">zip file</a></td>
+                        </tr>
+                        <tr>
+                            <td>Gain Chart</td>
+                            <td><a href="/static/file/nn/gainchart.xls">gainchart.xls</a></td>
+                        </tr>
+                        <tr>
+                            <td>Sensitivity</td>
+                            <td><a href="/static/file/nn/sensitivity.txt">variables.txt</a></td>
+                        </tr>
+                    </table>
+                    <hr/>
+                    <h4>Output from R TreeNet module</h4>
+                    <table class="table table-condensed table-striped">
+                        <tr>
+                            <td>Specs</td>
+                            <td><a href="/static/file/tree/specs.tar.gz">zip file</a></td>
+                        </tr>
+                        <tr>
+                            <td>Importance</td>
+                            <td><a href="/static/file/tree/importance.txt">variables.txt</a></td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+            <button class="btn" data-dismiss="modal" aria-hidden="true">Close</button>
+            <button class="btn btn-primary">Save changes</button>
+            </div>
+            </div>
+             Modal -->
         </div>
     </div>
 </div>
