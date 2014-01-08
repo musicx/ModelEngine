@@ -1,14 +1,6 @@
 from django.db import models
 
 # Create your models here.
-class EasyProjectLog(models.Model) :
-    name = models.CharField(max_length=128)
-    owner = models.CharField(max_length=128)
-    config = models.CharField(max_length=65536)
-    time = models.DateTimeField(auto_now_add=True)
-    status = models.IntegerField(default=0)
-    output = models.CharField(max_length=65536)
-
 class EasyProject(models.Model) :
     name = models.CharField(max_length=128)
     owner = models.CharField(max_length=128)
@@ -69,3 +61,13 @@ class EasyProject(models.Model) :
     eva_variable = models.CharField(max_length=4096)
     eva_unit_weight = models.CharField(max_length=128)
     eva_dollar_weight = models.CharField(max_length=128)
+
+
+class EasyProjectLog(models.Model) :
+    name = models.CharField(max_length=128)
+    owner = models.CharField(max_length=128)
+    config = models.ForeignKey(EasyProject)
+    time = models.DateTimeField(auto_now_add=True)
+    status = models.IntegerField(default=0)
+    output = models.CharField(max_length=65536)
+

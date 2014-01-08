@@ -5,6 +5,7 @@ urlpatterns = patterns('',
         url(r'^$', views.index, name='index'),
         url(r'^xml/$', views.generate_xml, name='generate_xml'),
         url(r'^new/$', views.new_project, name='new_project'),
+        url(r'^command/$', views.command, name='command'),
         url(r'^cheat/$', views.cheat, name='cheat')
     )
 

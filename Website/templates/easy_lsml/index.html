@@ -18,154 +18,115 @@
 </header>
 <div class="container">
     <div class="row">
-        <div class="span9">
-            <p class="well lead"> Here lists the most recent 20 modeling projects. <br/>For earlier projects, please use the search tool on the right. </p>
-            <table class="table table-hover table-bordered">
-                <thead>
-                    <tr>
-                        <th>Project Name</th>
-                        <th>Owner Email</th>
-                        <th>Created Time</th>
-                        <th>Status</th>
-                        <th>Configuration</th>
-                        <th>Output</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% if projects %}
-                    {% for project in projects %}
-                    <tr {% if project.status == 0 %} class="info"
-                        {% elif project.status == 1 %} class="success"
-                        {% elif project.status == 2 %} class="error"
-                        {% endif %}>
-                        <td>{{ project.name }}</td>
-                        <td>{{ project.owner }}</td>
-                        <td>{{ project.time }}</td>
-                        <td>{{ project.run_status }}</td>
-                        <td>
-                            <a id="toggleModal{{project.id}}" class="btn btn-small" role="button">view</a>
-                        </td>
-                        <td>
-                            <a id="toggleOutput{{project.id}}" class="btn {% if project.status == 0 %} btn-info
-                                                                        {% elif project.status == 1 %} btn-success
-                                                                        {% elif project.status == 2 %} btn-danger
-                                                                        {% endif %} btn-small" role="button">view</a>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                    {% else %}
-                    <tr><td colspan="6" class="text-center lead"> No projects found </td></tr>
-                    {% endif %}
-                </tbody>
-            </table>
-            <div>
-            {% if projects %}
-            {% for project in projects %}
-                <div id="modal{{project.id}}" class="modal hide fade" tabindex="-1" role="dialog" aria-labelledby="modalLabel{{project.id}}" aria-hidden="true"> <!--style="width:770px;margin-left:-385px;">-->
-                    <div class="modal-header">
-                        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
-                        <h3 id="modalLabel{{project.id}}">Configuration for {{project.name}} by {{project.owner}}</h3>
-                        <small>You can trigger the project again by copy this xml file to TASKPOOL on phxaidiedge3</small>
-                    </div>
-                    <div class="modal-body">
-                        <p>{{ project.config }}</p>
-                    </div>
-                    <div class="modal-footer">
-                        <button class="btn btn-primary" data-dismiss="modal" aria-hidden="true">Close</button>
-                    </div>
-                </div>
-                <div id="output{{project.id}}" class="modal hide fade" tabindex="-1" role="dialog" aria-labelledby="outputLabel{{project.id}}" aria-hidden="true"> <!--style="width:770px;margin-left:-385px;">-->
-                    <div class="modal-header">
-                        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
-                        <h3 id="outputLabel{{project.id}}">Output for {{project.name}} by {{project.owner}}</h3>
-                    </div>
-                    <div class="modal-body">
-                        <p>
-                        {% autoescape off %}
-                        {{ project.output }}
-                        {% endautoescape %}
-                        </p>
-                    </div>
-                    <div class="modal-footer">
-                        <button class="btn btn-primary" data-dismiss="modal" aria-hidden="true">Close</button>
-                    </div>
-                </div>
-            {% endfor %}
-            {% endif %}
+        <div class="span3">
+            <div style="margin:20px 0;">
+                <a href="/easy_lsml/new/" class="btn btn-primary" role="button">Build Your Model</a>
+                <a href="/easy_lsml/" class="btn btn-warning" role="button">Refresh Status</a>
+            </div>
+        </div>
+        <div class="span6">
+            <div class="pagination pagination-centered">
+                <ul>
+                <li><a href="#">&laquo;</a></li>
+                <li><a href="#">1</a></li>
+                <li><a href="#">2</a></li>
+                <li><a href="#">3</a></li>
+                <li><a href="#">4</a></li>
+                <li><a href="#">5</a></li>
+                <li><a href="#">&raquo;</a></li>
+                </ul>
             </div>
         </div>
         <div class="span3">
-            <p></p>
-            <form class="form-search" id="filter_project" method="post" action="/easy_lsml/" enctype="multipart/form-data">
+            <form class="form-search" id="filter_project" method="post" action="/easy_lsml/" enctype="multipart/form-data" style="margin:20px 0;">
                 {% csrf_token %}
                  <div class="input-append">
-                    <input type="text" name="keyword" class="input search-query" placeholder="project name or owner id">
+                    <input type="text" name="keyword" class="input search-query" placeholder="Search for project name / owner">
                     <button type="submit" class="btn"><i class="icon-search"></i></button>
                 </div>
             </form>
-            <p/>
-            <a href="/easy_lsml/new/" class="btn btn-large btn-block btn-primary" role="button">Build Your Model</a>
-            <p/>
-            <a href="/easy_lsml/" class="btn btn-large btn-block btn-warning" role="button">Refresh Status</a>
-
-            <!-- Modal 
-            <a href="#myModal" role="button" class="btn" data-toggle="modal">Launch demo modal</a>
-            <div id="myModal" class="modal hide fade" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true" style="width:770px;margin-left:-385px;">
-            <div class="modal-header">
-            <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
-            <h3 id="myModalLabel">Modal header</h3>
-            </div>
-            <div class="modal-body">
-                <div>
-                    <h4>Output from SAS Logistic Regression module</h4>
-                    <table class="table table-condensed table-striped">
-                        <tr>
-                            <td>Specs</td>
-                            <td><a href="/static/file/sas/specs.tar.gz">zip file</a></td>
-                        </tr>
-                        <tr>
-                            <td>Gain Chart</td>
-                            <td><a href="/static/file/sas/gainchart.xls">gainchart.xls</a></td>
-                        </tr>
-                    </table>
-                    <hr/>
-                    <h4>Output from ModelBuilder Neural Network module</h4>
-                    <table class="table table-condensed table-striped">
-                        <tr>
-                            <td>Specs</td>
-                            <td><a href="/static/file/nn/specs.tar.gz">zip file</a></td>
-                        </tr>
-                        <tr>
-                            <td>Gain Chart</td>
-                            <td><a href="/static/file/nn/gainchart.xls">gainchart.xls</a></td>
-                        </tr>
-                        <tr>
-                            <td>Sensitivity</td>
-                            <td><a href="/static/file/nn/sensitivity.txt">variables.txt</a></td>
-                        </tr>
-                    </table>
-                    <hr/>
-                    <h4>Output from R TreeNet module</h4>
-                    <table class="table table-condensed table-striped">
-                        <tr>
-                            <td>Specs</td>
-                            <td><a href="/static/file/tree/specs.tar.gz">zip file</a></td>
-                        </tr>
-                        <tr>
-                            <td>Importance</td>
-                            <td><a href="/static/file/tree/importance.txt">variables.txt</a></td>
-                        </tr>
-                    </table>
-                </div>
-            </div>
-            <div class="modal-footer">
-            <button class="btn" data-dismiss="modal" aria-hidden="true">Close</button>
-            <button class="btn btn-primary">Save changes</button>
-            </div>
-            </div>
-             Modal -->
         </div>
     </div>
+    <table class="table table-hover table-bordered">
+        <thead>
+            <tr>
+                <th>Project Name</th>
+                <th>Owner Email</th>
+                <th>Created Time</th>
+                <th>Status</th>
+                <th>Configuration</th>
+                <th>Output</th>
+                <th>Operation</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% if projects %}
+            {% for project in projects %}
+            <tr {% if project.status == 0 %} class="info"
+                {% elif project.status == 1 %} class="success"
+                {% elif project.status == 2 %} class="error"
+                {% elif project.status == 3 %} class="warning"
+                {% endif %}>
+                <td>{{ project.name }}</td>
+                <td>{{ project.owner }}</td>
+                <td>{{ project.time }}</td>
+                <td>{{ project.run_status }}</td>
+                <td>
+                    <a href="/easy_lsml/new/?pid={{project.pid}}" class="btn btn-small" role="button">change</a>
+                </td>
+                <td>
+                    <a id="toggleOutput{{project.ind}}" class="btn {% if project.status == 0 %} btn-info
+                                                                {% elif project.status == 1 %} btn-success
+                                                                {% elif project.status == 2 %} btn-danger
+                                                                {% elif project.status == 3 %} btn-warning
+                                                                {% endif %} btn-small" role="button">view</a>
+                </td>
+                <td>
+                    <a id="toggleCancel{{project.ind}}" class="btn btn-small btn-danger {% if project.status != 0 %} disabled {% endif %}" role="button">cancel</a>
+                </td>
+            </tr>
+            {% endfor %}
+            {% else %}
+            <tr><td colspan="6" class="text-center lead"> No projects found </td></tr>
+            {% endif %}
+        </tbody>
+    </table>
+    <div>
+    {% if projects %}
+    {% for project in projects %}
+        <div id="output{{project.ind}}" class="modal hide fade" tabindex="-1" role="dialog" aria-labelledby="outputLabel{{project.ind}}" aria-hidden="true"> <!--style="width:770px;margin-left:-385px;">-->
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                <h3 id="outputLabel{{project.ind}}">Output for {{project.name}} by {{project.owner}}</h3>
+            </div>
+            <div class="modal-body">
+                <p>
+                {% autoescape off %}
+                {{ project.output }}
+                {% endautoescape %}
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" data-dismiss="modal" aria-hidden="true">Close</button>
+            </div>
+        </div>
+        <div id="cancel{{project.ind}}" class="modal hide fade" tabindex="-1" role="dialog" aria-labelledby="cancelLabel{{project.ind}}" aria-hidden="true" style="width:440px;margin-left:-220px;">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                <h3 id="cancelLabel{{project.ind}}">Cancel Confirmation</h3>
+            </div>
+            <div class="modal-body">
+                <p class="lead"> Do you want to cancel project "{{project.name}}" by {{project.owner}}? </p>
+            </div>
+            <div class="modal-footer">
+                <a href="/easy_lsml/command/?pid={{project.pid}}&action=cancel" class="btn btn-danger">Yes, Cancel the project</a>
+                <button class="btn btn-success" data-dismiss="modal" aria-hidden="true">No</button>
+            </div>
+        </div>
+    {% endfor %}
+    {% endif %}
+    </div>
+</div>
 </div>
 <script src="{% static 'js/jquery-2.0.3.min.js' %}"></script>
 <script src="{% static 'js/bootstrap.min.js' %}"></script>
@@ -174,11 +135,11 @@
 $(document).ready(function(){
 {% if projects %}
 {% for project in projects %}
-        $('a#toggleModal{{project.id}}').click(function(){
-            $('#modal{{project.id}}').modal()
+        $('a#toggleCancel{{project.ind}}').click(function(){
+            $('#cancel{{project.ind}}').modal()
         });
-        $('a#toggleOutput{{project.id}}').click(function(){
-            $('#output{{project.id}}').modal()
+        $('a#toggleOutput{{project.ind}}').click(function(){
+            $('#output{{project.ind}}').modal()
         });
 {% endfor %}
 {% endif %}

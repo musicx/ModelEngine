@@ -1,0 +1,40 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+<head>
+    <link href="{% static 'css/bootstrap-fluid-adj.css' %}" rel="stylesheet">
+    <link href="{% static 'css/bootstrap.min.css' %}" rel="stylesheet" media="screen">
+    <link href="{% static 'css/bootstrap-responsive.css' %}" rel="stylesheet">
+
+    <title>Large Scale Machine Learning Platform Cheating Page</title>
+</head>
+
+<body>
+<header id="overview" class="jumbotron subhead">
+    <div class="container">
+        <h1>Large Scale Machine Learning Platform</h1>
+        <p class="lead">A simplified configuration interface</p>
+    </div>
+</header>
+<div class="container">
+    <div class="span6 offset3">
+        <form id="cheat_form" method="post" action="/easy_lsml/cheat/">
+
+            {% csrf_token %}
+            {% for hidden in form.hidden_fields %}
+                {{ hidden }}
+            {% endfor %}
+
+            {% for field in form.visible_fields %}
+                {{ field.label }}
+                {{ field }}<br/>
+                {{ field.help_text}}<br/>
+            {% endfor %}
+
+            <input type="submit" name="submit" value="Add Project" />
+        </form>
+
+    </div>
+</div>
+</body>
+</html>

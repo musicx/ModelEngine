@@ -22,7 +22,7 @@ class EasyProjectForm(forms.ModelForm) :
             widget=forms.TextInput(attrs={'class': 'input-mini'}))
     target_var = forms.CharField(max_length=128, initial='is_bad', label="Target Variable",
             help_text="Please specify the target variable name")
-    weight_var = forms.CharField(max_length=128, initial='unit_weight', label="Weight Variable",
+    weight_var = forms.CharField(max_length=128, initial='unit_weight', label="Weight Variable", required=False,
             help_text="Please specify the training weight variable name")
     model_variable_list = forms.CharField(max_length=4096, label="Model Variables List",
             help_text="Please provide the path to the list file of modeling variables",
@@ -139,20 +139,3 @@ class EasyProjectForm(forms.ModelForm) :
 
     class Meta :
         model = EasyProject
-
-
-class EasyProjectLogForm(forms.ModelForm) :
-    default_config = """<project> <name>test_project</name> <email>yijiliu@ebay.com</email> <project_input> <file id="train">path_to_train_data_set</file> <file id="test">path_to_test_data_set</file> <file id="model_var">model_variable_list</file> <file id="const_var">preserve_variable_list</file> </project_input> <clean_after_success></clean_after_success> <stages> <stage> <name>Pre-Processing</name> <tasks> <task> <name>woe generation and simple variable selection</name> <job_type>python</job_type> <script>preprocessing script</script> <package>preprocessing package path</package> <skip_task></skip_task> <task_input></task_input> <task_output> <file id="model_var_pro">model_vars_woed.txt</file> <file id="train_trans">transformed_train.csv</file> <file id="test_trans">transformed_test.csv</file> </task_output> </task> </tasks> </stage> <stage> <name>Modeling</name> <tasks> <task> <name>Build logistic regression model</name> <job_type>sas</job_type> <script>sas script</script> <package>sas package path</package> <skip_task></skip_task> <task_input></task_input> <task_output> <file type="output">sas_spec.tar.gz</file> <file type="data" id="sas_score_train">sas_scored_train.csv</file> <file type="data" id="sas_score_test">sas_scored_test.csv</file> </task_output> </task> <task> <name>Build neural network model</name> <job_type>mb</job_type> <script>Modelbuilder script</script> <package>modelbuilder script path</package> <skip_task></skip_task> <task_input></task_input> <task_output> <file type="output">nn_spec.tar.gz</file> <file type="output" id="nn_score_train">nn_scored_train.csv</file> <file type="output" id="nn_score_test">nn_scored_test.csv</file> </task_output> </task> <task> <name>Build TreeNet model</name> <job_type>r</job_type> <script>TreeNet script</script> <package>TreeNet script path</package> <skip_task></skip_task> <task_input></task_input> <task_output> <file type="output">tree_spec.tar.gz</file> <file type="output" id="tree_score_train">tree_scored_train.csv</file> <file type="output" id="tree_score_test">tree_scored_test.csv</file> </task_output> </task> </tasks> <stage_script>evaluation script</stage_script> <stage_package>evaluation package</stage_package> <skip_stage></skip_stage> <stage_input></stage_input> <stage_output> <file type="output">gainchart.csv</file> </stage_output> </stage> </stages> </project> """
-    default_output = """<h4>Output from SAS Logistic Regression module</h4> <table class="table table-condensed table-striped"> <tr> <td>Specs</td> <td><a href="/static/file/sas/specs.tar.gz">zip file</a></td> </tr> <tr> <td>Gain Chart</td> <td><a href="/static/file/sas/gainchart.xls">gainchart.xls</a></td> </tr> </table> <hr/> <h4>Output from ModelBuilder Neural Network module</h4> <table class="table table-condensed table-striped"> <tr> <td>Specs</td> <td><a href="/static/file/nn/specs.tar.gz">zip file</a></td> </tr> <tr> <td>Gain Chart</td> <td><a href="/static/file/nn/gainchart.xls">gainchart.xls</a></td> </tr> <tr> <td>Sensitivity</td> <td><a href="/static/file/nn/sensitivity.txt">variables.txt</a></td> </tr> </table> <hr/> <h4>Output from R TreeNet module</h4> <table class="table table-condensed table-striped"> <tr> <td>Specs</td> <td><a href="/static/file/tree/specs.tar.gz">zip file</a></td> </tr> <tr> <td>Importance</td> <td><a href="/static/file/tree/importance.txt">variables.txt</a></td> </tr> </table> """
-
-    name = forms.CharField(max_length=128, initial='test_project')
-    owner = forms.CharField(max_length=128, initial='yijiliu@ebay.com')
-    status = forms.IntegerField(initial=1)
-    config = forms.CharField(max_length=65536, initial=default_config,
-            widget=forms.Textarea(attrs={'rows':"10"}))
-    output = forms.CharField(max_length=65536, initial=default_output,
-            widget=forms.Textarea(attrs={'rows':"10"}))
-    class Meta :
-        model = EasyProjectLog
-        fields = {"name", "owner", "config", "output", "status"}
-
