@@ -1,0 +1,38 @@
+/***************
+edited by Eric Liu
+This file is used as the template for reading common dataset and save it in data sub-directory
+input :
+    source : raw flat file dataset path
+    delimiter : dataset delimiter
+    target : output .mdb file path
+***************/
+
+import com.fairisaac.mb.scripting.data.BinningMissingValueMap
+
+requires (heap:'2G') // Allocates RAM for running the script
+String pathToData = './data/'
+String datasetName = '{opt[target]}' // Name of MB datafile without the .mbd
+
+String srcURI = "{opt[source]}"
+String sinkURI = '{opt[target]}' // pathToData+datasetName+'.mbd'
+
+new File('./data').mkdir()
+
+// Import data 
+Dataset ds = app.task.importData(
+    in: srcURI,
+    out: sinkURI,
+    fileType: 'delimited',
+    overwrite: true,
+    calculateStats: false
+) {{
+    layout (
+        varDelimiter: '{opt[delimiter]}', \\ '\007' or ','
+        characterSet: 'US-ASCII',
+        partialLayout: true
+    ) {{}}
+}}.dataset
+
+// Save to datafile
+ds.save()
+

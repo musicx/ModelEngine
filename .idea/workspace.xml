@@ -2,6 +2,7 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="7614d203-ba21-4be5-8496-1ea3e2dba989" name="Default" comment="">
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/Package/PythonModelBuilder/A_ReadTrainData.mb.template" />
       <change type="DELETED" beforePath="C:\Work\Python\ModelEngine\Delivery\del_1386649693_shutdown.xml" afterPath="" />
       <change type="DELETED" beforePath="C:\Work\Python\ModelEngine\Delivery\pure_test_1386646030\clean_1386646047.xml" afterPath="" />
       <change type="DELETED" beforePath="C:\Work\Python\ModelEngine\Delivery\pure_test_1386646030\del_1386646031_test_project.xml" afterPath="" />
@@ -39,10 +40,15 @@
       <change type="DELETED" beforePath="C:\Work\Python\ModelEngine\Delivery\simple_fetch_test_1386750714\tsk_first_sum_1386750714.xml" afterPath="" />
       <change type="DELETED" beforePath="C:\Work\Python\ModelEngine\Output\pure_test_1386646030\printed1.dat" afterPath="" />
       <change type="DELETED" beforePath="C:\Work\Python\ModelEngine\Output\pure_test_1386646030\total.csv" afterPath="" />
+      <change type="DELETED" beforePath="C:\Work\Python\ModelEngine\Package\PythonModelBuilder\A_ReadData.mb.template" afterPath="" />
       <change type="DELETED" beforePath="C:\Work\Python\ModelEngine\Project\modelengine\start.py.linux" afterPath="" />
       <change type="DELETED" beforePath="C:\Work\Python\ModelEngine\TaskPool\test_project.xmla" afterPath="" />
       <change type="DELETED" beforePath="C:\Work\Python\ModelEngine\TaskPool\test_project_linux.xmla" afterPath="" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/Package/PythonGainChart/merge.py" afterPath="$PROJECT_DIR$/Package/PythonGainChart/merge.py" />
+      <change type="MOVED" beforePath="C:\Work\Python\ModelEngine\Package\PythonModelBuilder\B_PrepareData.mb.template" afterPath="$PROJECT_DIR$/Package/PythonModelBuilder/D_ReadData.mb.template" />
+      <change type="MOVED" beforePath="C:\Work\Python\ModelEngine\Package\PythonModelBuilder\C_TrainManager.mb.template" afterPath="$PROJECT_DIR$/Package/PythonModelBuilder/B_TrainManager.mb.template" />
+      <change type="MOVED" beforePath="C:\Work\Python\ModelEngine\Package\PythonModelBuilder\D_TrainWorker.mb.template" afterPath="$PROJECT_DIR$/Package/PythonModelBuilder/C_TrainWorker.mb.template" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/Package/PythonModelBuilder/E_ScoreData.mb.template" afterPath="$PROJECT_DIR$/Package/PythonModelBuilder/E_ScoreData.mb.template" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/Package/PythonModelBuilder/generate_mb.py" afterPath="$PROJECT_DIR$/Package/PythonModelBuilder/generate_mb.py" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
     </list>
     <ignored path="ModelEngine.iws" />
@@ -75,45 +81,73 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="scp.py" pinned="false" current="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/Project/modelengine/scp.py">
+      <file leaf-file-name="start.py" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/Project/modelengine/start.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="7" column="0" selection-start="132" selection-end="132" vertical-scroll-proportion="0.0" vertical-offset="105" max-vertical-offset="5865">
+            <state line="221" column="35" selection-start="12763" selection-end="12763" vertical-scroll-proportion="0.0" vertical-offset="3315" max-vertical-offset="11115">
               <folding />
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="start.py" pinned="false" current="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/Project/modelengine/start.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state line="221" column="35" selection-start="12763" selection-end="12763" vertical-scroll-proportion="0.0" vertical-offset="3315" max-vertical-offset="7155">
-              <folding>
-                <element signature="e#0#11#0" expanded="true" />
-                <element signature="e#15577#20107#0" expanded="false" />
-                <element signature="e#20138#26760#0" expanded="false" />
-                <element signature="e#26800#28338#0" expanded="false" />
-                <element signature="e#28375#28818#0" expanded="false" />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="generate_mb.py" pinned="false" current="false" current-in-tab="false">
+      <file leaf-file-name="generate_mb.py" pinned="false" current="true" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/Package/PythonModelBuilder/generate_mb.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="24" column="41" selection-start="1395" selection-end="1395" vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="480">
-              <folding>
-                <element signature="e#0#33#0" expanded="true" />
-              </folding>
+            <state line="43" column="43" selection-start="1968" selection-end="1968" vertical-scroll-proportion="0.84421366" vertical-offset="61" max-vertical-offset="735">
+              <folding />
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="nn_mb.sh.template" pinned="false" current="true" current-in-tab="true">
+      <file leaf-file-name="A_ReadTrainData.mb.template" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/Package/PythonModelBuilder/A_ReadTrainData.mb.template">
+          <provider selected="true" editor-type-id="text-editor">
+            <state line="8" column="35" selection-start="0" selection-end="1716" vertical-scroll-proportion="0.0" vertical-offset="406" max-vertical-offset="1080">
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="D_ReadData.mb.template" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/Package/PythonModelBuilder/D_ReadData.mb.template">
+          <provider selected="true" editor-type-id="text-editor">
+            <state line="24" column="26" selection-start="735" selection-end="735" vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="660">
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="nn_mb.sh.template" pinned="false" current="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/Package/PythonModelBuilder/nn_mb.sh.template">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="11" column="10" selection-start="627" selection-end="627" vertical-scroll-proportion="0.23672883" vertical-offset="0" max-vertical-offset="697">
+            <state line="11" column="10" selection-start="627" selection-end="627" vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="345">
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="B_TrainManager.mb.template" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/Package/PythonModelBuilder/B_TrainManager.mb.template">
+          <provider selected="true" editor-type-id="text-editor">
+            <state line="110" column="51" selection-start="4641" selection-end="4641" vertical-scroll-proportion="0.0" vertical-offset="1276" max-vertical-offset="1950">
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="C_TrainWorker.mb.template" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/Package/PythonModelBuilder/C_TrainWorker.mb.template">
+          <provider selected="true" editor-type-id="text-editor">
+            <state line="22" column="36" selection-start="1134" selection-end="1134" vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="2025">
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="E_ScoreData.mb.template" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/Package/PythonModelBuilder/E_ScoreData.mb.template">
+          <provider selected="true" editor-type-id="text-editor">
+            <state line="8" column="21" selection-start="242" selection-end="242" vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="495">
               <folding />
             </state>
           </provider>
@@ -122,27 +156,7 @@
       <file leaf-file-name="merge.py" pinned="false" current="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/Package/PythonGainChart/merge.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="64" column="26" selection-start="1997" selection-end="1997" vertical-scroll-proportion="0.0" vertical-offset="690" max-vertical-offset="3195">
-              <folding>
-                <element signature="e#0#33#0" expanded="true" />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="engine.py" pinned="false" current="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/Project/modelengine/engine.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state line="57" column="52" selection-start="2172" selection-end="2172" vertical-scroll-proportion="0.0" vertical-offset="855" max-vertical-offset="1530">
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="engine_config.xml" pinned="false" current="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/Configuration/engine_config.xml">
-          <provider selected="true" editor-type-id="text-editor">
-            <state line="19" column="17" selection-start="733" selection-end="733" vertical-scroll-proportion="0.0" vertical-offset="285" max-vertical-offset="405">
+            <state line="82" column="0" selection-start="2935" selection-end="3163" vertical-scroll-proportion="0.0" vertical-offset="1230" max-vertical-offset="3195">
               <folding />
             </state>
           </provider>
@@ -166,22 +180,22 @@
   <component name="IdeDocumentHistory">
     <option name="changedFiles">
       <list>
-        <option value="$PROJECT_DIR$/TaskPool/worktask.xml" />
-        <option value="$PROJECT_DIR$/TaskPool/Test/command.xml" />
-        <option value="$PROJECT_DIR$/TaskPool/project.xml" />
-        <option value="$PROJECT_DIR$/TaskPool/Test/worktask.xml" />
-        <option value="$PROJECT_DIR$/TaskPool/test_project.xml" />
-        <option value="$PROJECT_DIR$/Input/multiply.py" />
-        <option value="$PROJECT_DIR$/Project/modelengine/engine.py" />
-        <option value="$PROJECT_DIR$/Configuration/engine_config.xml" />
         <option value="$PROJECT_DIR$/TaskPool/simple_project.xml" />
         <option value="$PROJECT_DIR$/Project/modelengine/scp_test.py" />
         <option value="$PROJECT_DIR$/Project/modelengine/scp.py" />
         <option value="$PROJECT_DIR$/Project/modelengine/project.py" />
         <option value="$PROJECT_DIR$/Project/modelengine/start.py" />
         <option value="$PROJECT_DIR$/Package/PythonGainChart/merge.py" />
-        <option value="$PROJECT_DIR$/Package/PythonModelBuilder/generate_mb.py" />
         <option value="$PROJECT_DIR$/Package/PythonModelBuilder/nn_mb.sh.template" />
+        <option value="$PROJECT_DIR$/Package/PythonModelBuilder/A_ReadData.mb.template" />
+        <option value="$PROJECT_DIR$/Package/PythonModelBuilder/C_TrainManager.mb.template" />
+        <option value="$PROJECT_DIR$/Package/PythonModelBuilder/D_TrainWorker.mb.template" />
+        <option value="$PROJECT_DIR$/Package/PythonModelBuilder/A_ReadTrainData.mb.template" />
+        <option value="$PROJECT_DIR$/Package/PythonModelBuilder/B_TrainManager.mb.template" />
+        <option value="$PROJECT_DIR$/Package/PythonModelBuilder/C_TrainWorker.mb.template" />
+        <option value="$PROJECT_DIR$/Package/PythonModelBuilder/E_ScoreData.mb.template" />
+        <option value="$PROJECT_DIR$/Package/PythonModelBuilder/D_ReadData.mb.template" />
+        <option value="$PROJECT_DIR$/Package/PythonModelBuilder/generate_mb.py" />
       </list>
     </option>
   </component>
@@ -217,7 +231,6 @@
       <sortByType />
     </navigator>
     <panes>
-      <pane id="Scope" />
       <pane id="ProjectPane">
         <subPane>
           <PATH>
@@ -334,17 +347,18 @@
           </PATH>
         </subPane>
       </pane>
+      <pane id="Scope" />
     </panes>
   </component>
   <component name="PropertiesComponent">
     <property name="options.splitter.main.proportions" value="0.3" />
-    <property name="recentsLimit" value="5" />
     <property name="options.lastSelected" value="project.propVCSSupport.Mappings" />
+    <property name="recentsLimit" value="5" />
     <property name="last_opened_file_path" value="$PROJECT_DIR$/.." />
     <property name="FullScreen" value="false" />
     <property name="DefaultHtmlFileTemplate" value="Xhtml" />
-    <property name="options.splitter.details.proportions" value="0.2" />
     <property name="options.searchVisible" value="true" />
+    <property name="options.splitter.details.proportions" value="0.2" />
   </component>
   <component name="PyConsoleOptionsProvider">
     <option name="myPythonConsoleState">
@@ -619,7 +633,7 @@
     </todo-panel>
   </component>
   <component name="ToolWindowManager">
-    <frame x="-8" y="-8" width="1616" height="876" extended-state="7" />
+    <frame x="-8" y="-8" width="1616" height="876" extended-state="6" />
     <editor active="true" />
     <layout>
       <window_info id="Changes" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32930845" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
@@ -690,31 +704,6 @@
     </breakpoint-manager>
   </component>
   <component name="editorHistoryManager">
-    <entry file="file://C:/Anaconda/Lib/multiprocessing/forking.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="390" column="11" selection-start="12277" selection-end="12277" vertical-scroll-proportion="0.0" vertical-offset="5559" max-vertical-offset="7695" />
-      </provider>
-    </entry>
-    <entry file="file://C:/Anaconda/Lib/multiprocessing/process.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="260" column="37" selection-start="7675" selection-end="7675" vertical-scroll-proportion="0.42857143" vertical-offset="3654" max-vertical-offset="4890" />
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/TaskPool/Test/worktask.xml">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="10" column="12" selection-start="331" selection-end="331" vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="300" />
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/TaskPool/Test/project.xml">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="19" column="22" selection-start="692" selection-end="692" vertical-scroll-proportion="0.19189766" vertical-offset="195" max-vertical-offset="1590" />
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/Input/sum.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="0" column="0" selection-start="0" selection-end="181" vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="270" />
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/Input/multiply.py">
       <provider selected="true" editor-type-id="text-editor">
         <state line="12" column="0" selection-start="181" selection-end="181" vertical-scroll-proportion="0.38379532" vertical-offset="0" max-vertical-offset="469" />
@@ -761,37 +750,62 @@
     <entry file="file://$PROJECT_DIR$/Project/modelengine/start.py">
       <provider selected="true" editor-type-id="text-editor">
         <state line="221" column="35" selection-start="12763" selection-end="12763" vertical-scroll-proportion="0.0" vertical-offset="3315" max-vertical-offset="7155">
-          <folding>
-            <element signature="e#0#11#0" expanded="true" />
-            <element signature="e#15577#20107#0" expanded="false" />
-            <element signature="e#20138#26760#0" expanded="false" />
-            <element signature="e#26800#28338#0" expanded="false" />
-            <element signature="e#28375#28818#0" expanded="false" />
-          </folding>
+          <folding />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/Package/PythonGainChart/merge.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="64" column="26" selection-start="1997" selection-end="1997" vertical-scroll-proportion="0.0" vertical-offset="690" max-vertical-offset="3195">
-          <folding>
-            <element signature="e#0#33#0" expanded="true" />
-          </folding>
+        <state line="82" column="0" selection-start="2935" selection-end="3163" vertical-scroll-proportion="0.0" vertical-offset="960" max-vertical-offset="3150">
+          <folding />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/Package/PythonModelBuilder/generate_mb.py">
+    <entry file="file://$PROJECT_DIR$/Package/PythonModelBuilder/C_TrainWorker.mb.template">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="24" column="41" selection-start="1395" selection-end="1395" vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="480">
-          <folding>
-            <element signature="e#0#33#0" expanded="true" />
-          </folding>
+        <state line="22" column="36" selection-start="1134" selection-end="1134" vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="2025">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Package/PythonModelBuilder/A_ReadTrainData.mb.template">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="8" column="35" selection-start="0" selection-end="1716" vertical-scroll-proportion="0.0" vertical-offset="406" max-vertical-offset="1080">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Package/PythonModelBuilder/B_TrainManager.mb.template">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="110" column="51" selection-start="4641" selection-end="4641" vertical-scroll-proportion="0.0" vertical-offset="1276" max-vertical-offset="1950">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Package/PythonModelBuilder/E_ScoreData.mb.template">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="8" column="21" selection-start="242" selection-end="242" vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="495">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Package/PythonModelBuilder/D_ReadData.mb.template">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="24" column="26" selection-start="735" selection-end="735" vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="660">
+          <folding />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/Package/PythonModelBuilder/nn_mb.sh.template">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="11" column="10" selection-start="627" selection-end="627" vertical-scroll-proportion="0.23672883" vertical-offset="0" max-vertical-offset="697">
+        <state line="11" column="10" selection-start="627" selection-end="627" vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="345">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Package/PythonModelBuilder/generate_mb.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="43" column="43" selection-start="1968" selection-end="1968" vertical-scroll-proportion="0.84421366" vertical-offset="61" max-vertical-offset="735">
           <folding />
         </state>
       </provider>

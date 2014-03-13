@@ -1,3 +1,15 @@
+/***************
+edited by Eric Liu
+This file is used as the template for training model specs
+input :
+    train : training dataset path
+    delimiter : dataset delimiter
+    bad : bad variable name
+    nodes : node numbers separated by comma
+    role_ids : key variables roles assignment lines
+    drop_vars : drop variables list
+***************/
+
 import com.fairisaac.mb.api.job.launch.LaunchedJob
 import com.fairisaac.mb.common.data.base.BaseTable
 import java.awt.Color 
@@ -5,9 +17,9 @@ import java.awt.Color
 User input
 ********************************************************************************/
 requires (heap:'10G') // Allocates RAM for running this script
-String pathToData = '../data/'
-String datasetName = 'dev_nn_r_f_setid_zscl' // Name of MB datafile without the .mbd
-String targetVariable = 'ato_bad'
+String pathToData = './data/'
+String datasetName = 'nn_train' // Name of MB datafile without the .mbd
+String targetVariable = '{opt[bad]}'
 String targetLowStates = '0'
 String targetLowScoreLabel = 'Good'
 String targetHighStates = '1'
@@ -18,17 +30,18 @@ String inputVariables = '*_zscl'
 String sampleWeight = null //'e.g. sampleWeight3'
 String setidVariable = 'setid' //'e.g. trainTestEval'
 int numConcurrentJobs = 3 // number of simultaneous training jobs
-List numHiddenNodesToTry = [15,18,20]
+List numHiddenNodesToTry = [{opt[nodes]}]
 List numHiddenLayersToTry = [1]
 String prepareModelForReasonCodes = 'trainOnly' // trainOnly trainAndReasonCode
 
-String myExclude=' waccount_consiste_ore_4608_s2_zscl wv2_beacon_avg_ne_ric_03BB_s2_zscl wv3_ip_ad_dist_3d_ric_F411_s2_zscl wasn_pmts_s2_zscl wcidr_accts_s2_zscl wcidr_bad_accts_s2_zscl wcidr_bad_pmts_s2_zscl wcp_bad_dollar_s2_zscl wSnrCtyIpCtyMinCntTxn90d_s2_zscl wSnrCtyIpCtyMnSumAmt90d_s2_zscl wSnrCtyIpCtyRtAmt30d_s2_zscl wSnrCtyIpCtyRtTxn90d_s2_zscl wSnrCtyIpCtySdCntTxn30d_s2_zscl wSnrCtyIpCtySdCntTxn90d_s2_zscl wSnrCtyIpTzMaxAmt30d_s2_zscl wSnrCtyIpTzMaxSumAmt90d_s2_zscl wSnrCtyIpTzMnSumAmt7d_s2_zscl wSnrCtyIpTzMnSumAmt90d_s2_zscl wSnrCtyIpTzRtTxn7d_s2_zscl wSnrIpAsnRtAmt30d_s2_zscl wSnrIpCidrRtAmt7d_s2_zscl wSnrIpCidrRtTxn7d_s2_zscl wSnrIpCidrSdCntTxn90d_s2_zscl wSnrIpCidrSdSumAmt90d_s2_zscl wSnrIpCnty_s2_zscl wSnrPCnty_s2_zscl wvid_timesincelast_used_s2_zscl wvid_timesincefirst_used_s2_zscl wcp_timesincefirst_used_s2_zscl wip_timesincefirst_used_s2_zscl wip_timesincelast_used_s2_zscl wcp_timesincelast_used_s2_zscl wfso_timesincefirst_used_s2_zscl wfso_timesincelast_used_s2_zscl '
+String myExclude='{opt[drop_vars]}'
 
 
 /********************************************************************************
 Create Directories
 ********************************************************************************/
-new File('./scripts/properties').mkdir()  
+new File('./scripts').mkdir()
+new File('./scripts/properties').mkdir()
 new File('./scripts/models').mkdir()
 new File('./scripts/reports').mkdir()
 
@@ -38,16 +51,16 @@ Get Logs from Child Jobs
 app.settings.'mb.job.logChildOutput' = true
 
 /********************************************************************************
-Get a handle to the data and transform the target to {0,1}
+Get a handle to the data and transform the target to {{0,1}}
 ********************************************************************************/
-Dataset ds = app.data.open(in:pathToData+datasetName+'.mbd'){
+Dataset ds = app.data.open(in:pathToData+datasetName+'.mbd'){{
     binaryTarget(
         vars: targetVariable+'=binaryTargetNN',
         low: targetLowStates,
         lowLabel: targetLowScoreLabel,
         high: targetHighStates,
         highLabel: targetHighScoreLabel,
-        otherGroupLabel: 'Other')}
+        otherGroupLabel: 'Other')}}
 Dataset dstemp = app.data.create()
 app.data.copy(in:ds,out:dstemp)
 Dataset ds1 = app.data.open(in:dstemp,filter:app.filter.where('binaryTargetNN < 2.0'))
@@ -58,8 +71,8 @@ Train model with all variables and optimize network architecture
 List allVariables = ds1.getDatasetInfo().getVariableNames()
 List predictorVarInfos = ds1.getDatasetInfo().getVariableInfos(inputVariables)
 List include = []
-predictorVarInfos.each(){
-    include += it.name}
+predictorVarInfos.each(){{
+    include += it.name}}
 String excludedVariables = (allVariables-include).join(' ') + ' ' + myExclude
 String includedVariables = include.join(' ')
 app.logger.info(includedVariables)
@@ -68,9 +81,9 @@ app.logger.info(includedVariables)
 String fileName
 List propertyFiles = []
 
-numHiddenNodesToTry.each(){nodes->
-    numHiddenLayersToTry.each(){layers->
-        fileName = '../scripts/properties/properties_'+nodes+layers+'.groovy'
+numHiddenNodesToTry.each(){{nodes->
+    numHiddenLayersToTry.each(){{layers->
+        fileName = './scripts/properties/properties_'+nodes+layers+'.groovy'
         ConfigObject properties = new ConfigObject()
         properties.pathToData = pathToData
         properties.datasetName = datasetName
@@ -86,34 +99,26 @@ numHiddenNodesToTry.each(){nodes->
         properties.prepareModelForReasonCodes = prepareModelForReasonCodes
         properties.excludedVariables = excludedVariables
         properties.includedVariables = includedVariables
-        new File(fileName).withWriter{writer->properties.writeTo(writer)}
+        new File(fileName).withWriter{{writer->properties.writeTo(writer)}}
         propertyFiles.add(fileName)
-    }
-}
+    }}
+}}
 // Launch the jobs numConcurrentJobs at a time
 String propFile = ''
-while (propertyFiles.size()>0){
-    for (i in 0..numConcurrentJobs-1) {
+while (propertyFiles.size()>0){{
+    for (i in 0..numConcurrentJobs-1) {{
         propFile = propertyFiles.pop()
-        LaunchedJob job1 = app.job.submit(script:'D_TrainWorker.mb',arguments:['-DPropFile='+propFile])
-    }
+        LaunchedJob job1 = app.job.submit(script:'C_TrainWorker.mb',arguments:['-DPropFile='+propFile])
+    }}
     // Wait for the jobs to finish.
     app.job.waitForChildren()
-}
+}}
 
-	        
-	        
-	       // Plot sensititivity results
-numHiddenNodesToTry.each(){nodes->
-    numHiddenLayersToTry.each(){layers->
-                String tablePathAndFile = '../scripts/models/Sensitivity'+nodes+layers+'.tbl'
-                String outputPathAndFile = '../scripts/reports/SensitivityPlot'+nodes+layers+'.html'
+// Plot sensititivity results
+numHiddenNodesToTry.each(){{nodes->
+    numHiddenLayersToTry.each(){{layers->
+                String tablePathAndFile = './scripts/models/Sensitivity'+nodes+layers+'.tbl'
+                String outputPathAndFile = './scripts/reports/SensitivityPlot'+nodes+layers+'.html'
                // U_PlotSensitivity.run(tablePathAndFile,outputPathAndFile)
-    }
-}
- 
-	        
-	        
-	        
-	        
-	        
+    }}
+}}

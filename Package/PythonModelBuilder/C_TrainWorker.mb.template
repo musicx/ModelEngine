@@ -102,25 +102,25 @@ Export the model to PMML
 ********************************************************************************/
 m1 = nnTrainResult.model
 m1.setName('Model'+numNodes+numLayers)
-app.model.save(m1, './models/Nn'+numNodes+numLayers+'.pmml')
+app.model.save(m1, './models/spec_nn_n'+numNodes+'_l'+numLayers+'.pmml')
 app.logger.info('###### Finished NN Training/pmml with '+numNodes+' hidden nodes ##########')
     
     
    /********************************************************************************
 Save the variable results to a dataset
 ********************************************************************************/
-app.table.toCSV(nnTrainResult.variable,'models/Variable'+numNodes+numLayers+'.csv')
+app.table.toCSV(nnTrainResult.variable,'./models/variable_n'+numNodes+'_l'+numLayers+'.csv')
     
    
    /********************************************************************************
 Save the sensitivity results to a dataset
 ********************************************************************************/
-app.table.toCSV(nnTrainResult.sensitivity,'models/Sensitivity'+numNodes+numLayers+'.csv')
+app.table.toCSV(nnTrainResult.sensitivity,'./models/sensitivity_n'+numNodes+'_l'+numLayers+'.csv')
 app.logger.info('########## Finished NN Training with '+numNodes+' hidden nodes ##########')
 /********************************************************************************
 Save the sensitivity results to a table
 ********************************************************************************/
-File f1 = new File('reports/Sensitivity'+numNodes+numLayers+'.tbl')
+File f1 = new File('./reports/sensitivity_n'+numNodes+'_l'+numLayers+'.tbl')
 f1.delete()
 nnTrainResult.sensitivity.save(f1)
 
