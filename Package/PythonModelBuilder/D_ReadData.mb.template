@@ -14,7 +14,7 @@ String pathToData = './data/'
 String datasetName = '{opt[target]}' // Name of MB datafile without the .mbd
 
 String srcURI = "{opt[source]}"
-String sinkURI = '{opt[target]}' // pathToData+datasetName+'.mbd'
+String sinkURI = pathToData+datasetName+'.mbd'
 
 new File('./data').mkdir()
 
@@ -27,7 +27,7 @@ Dataset ds = app.task.importData(
     calculateStats: false
 ) {{
     layout (
-        varDelimiter: '{opt[delimiter]}', \\ '\007' or ','
+        varDelimiter: '{opt[delimiter]}', // '\007' or ','
         characterSet: 'US-ASCII',
         partialLayout: true
     ) {{}}

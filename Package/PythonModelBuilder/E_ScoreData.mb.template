@@ -14,7 +14,7 @@ model_file = '{opt[spec]}'  //  './models/Nn'+numNodes+numLayers+'.pmml'
 modeln = app.model.load(model_file)
 modeln.name = '{opt[name]}'
 // Load the dataset and apply transforms: e.g. score, rename, and binary target
-Dataset ds = app.data.open(source: '{opt[input]}')  // './data/{opt[data]}.mbd'
+Dataset ds = app.data.open(source: '{opt[input]}')  // './data/opt[data].mbd'
 {{
     score(model: modeln)
     rename(vars: '{opt[name]}_score=score_{opt[name]}') // model score renaming
@@ -25,4 +25,4 @@ app.data.copy(in:ds, out:dsout)
 
 String keepvars='{opt[keys]} score_{opt[name]}'
 app.task.exportData(in: app.data.open(in:dsout, vars:keepvars) , out:'{opt[output]}', fileType:'delimited', overwrite:true)
-//   ./data/{opt[data]}_scored.csv
+//  './data/opt[data]_scored.csv'

@@ -5,9 +5,9 @@ Parse Properties File
 ********************************************************************************/
 List args = app.settings.get('mb.clprop.args')
 String propertiesLocation = ''
-args.each(){
-    if (it.contains('PropFile')) {
-        propertiesLocation=it.toString().tokenize('=')[1]}}
+args.each(){{
+    if (it.contains('PropFile')) {{
+        propertiesLocation=it.toString().tokenize('=')[1]}}}}
 def properties = new ConfigSlurper().parse(new File(propertiesLocation).toURL())
 app.logger.info(properties.toString())
 String pathToData = properties.pathToData
@@ -25,16 +25,16 @@ String prepareModelForReasonCodes = properties.prepareModelForReasonCodes
 String excludedVariables = properties.excludedVariables
 String includedVariables = properties.includedVariables
 /********************************************************************************
-Get a handle to the data and transform the target to {0,1}
+Get a handle to the data and transform the target to {{0,1}}
 ********************************************************************************/
-Dataset ds = app.data.open(in:pathToData+datasetName+'.mbd'){
+Dataset ds = app.data.open(in:pathToData+datasetName+'.mbd'){{
     binaryTarget(
         vars: targetVariable+'=binaryTargetNN',
         low: targetLowStates,
         lowLabel: targetLowScoreLabel,
         high: targetHighStates,
         highLabel: targetHighScoreLabel,
-        otherGroupLabel: 'Other')}
+        otherGroupLabel: 'Other')}}
 Dataset dstemp = app.data.create()
 app.data.copy(in:ds,out:dstemp)
 Dataset ds1 = app.data.open(in:dstemp,filter:app.filter.where('binaryTargetNN < 2.0'))        
@@ -70,22 +70,22 @@ TaskResult nnTrainResult = app.task.nnet(
    forceLastWeights: false, 
    seed:25,
    reasonCodesEnabled: prepareModelForReasonCodes,
-   trainedModel: null) {
-           architecture {
+   trainedModel: null) {{
+           architecture {{
                hiddenLayer (nodes: new Integer(numNodes),activation: 'tanh')
-		       if (numLayers>=2){
-		       hiddenLayer (nodes: new Integer(numNodes),activation: 'tanh')}
-		       if (numLayers>=3) {
-               hiddenLayer (nodes: new Integer(numNodes),activation: 'tanh')}
-		       if (numLayers>=4) {
-               hiddenLayer (nodes: new Integer(numNodes),activation: 'tanh')}
-		       if (numLayers>=5) {
-               hiddenLayer (nodes: new Integer(numNodes),activation: 'tanh')}
-		       if (numLayers>=6) {
-               hiddenLayer (nodes: new Integer(numNodes),activation: 'tanh')}
+		       if (numLayers>=2){{
+		       hiddenLayer (nodes: new Integer(numNodes),activation: 'tanh')}}
+		       if (numLayers>=3) {{
+               hiddenLayer (nodes: new Integer(numNodes),activation: 'tanh')}}
+		       if (numLayers>=4) {{
+               hiddenLayer (nodes: new Integer(numNodes),activation: 'tanh')}}
+		       if (numLayers>=5) {{
+               hiddenLayer (nodes: new Integer(numNodes),activation: 'tanh')}}
+		       if (numLayers>=6) {{
+               hiddenLayer (nodes: new Integer(numNodes),activation: 'tanh')}}
 
                outputLayer (activation: 'logistic')  
-		  }
+		  }}
 		  /****** Data has been z-scaled already
 		   scale (
 		          z: includedVariables,
@@ -94,7 +94,7 @@ TaskResult nnTrainResult = app.task.nnet(
 		          log: '' )
 		   *******/
 		   
-}
+}}
 
 
 /********************************************************************************
@@ -102,25 +102,25 @@ Export the model to PMML
 ********************************************************************************/
 m1 = nnTrainResult.model
 m1.setName('Model'+numNodes+numLayers)
-app.model.save(m1, './models/spec_nn_n'+numNodes+'_l'+numLayers+'.pmml')
+app.model.save(m1, './scripts/models/spec_nn_n'+numNodes+'_l'+numLayers+'.pmml')
 app.logger.info('###### Finished NN Training/pmml with '+numNodes+' hidden nodes ##########')
     
     
    /********************************************************************************
 Save the variable results to a dataset
 ********************************************************************************/
-app.table.toCSV(nnTrainResult.variable,'./models/variable_n'+numNodes+'_l'+numLayers+'.csv')
+app.table.toCSV(nnTrainResult.variable,'./scripts/models/variable_n'+numNodes+'_l'+numLayers+'.csv')
     
    
    /********************************************************************************
 Save the sensitivity results to a dataset
 ********************************************************************************/
-app.table.toCSV(nnTrainResult.sensitivity,'./models/sensitivity_n'+numNodes+'_l'+numLayers+'.csv')
+app.table.toCSV(nnTrainResult.sensitivity,'./scripts/models/sensitivity_n'+numNodes+'_l'+numLayers+'.csv')
 app.logger.info('########## Finished NN Training with '+numNodes+' hidden nodes ##########')
 /********************************************************************************
 Save the sensitivity results to a table
 ********************************************************************************/
-File f1 = new File('./reports/sensitivity_n'+numNodes+'_l'+numLayers+'.tbl')
+File f1 = new File('./scripts/reports/sensitivity_n'+numNodes+'_l'+numLayers+'.tbl')
 f1.delete()
 nnTrainResult.sensitivity.save(f1)
 

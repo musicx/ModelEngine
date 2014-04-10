@@ -28,7 +28,7 @@ Dataset ds = app.task.importData(
     calculateStats: false
 ) {{
     layout (
-        varDelimiter: '{opt[delimiter]}', \\ '\007' or ','
+        varDelimiter: '{opt[delimiter]}', // '\007' or ','
         characterSet: 'US-ASCII',
         partialLayout: true
     ) {{}}
@@ -39,7 +39,7 @@ ds.getVariableInfos().each() {{
     if (it.getName() == 'opt[bad]')
         it.getVariableRoles().add('target')
 {opt[role_ids]}
-//    else if (it.getName() == 'opt[key]')
+//    else if (it.getName() == 'key')
 //        it.getVariableRoles().add('recordID')
     else
         it.getVariableRoles().add('predictor')
@@ -48,19 +48,33 @@ ds.getVariableInfos().each() {{
 // Categorize variables
 app.data.categorize(ds, '{opt[bad]}')
 
+// Add SetId
+app.data.newPartitionColumn(ds, 'setid')
+rand = new Random(1805)
+ds.updateIterator().each {{
+    if (rand.nextInt(100) > 30) {{
+        it['setid'] = Partition.TRAIN.getId();
+    }}
+    else {{
+        it['setid'] = Partition.TEST.getId();
+    }}
+}}
+
 // Save to datafile
 ds.save()
 
 Dataset ds2 = app.data.open(source: sinkURI,
-    vars: {opt[keep_vars]}
+    vars: '{opt[keep_vars]} setid'
     ) {{
-    partition(sets: [70, 30])
+    //partition(sets: [70, 30])
 }}
 
 Dataset ds3 = app.task.copy(
     in:ds2,
     out:pathToData+datasetName+'.mbd',
     overwrite:true).dataset
+
+//ds3.save()
 
 // Print dataset info and sample to console
 app.data.dump(in:ds3, contents:true)

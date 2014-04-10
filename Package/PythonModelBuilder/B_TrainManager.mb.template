@@ -7,6 +7,7 @@ input :
     bad : bad variable name
     nodes : node numbers separated by comma
     role_ids : key variables roles assignment lines
+    model_vars : variables used for modeling
     drop_vars : drop variables list
 ***************/
 
@@ -25,11 +26,11 @@ String targetLowScoreLabel = 'Good'
 String targetHighStates = '1'
 String targetHighScoreLabel = 'Bad'
 
-String inputVariables = '*_zscl'
+String inputVariables = {opt[model_vars]}
 
 String sampleWeight = null //'e.g. sampleWeight3'
 String setidVariable = 'setid' //'e.g. trainTestEval'
-int numConcurrentJobs = 3 // number of simultaneous training jobs
+int numConcurrentJobs = {opt[nodes_num]} // number of simultaneous training jobs
 List numHiddenNodesToTry = [{opt[nodes]}]
 List numHiddenLayersToTry = [1]
 String prepareModelForReasonCodes = 'trainOnly' // trainOnly trainAndReasonCode
