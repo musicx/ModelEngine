@@ -1120,16 +1120,16 @@ if __name__ == "__main__" :
     file_name = os.path.basename(options.bin)
     file_root_name = os.path.join(os.path.dirname(options.bin), file_name[:file_name.rfind('.')])
     if options.woe and options.woe.find('{0}') == -1 :
-        options.woe = options.woe[:options.woe.rfind('.')] + "_{0}" + options.woe[options.woe.rfind('.'):]
+        options.woe = options.woe[:options.woe.rfind('.')] + "{0}" + options.woe[options.woe.rfind('.'):]
     else :
-        options.woe = file_root_name + "_woe_{0}.txt"
+        options.woe = file_root_name + "_woe{0}.txt"
     if options.log :
         logging.basicConfig(level=logging.DEBUG, format='%(asctime)-15s - %(levelname)s - %(message)s', filename=options.log, filemode='w')
     else :
         logging.basicConfig(level=logging.INFO, format='%(levelname)s - %(message)s')
-    options.csv = file_root_name + "_csv_{0}_{1}.txt"
-    options.uni = file_root_name + "_uni_{0}.txt"
-    options.lst = file_root_name + "_lst_{0}.txt"
+    options.csv = file_root_name + "_csv{0}_{1}.txt"
+    options.uni = file_root_name + "_uni{0}.txt"
+    options.lst = file_root_name + "_lst{0}.txt"
     if options.suf :
         options.suf += "_woe"
     else :
@@ -1213,18 +1213,19 @@ if __name__ == "__main__" :
         logging.info("auto re-binning for {0} finished. start exporting...".format(badname))
 
         logging.info("start writing woe file after variable exclusion...")
-        SaveToWoe(options.woe.format(badname), variables, excludes, badname)
+        bad_suffix = "_" + badname if len(badnames) > 1 else ''
+        SaveToWoe(options.woe.format(bad_suffix), variables, excludes, badname)
 
         logging.info("start writing woe variables list...")
-        SaveVarList(options.lst.format(badname), variables, excludes)
+        SaveVarList(options.lst.format(bad_suffix), variables, excludes)
 
         logging.info("start writing the variable analysis...")
-        SaveUniAnalysis(options.uni.format(badname), variables, status, badname)
+        SaveUniAnalysis(options.uni.format(bad_suffix), variables, status, badname)
 
         logging.info("start saving the binning details...")
-        zscls = SaveToCsv(options.csv.format(badname, "{0}"), variables, status, badname)
+        zscls = SaveToCsv(options.csv.format(bad_suffix, "{0}"), variables, status, badname)
 
         logging.info("start writing woe file after variable exclusion...")
-        SaveToZWoe(options.woe.format("zscl_" + badname), variables, excludes, badname, zscls)
+        SaveToZWoe(options.woe.format("_zscl" + bad_suffix), variables, excludes, badname, zscls)
 
         #After this process, use the woe file to generate transformed variables. Maybe in another py file.

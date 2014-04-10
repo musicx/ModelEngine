@@ -361,6 +361,7 @@ def distinctSortVariables(options, bads, wgt, vars, special_type) :
         return []
     bad_float = ignore_exception(ValueError, 2)(float)
     type_float = ignore_exception(ValueError, None)(float)
+    wgt_float = ignore_exception(ValueError, 1)(float)
     known_error_value = {'', 'null', 'none', 'missing', '.', '_missing_'}
     input_vars = {}
     binned_vars = {}
@@ -409,7 +410,7 @@ def distinctSortVariables(options, bads, wgt, vars, special_type) :
             if len(parts) < max(vars.keys()) :
                 logging.error("column mismatch when parsing develop dataset!")
                 return {}
-            weight = 1 if wgt < 0 else float(parts[wgt])
+            weight = 1 if wgt < 0 else wgt_float(parts[wgt])
             bad_values = {}
             for bad_ind in bads :
                 bad_value = bad_float(parts[bad_ind])
@@ -455,7 +456,7 @@ def findBin(value, bins, binType) :
                 return bin_ind
         return None
     elif binType == "num" :
-        if value is None :
+        if value is None or len(bins) == 1:
             return 0
         lb = 1
         ub = len(bins)
@@ -481,6 +482,7 @@ def applyBoundaries(val, options, variables) :
         new_char_bins[val_names[val_bad]] = set()
     bad_float = ignore_exception(ValueError, 2)(float)
     nfloat = ignore_exception(ValueError, None)(float)
+    wfloat = ignore_exception(ValueError, 1)(float)
     with open(val, "r") as fn :
         line = fn.readline()
         while True :
@@ -493,7 +495,7 @@ def applyBoundaries(val, options, variables) :
             if len(parts) < len(val_names) :
                 logging.error("column mismatch when parsing validation dataset!")
                 break
-            weight = 1 if val_wgt < 0 else float(parts[val_wgt])
+            weight = 1 if val_wgt < 0 else wfloat(parts[val_wgt])
             bad_values = {}
             for bad_ind in val_bads :
                 bad_value = bad_float(parts[bad_ind])
@@ -538,13 +540,16 @@ def checkHeader(options) :
     with open(options.src) as fn:
         head = fn.readline()
         value = fn.readline()
+        headFields = head.split(options.dlm)
+        valueFields = value.split(options.dlm)
     if options.head :
         with open(options.head) as fn :
             head = fn.readline()
-    headFields = head.split(',')
-    valueFields = value.split(options.dlm)
+            headFields = head.split(',')
     if len(headFields) != len(valueFields) :
-        logging.ERROR
+        logging.error('mismatch has been found on header line and following lines')
+        return False
+    return True
 
 
 if __name__ == '__main__' :
@@ -557,7 +562,7 @@ if __name__ == '__main__' :
     parser.add_option("-e", "--head", dest="head", help="optional head line file, must use ',' as delimiter", action="store", type="string")
     parser.add_option("-t", "--type", dest="type", help="optional variable type file in format var_name[,keep|drop][,num|char] on each line", action="store", type="string")
     parser.add_option("-l", "--log", dest="log", help="log file, if not given, stdout is used", action="store", type="string")
-    parser.add_option("-n", "--num", dest="num", help="number of variables per batch, default is all at once", action="store", type="int", default=0)
+    parser.add_option("-n", "--num", dest="num", help="number of variables per batch, default is 100 vars at once", action="store", type="int", default=100)
     parser.add_option("-m", "--mess", dest="mess", help="minimum mess block, default=2% of total population", action="store", type="float", default=0.02)
     parser.add_option("-p", "--pct", dest="pct", help="minimum target block, default=2% of all bad or all good", action="store", type="float", default=0.02)
     parser.add_option("-d", "--dlm", dest="dlm", help="delimiter char, accept xASCII format, default=,", action="store", type="string", default=",")

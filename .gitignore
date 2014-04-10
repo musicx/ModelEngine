@@ -1,2 +1,6 @@
-.idea/ 
+.idea/
 *.pyc
+Temp/
+Output/
+Delivery/
+Package/mb_scripts/
