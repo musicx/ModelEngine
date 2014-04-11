@@ -92,7 +92,7 @@ class TaskScanner(Thread):
             elif "worktask" in doc:
                 worktask = WorkTask(doc['worktask'])
                 logging.debug("worktask {0} created for project {1}".format(worktask.task_name, worktask.project_id))
-                self.checkFolder(worktask.project_id)
+                self.checkFolder(worktask.project_id, worktask.task_name)
                 missing_list = worktask.checkMissing(self.engine)
                 logging.debug("{0} missing files found for worktask ".format(len(missing_list)) + worktask.task_name)
                 self.moveTask(filename, worktask.project_id)
@@ -191,8 +191,10 @@ class TaskScanner(Thread):
                     for item in message.outputs :
                         finished = Event()
                         source_path = item.path
-                        target_folder = self.engine.output if item.is_output else self.engine.temp  # TODO: check here if task_name is needed
-                        target_folder = os.sep.join([target_folder, message.project_id])
+                        target_folder = os.sep.join((self.engine.output, message.project_id)) if item.is_output\
+                                        else os.sep.join((self.engine.temp, message.project_id, message.task_name))
+                        if not os.path.exists(target_folder) :
+                            os.makedirs(target_folder)
                         if item.is_folder and not os.path.exists(item.relative_path):
                             target_folder = os.sep.join([target_folder, item.relative_path])
                         fetcher = Fetcher(self.engine, self.system.engines[message.worker], source_path,
@@ -277,8 +279,11 @@ class TaskScanner(Thread):
         else :
             os.remove(filename)
 
-    def checkFolder(self, project_id):
-        temp = os.sep.join((self.engine.temp, project_id))
+    def checkFolder(self, project_id, task_name=None):
+        if task_name is not None:
+            temp = os.sep.join((self.engine.temp, project_id))
+        else :
+            temp = os.sep.join((self.engine.temp, project_id, task_name))
         output = os.sep.join((self.engine.output, project_id))
         delivery = os.sep.join((self.engine.delivery, project_id))
         if not os.path.exists(temp) :
