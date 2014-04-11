@@ -296,13 +296,13 @@ class Project:
                         work_task_xml.file(item.path, id=item.id, type=datatype)
         return str(work_task_xml)
 
-    def findAbsolutePath(self, path, engine):
+    def findAbsolutePath(self, path, engine):  # TODO : check what function is this related to, if taskname can be added simply
         if (path.startswith(os.sep) or path[1] == ":") and os.path.exists(path) :
             return path
-        elif os.path.exists(os.sep.join([engine.temp, self.project_id, path])) :
-            return os.sep.join([engine.temp, self.project_id, path])
-        elif os.path.exists(os.sep.join([engine.output, self.project_id, path])) :
-            return os.sep.join([engine.output, self.project_id, path])
+        elif os.path.exists(os.sep.join([engine.temp, self.project_id, self.task_name, path])) :
+            return os.sep.join([engine.temp, self.project_id, self.task_name, path])
+        elif os.path.exists(os.sep.join([engine.output, self.project_id, self.task_name, path])) :
+            return os.sep.join([engine.output, self.project_id, self.task_name, path])
         else :
             logging.error("File cannot be found : {0}".format(path))
             return None
@@ -375,9 +375,9 @@ class WorkTask:
         for input_file in self.inputs :
             missing_flag = False
             temp_path = input_file.path if input_file.path.startswith(os.sep) or input_file.path[1] == ":" \
-                                        else os.sep.join([engine.temp, self.project_id, os.path.basename(input_file.path)])
+                                        else os.sep.join([engine.temp, self.project_id, self.task_name, os.path.basename(input_file.path)])
             output_path = input_file.path if input_file.path.startswith(os.sep) or input_file.path[1] == ":" \
-                                          else os.sep.join((engine.output, self.project_id, input_file.path))
+                                          else os.sep.join((engine.output, self.project_id, self.task_name, input_file.path))
             if not os.path.exists(output_path):
                 if not os.path.exists(temp_path) :
                     missing_files.append(input_file)
@@ -386,22 +386,22 @@ class WorkTask:
                     input_file.path = temp_path
             else :
                 input_file.path = output_path
-            replace_path = os.sep.join([engine.temp, self.project_id, os.path.basename(input_file.path)]) \
+            replace_path = os.sep.join([engine.temp, self.project_id, self.task_name, os.path.basename(input_file.path)]) \
                            if missing_flag else input_file.path
             if input_file.id is not None and input_file.id != "##":
                 self.script = self.script.replace("%" + input_file.id, replace_path)
         for output_file in self.outputs :
             file_path = output_file.path if output_file.path.startswith(os.sep) or output_file.path[1] == ":" \
-                                         else os.sep.join([engine.temp, self.project_id, output_file.path])
+                                         else os.sep.join([engine.temp, self.project_id, self.task_name, output_file.path])
             output_file.path = file_path
             if output_file.id is not None and output_file.id != "##" :
                 self.script = self.script.replace("%" + output_file.id, file_path)
         package_missing_flag = False
         if self.package is not None and self.package.strip() != "" :
             package_temp_path = self.package if self.package.startswith(os.sep) or self.package[1] == ":" \
-                                             else os.sep.join((engine.temp, self.project_id, self.package))
+                                             else os.sep.join((engine.temp, self.project_id, self.task_name, self.package))
             package_output_path = self.package if self.package.startswith(os.sep) or self.package[1] == ":" \
-                                               else os.sep.join((engine.output, self.project_id, self.package))
+                                               else os.sep.join((engine.output, self.project_id, self.task_name, self.package))
             if not os.path.exists(package_output_path) :
                 if not os.path.exists(package_temp_path) :
                     missing_files.append(DataFile(self.package, is_package=True))
@@ -418,14 +418,14 @@ class WorkTask:
             temp_script_part = os.path.basename(script_part) if script_part.startswith(os.sep) or script_part[1] == ':' \
                                                              else script_part
             #NOTE: check if this works when there is a relative path in the script part
-            candidate_script_path = os.sep.join([engine.temp, self.project_id, temp_script_part]) \
+            candidate_script_path = os.sep.join([engine.temp, self.project_id, self.task_name, temp_script_part]) \
                                     if package_missing_flag else self.package
             if not os.path.exists(script_part) :
                 file_pattern = re.compile(r'\w+\.\w+')
                 if file_pattern.search(script_part) is not None :
                     self.script = self.script.replace(script_part, candidate_script_path, 1)
-        self.script.replace("%TEMP", os.sep.join([engine.temp, self.project_id]))
-        self.script.replace("%OUTPUT", os.sep.join([engine.output, self.project_id]))
+        self.script.replace("%TEMP", os.sep.join([engine.temp, self.project_id, self.task_name]))
+        self.script.replace("%OUTPUT", os.sep.join([engine.output, self.project_id, self.task_name]))
         if self.script.startswith("sas ") :
             self.script = self.script.replace("sas", "/sasadmin/sas92home/SASFoundation/9.2/sas", 1)
         return missing_files

@@ -101,12 +101,12 @@ class TaskScanner(Thread):
                 for item in missing_list :
                     finished = Event()
                     fetcher = Fetcher(self.engine, self.system.controller, item.path,
-                                      os.sep.join([self.engine.temp, worktask.project_id]),
+                                      os.sep.join([self.engine.temp, worktask.project_id, worktask.task_name]),
                                       finished, is_folder=item.is_folder, is_output=item.is_output)
                     fetcher.start()
                     finish_events.append(finished)
                 worker_process = WorkerProcess(worktask.project_id, worktask.task_name, worktask.script,
-                                               os.sep.join([self.engine.temp, worktask.project_id]),
+                                               os.sep.join([self.engine.temp, worktask.project_id, worktask.task_name]),
                                                worktask.outputs, self.message_queue, finish_events, worktask.package)
                 # maintain a worktask dict for different projects
                 self.engine.worktasks[worktask.project_id].append(worker_process)
@@ -191,7 +191,7 @@ class TaskScanner(Thread):
                     for item in message.outputs :
                         finished = Event()
                         source_path = item.path
-                        target_folder = self.engine.output if item.is_output else self.engine.temp
+                        target_folder = self.engine.output if item.is_output else self.engine.temp  # TODO: check here if task_name is needed
                         target_folder = os.sep.join([target_folder, message.project_id])
                         if item.is_folder and not os.path.exists(item.relative_path):
                             target_folder = os.sep.join([target_folder, item.relative_path])
