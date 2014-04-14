@@ -299,10 +299,12 @@ class Project:
     def findAbsolutePath(self, path, engine):
         if (path.startswith(os.sep) or path[1] == ":") and os.path.exists(path) :
             return path
+        elif os.path.exists(os.sep.join([engine.temp, self.project_id, path])) :
+            return os.sep.join([engine.temp, self.project_id, path])
         elif os.path.exists(os.sep.join([engine.output, self.project_id, path])) :
             return os.sep.join([engine.output, self.project_id, path])
         temp_folder = os.sep.join((engine.temp, self.project_id))
-        sub_temp_folders = [x for x in os.listdir(temp_folder) if os.path.isdir(os.sep.join(temp_folder, x))]
+        sub_temp_folders = [x for x in os.listdir(temp_folder) if os.path.isdir(os.sep.join((temp_folder, x)))]
         for sub_temp_folder in sub_temp_folders :
             if os.path.exists(os.sep.join([engine.temp, self.project_id, sub_temp_folder, path])) :
                 return os.sep.join([engine.temp, self.project_id, sub_temp_folder, path])
@@ -398,34 +400,9 @@ class WorkTask:
             output_file.path = file_path
             if output_file.id is not None and output_file.id != "##" :
                 self.script = self.script.replace("%" + output_file.id, file_path)
-        package_missing_flag = False
+
         if self.package is not None and self.package.strip() != "" :
-            package_temp_path = self.package if self.package.startswith(os.sep) or self.package[1] == ":" \
-                                             else os.sep.join((engine.temp, self.project_id, self.task_name, self.package))
-            package_output_path = self.package if self.package.startswith(os.sep) or self.package[1] == ":" \
-                                               else os.sep.join((engine.output, self.project_id, self.package))
-            if not os.path.exists(package_output_path) :
-                if not os.path.exists(package_temp_path) :
-                    missing_files.append(DataFile(self.package, is_package=True))
-                    package_missing_flag = True
-                else :
-                    self.package = package_temp_path
-            else :
-                self.package = package_output_path
-            # replace the package path in the script
-            script_part = [x for x in self.script.split(" ") \
-                            if not x.startswith("-") and os.path.basename(x) not in ['python', '.', 'sh',
-                                                                                     'Rscript', 'sas',
-                                                                                     'mbsh', 'java', '$MBSH']][0]
-            temp_script_part = os.path.basename(script_part) if script_part.startswith(os.sep) or script_part[1] == ':' \
-                                                             else script_part
-            #NOTE: check if this works when there is a relative path in the script part
-            candidate_script_path = os.sep.join([engine.temp, self.project_id, self.task_name, temp_script_part]) \
-                                    if package_missing_flag else self.package
-            if not os.path.exists(script_part) :
-                file_pattern = re.compile(r'\w+\.\w+')
-                if file_pattern.search(script_part) is not None :
-                    self.script = self.script.replace(script_part, candidate_script_path, 1)
+            missing_files.append(DataFile(self.package, is_package=True))
         self.script.replace("%TEMP", os.sep.join([engine.temp, self.project_id, self.task_name]))
         self.script.replace("%OUTPUT", os.sep.join([engine.output, self.project_id]))
         if self.script.startswith("sas ") :

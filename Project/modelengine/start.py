@@ -585,7 +585,9 @@ class WorkerThread(Thread) :
         self.outputs = outputs
         self.message_queue = out_queue
         self.events = events
-        self.package = package
+        self.package = "" if package is None else package
+        if self.package :
+            self.package = os.sep.join((self.work_folder, os.path.basename(self.package)))
 
     def run(self):
         if self.events is not None:
@@ -650,7 +652,9 @@ class WorkerProcess(Process) :
         self.outputs = outputs
         self.message_queue = out_queue
         self.events = events
-        self.package = package
+        self.package = "" if package is None else package
+        if self.package :
+            self.package = os.sep.join((self.work_folder, os.path.basename(self.package)))
 
     def run(self):
         if self.events is not None:
