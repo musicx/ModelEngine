@@ -152,21 +152,21 @@ def parseDrop(options) :
 if __name__ == "__main__" :
     parser = OptionParser()
     parser.add_option("-r", "--raw", dest="raw", help="raw csv file", action="store", type="string")
-    parser.add_option("-w", "--woe", dest="woe", help="WoE input file", action="store", type="string")
-    parser.add_option("-b", "--bin", dest="bin", help="z-scaled input file", action="store", type="string")
-    parser.add_option("-z", "--zscl", dest="zscl", help="z-scaled WoE input file", action="store", type="string")
-    parser.add_option("-v", "--var", dest="var", help="variable list file", action="store", type="string")
+    parser.add_option("-d", "--dlm", dest="dlm", help="delimiter char, default=,", action="store", type="string", default=",")
+    parser.add_option("-b", "--bin", dest="bin", help="z-scaled input file, choose one or more among {bin, woe, zscl}", action="store", type="string")
+    parser.add_option("-w", "--woe", dest="woe", help="WoE input file, choose one or more among {bin, woe, zscl}", action="store", type="string")
+    parser.add_option("-z", "--zscl", dest="zscl", help="z-scaled WoE input file, choose one or more among {bin, woe, zscl}", action="store", type="string")
+    parser.add_option("-v", "--var", dest="var", help="variable list file, required for woe transform", action="store", type="string")
+    parser.add_option("-p", "--drop", dest="drop", help="drop variable list, optional", action="store", type="string")
     parser.add_option("-l", "--log", dest="log", help="log file", action="store", type="string")
     parser.add_option("-o", "--out", dest="out", help="output file", action="store", type="string")
-    parser.add_option("-d", "--dlm", dest="dlm", help="delimiter char, default=,", action="store", type="string", default=",")
-    parser.add_option("-p", "--drop", dest="drop", help="drop variable list", action="store", type="string")
     (options, args) = parser.parse_args()
 
     if not options.raw or not os.path.exists(options.raw):
         print "You must specify the source dataset file!"
         exit()
     if (not options.var or not os.path.exists(options.var)) and (not options.bin or not os.path.exists(options.bin)) :
-        print "You must provide either the fine bin result file or the coarse bin result variable list file!"
+        print "You must provide either the fine bin result file (.bin) or the coarse bin result variable list file (_lst.txt)!"
         exit()
     if not options.out :
         options.out = options.raw + ".out"

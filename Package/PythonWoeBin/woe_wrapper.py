@@ -83,3 +83,5 @@ if __name__ == '__main__' :
     fr.close()
 
     call(["chmod", "777", "run_py_woe.sh"])
+
+    call(["bash", "run_py_woe.sh"])

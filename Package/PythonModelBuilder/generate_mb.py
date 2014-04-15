@@ -123,3 +123,5 @@ if __name__ == '__main__':
     fr.flush()
     fr.close()
     call(["chmod", "777", "run_mb_nn.sh"])
+
+    call(['bash', "run_mb_nn.sh"])

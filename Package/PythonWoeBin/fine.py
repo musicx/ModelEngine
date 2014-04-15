@@ -1,7 +1,10 @@
 from collections import defaultdict
+import fnmatch
+import json
 import logging
 from optparse import OptionParser
 import math
+import os
 
 __author__ = 'yijiliu'
 
@@ -279,22 +282,34 @@ def parseType(options) :
     special = {}
     ikeeps = set()
     idrops = set()
-    with open(options.type, "r") as fn:
-        while True:
-            line = fn.readline()
-            if not line :
-                break
+    if os.path.exists(options.type) :
+        lines = open(options.type).readlines()
+        for line in lines:
             parts = [x.lower().strip() for x in line.split(',')]
-            if "num" in parts :
+            if "num" in parts or 'n' in parts:
                 special[parts[0]] = "num"
-            elif "char" in parts :
+            elif "char" in parts or 'c' in parts:
                 special[parts[0]] = "char"
-            if "drop" in parts :
+            if "drop" in parts or 'd' in parts:
                 idrops.add(parts[0])
-            if "keep" in parts :
+            if "keep" in parts or 'k' in parts:
                 ikeeps.add(parts[0])
-        if len(ikeeps) > 0 :
-            idrops = set()
+    else :
+        try :
+            variables = json.loads(options.type.lower())
+            for name in variables :
+                if 'num' in variables[name] or 'n' in variables[name] :
+                    special[name] = 'num'
+                elif 'char' in variables[name] or 'c' in variables[name] :
+                    special[name] = 'char'
+                if 'drop' in variables[name] or 'd' in variables[name] :
+                    idrops.add(name)
+                if 'keep' in variables[name] or 'k' in variables[name] :
+                    ikeeps.add(name)
+        except ValueError :
+            pass
+    if len(ikeeps) > 0 :
+        idrops = set()
     return special, ikeeps, idrops
 
 
@@ -552,20 +567,28 @@ def checkHeader(options) :
     return True
 
 
+def findPatterns(base, patterns) :
+    selected = set()
+    for pattern in patterns :
+        selected = selected.union(fnmatch.filter(base, pattern))
+    return selected
+
+
 if __name__ == '__main__' :
     parser = OptionParser()
     parser.add_option("-s", "--src", dest="src", help="develop data file", action="store", type="string")
     parser.add_option("-v", "--val", dest="val", help="validate data file, if many, use ','", action="store", type="string")
+    parser.add_option("-d", "--dlm", dest="dlm", help="delimiter char, accept xASCII format, default=,", action="store", type="string", default=",")
     parser.add_option("-b", "--bad", dest="bad", help="index or names of bad variables", action="store", type="string")
-    parser.add_option("-o", "--out", dest="out", help="output fine bin file", action="store", type="string")
     parser.add_option("-w", "--wgt", dest="wgt", help="index or names of weight, optional", action="store", type="string")
     parser.add_option("-e", "--head", dest="head", help="optional head line file, must use ',' as delimiter", action="store", type="string")
-    parser.add_option("-t", "--type", dest="type", help="optional variable type file in format var_name[,keep|drop][,num|char] on each line", action="store", type="string")
-    parser.add_option("-l", "--log", dest="log", help="log file, if not given, stdout is used", action="store", type="string")
+    parser.add_option("-t", "--type", dest="type", help="optional variable type file / json string in format var_name[,k[eep]|d[rop]][,n[um]|c[har]] on each line", action="store", type="string")
+    parser.add_option("-x", "--excl", dest="exclude", help="optional variable list for simple exclusion of binning, wildchar supported, separate with ','", action="store", type="string")
     parser.add_option("-n", "--num", dest="num", help="number of variables per batch, default is 100 vars at once", action="store", type="int", default=100)
     parser.add_option("-m", "--mess", dest="mess", help="minimum mess block, default=2% of total population", action="store", type="float", default=0.02)
     parser.add_option("-p", "--pct", dest="pct", help="minimum target block, default=2% of all bad or all good", action="store", type="float", default=0.02)
-    parser.add_option("-d", "--dlm", dest="dlm", help="delimiter char, accept xASCII format, default=,", action="store", type="string", default=",")
+    parser.add_option("-o", "--out", dest="out", help="output fine bin file", action="store", type="string")
+    parser.add_option("-l", "--log", dest="log", help="log file, if not given, stdout is used", action="store", type="string")
     (options, args) = parser.parse_args()
 
     if not options.src :
@@ -603,6 +626,13 @@ if __name__ == '__main__' :
         keeps = set()
         drops = set()
     logging.info("special variable type parsed...")
+
+    if options.exclude :
+        exclude_patterns = options.exclude.lower().split(',')
+        exclude_base = [x.lower() for x in vnames]
+        excludes = set(findPatterns(exclude_base, exclude_patterns))
+        keeps = keeps.difference(excludes)
+        drops = drops.union(excludes)
 
     logging.info("start generating distinct values...")
     name_batch = {}
