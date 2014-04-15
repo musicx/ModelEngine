@@ -192,8 +192,8 @@ class TaskScanner(Thread):
                         finished = Event()
                         source_path = item.path
                         target_folder = os.sep.join((self.engine.output if item.is_output else self.engine.temp, message.project_id))
-                        if item.is_folder and not os.path.exists(item.relative_path):
-                            target_folder = os.sep.join([target_folder, item.relative_path])
+                        #if item.is_folder and not os.path.exists(item.folder_path):
+                        #    target_folder = os.sep.join([target_folder, item.folder_path])
                         fetcher = Fetcher(self.engine, self.system.engines[message.worker], source_path,
                                           target_folder, finished, is_output=item.is_output, is_folder=item.is_folder)
                         fetcher.start()

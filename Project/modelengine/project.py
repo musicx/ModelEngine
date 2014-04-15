@@ -42,7 +42,7 @@ class DataFile:
                 self.is_input = True if fconfig['@type'] == 'data' else False
             self.id = fconfig['@id'] if '@id' in fconfig else '##'
             self.path = fconfig['#text']
-        self.relative_path = self.path if self.is_folder else ""
+        self.folder_path = self.path if self.is_folder else ""
         if not self.is_package and not self.is_input and not self.is_folder and not self.is_output :
             self.is_output = True
 
@@ -76,8 +76,8 @@ class Task:
                 else:
                     for item in tconfig['task_output']['folder'] :
                         self.output.append(DataFile(item, is_folder=True))
-        self.complete = False
-        self.delievered = False
+        self.complete = True if self.skip else False
+        self.delievered = True if self.skip else False
 
 
 class Stage:
@@ -129,7 +129,7 @@ class Stage:
 
     def allTaskComplete(self):
         for task in self.tasks.itervalues() :
-            if not task.complete:
+            if not task.complete :
                 return False
         return True
 
