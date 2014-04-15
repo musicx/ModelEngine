@@ -26,10 +26,11 @@ if __name__ == '__main__':
 
     config_string = {'bad' : options.bad,
                      'train' : options.train}
-    if options.test.find(';') >= 0 :
-        tests = options.test.split(';')
-    else :
-        tests = [options.test]
+    if options.test :
+        if options.test.find(';') >= 0 :
+            tests = options.test.split(';')
+        else :
+            tests = [options.test]
 
     if options.key.find(',') >= 0 :
         keys = [x.lower() for x in options.key.split(',')]
@@ -87,15 +88,16 @@ if __name__ == '__main__':
     with open('C_TrainWorker.mb', 'w') as fn :
         fn.write(part_c.format(opt=config_string))
 
-    part_d = open('D_ReadData.mb.template').read()
-    for ind in xrange(len(tests)) :
-        cmd_d = "D_ReadData_d{}".format(ind)
-        config_string['source'] = tests[ind]
-        config_string['target'] = "test_d{}".format(ind)
-        with open('{}.mb'.format(cmd_d), 'w') as fn :
-            fn.write(part_d.format(opt=config_string))
-        fr.write(cmd.format(cmd_d))
-        fr.write("\n\n")
+    if options.test:
+        part_d = open('D_ReadData.mb.template').read()
+        for ind in xrange(len(tests)) :
+            cmd_d = "D_ReadData_d{}".format(ind)
+            config_string['source'] = tests[ind]
+            config_string['target'] = "test_d{}".format(ind)
+            with open('{}.mb'.format(cmd_d), 'w') as fn :
+                fn.write(part_d.format(opt=config_string))
+            fr.write(cmd.format(cmd_d))
+            fr.write("\n\n")
 
     part_e = open('E_ScoreData.mb.template').read()
     for node in nodes :
@@ -110,15 +112,16 @@ if __name__ == '__main__':
         fr.write(cmd.format(cmd_e))
         fr.write("\n")
 
-        for ind in xrange(len(tests)) :
-            cmd_e = "E_ScoreData_d{0}_n{1}".format(ind, node)
-            config_string['input'] = r"./data/test_d{}.mbd".format(ind)
-            config_string['output'] = r"./data/scored_test_d{0}_n{1}.csv".format(ind, node)
-            with open('{}.mb'.format(cmd_e), 'w') as fn :
-                fn.write(part_e.format(opt=config_string))
-            fr.write(cmd.format(cmd_e))
+        if options.test :
+            for ind in xrange(len(tests)) :
+                cmd_e = "E_ScoreData_d{0}_n{1}".format(ind, node)
+                config_string['input'] = r"./data/test_d{}.mbd".format(ind)
+                config_string['output'] = r"./data/scored_test_d{0}_n{1}.csv".format(ind, node)
+                with open('{}.mb'.format(cmd_e), 'w') as fn :
+                    fn.write(part_e.format(opt=config_string))
+                fr.write(cmd.format(cmd_e))
+                fr.write("\n")
             fr.write("\n")
-        fr.write("\n")
 
     fr.flush()
     fr.close()

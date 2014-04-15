@@ -14,37 +14,9 @@ if __name__ == '__main__' :
     parser.add_option("-w", "--wgt", dest="wgt", help="index or names of weight, optional", action="store", type="string")
     parser.add_option("-e", "--head", dest="head", help="optional head line file, must use ',' as delimiter", action="store", type="string")
     parser.add_option("-t", "--type", dest="type", help="optional variable type file in format var_name[,keep|drop][,num|char] on each line", action="store", type="string")
+    parser.add_option("-x", "--excl", dest="exclude", help="optional variable list for simple exclusion of binning, wildchar supported, separate with ','", action="store", type="string")
     parser.add_option("-d", "--dlm", dest="dlm", help="delimiter char, accept xASCII format, default=,", action="store", type="string")
     parser.add_option("-c", "--sel", dest="sel", help="# of variables selected based on iv", action="store", type="int", default=1000)
-
-    extra_parameters = '''
-    parser.add_option("-o", "--out", dest="out", help="output fine bin file", action="store", type="string")
-    parser.add_option("-l", "--log", dest="log", help="log file, if not given, stdout is used", action="store", type="string")
-    parser.add_option("-n", "--num", dest="num", help="number of variables per batch, default is all at once", action="store", type="int", default=0)
-    parser.add_option("-m", "--mess", dest="mess", help="minimum mess block, default=2% of total population", action="store", type="float", default=0.02)
-    parser.add_option("-p", "--pct", dest="pct", help="minimum target block, default=2% of all bad or all good", action="store", type="float", default=0.02)
-
-    parser.add_option("-b", "--bin", dest="bin", help="binning input file", action="store", type="string")
-    parser.add_option("-w", "--woe", dest="woe", help="WoE output file", action="store", type="string")
-    parser.add_option("-l", "--log", dest="log", help="log file", action="store", type="string")
-    parser.add_option("-f", "--suffix", dest="suf", help="suffix except _woe", action="store", type="string")
-    parser.add_option("-i", "--iv", dest="iv", help="iv excluding threshold", action="store", type="float", default=0.001)
-    parser.add_option("-r", "--mrate", dest="mr", help="missing rate excluding threshold", action="store", type="float", default=0.95)
-    parser.add_option("-d", "--drpb", dest="drpb", help="drop bin threshold", action="store", type="float", default=100)
-    parser.add_option("-g", "--aggb", dest="aggb", help="aggregation bin threshold", action="store", type="float", default=500)
-    parser.add_option("-o", "--outb", dest="outb", help="output min bin threshold", action="store", type="float", default=0.02)
-
-    parser.add_option("-r", "--raw", dest="raw", help="raw csv file", action="store", type="string")
-    parser.add_option("-w", "--woe", dest="woe", help="WoE input file", action="store", type="string")
-    parser.add_option("-b", "--bin", dest="bin", help="z-scaled input file", action="store", type="string")
-    parser.add_option("-z", "--zscl", dest="zscl", help="z-scaled WoE input file", action="store", type="string")
-    parser.add_option("-v", "--var", dest="var", help="variable list file", action="store", type="string")
-    parser.add_option("-l", "--log", dest="log", help="log file", action="store", type="string")
-    parser.add_option("-o", "--out", dest="out", help="output file", action="store", type="string")
-    parser.add_option("-d", "--dlm", dest="dlm", help="delimiter char, default=,", action="store", type="string", default=",")
-    parser.add_option("-p", "--drop", dest="drop", help="drop variable list", action="store", type="string")
-    '''
-
     (options, args) = parser.parse_args()
 
     if not options.src :
@@ -60,14 +32,15 @@ if __name__ == '__main__' :
                      'wgt' : '-w ' + options.wgt if options.wgt else '',
                      'head' : '-e ' + options.head if options.head else '',
                      'type' : '-t ' + options.type if options.type else '',
-                     'dlm' : '-d ' + options.dlm if options.dlm else ''
+                     'dlm' : '-d ' + options.dlm if options.dlm else '',
+                     'ex' : '-x ' + options.exclude if options.exclude else ''
     }
 
     fr = open('run_py_woe.sh', 'w')
-    fr.write('python fine.py -s {opt[dev]} {opt[oot]} -b {opt[bad]} {opt[wgt]} {opt[head]} {opt[dlm]} {opt[type]} -l woe_fine_bin.log -o temp_result.bin\n\n'.format(opt=config_string))
-    fr.write('python coarse.py -b temp_result.bin -l woe_coarse_bin.log\n\n'.format(opt=config_string))
+    fr.write('python fine.py -s {opt[dev]} {opt[oot]} -b {opt[bad]} {opt[wgt]} {opt[head]} {opt[dlm]} {opt[type]} {opt[ex]} -l woe_fine_bin.log -o woe_result.bin\n\n'.format(opt=config_string))
+    fr.write('python coarse.py -b woe_result.bin -l woe_coarse_bin.log\n\n'.format(opt=config_string))
 
-    fr.write('python trans.py -r {opt[dev]} -z temp_result_woe_zscl.txt -v temp_result_lst.txt {opt[dlm]} -l woe_trans_data_train.log -o train_woe_zscl.csv\n'.format(opt=config_string))
+    fr.write('python trans.py -r {opt[dev]} -z woe_result_woe_zscl.txt -v woe_result_lst.txt {opt[dlm]} -l woe_trans_data_train.log -o train_woe_zscl.csv\n'.format(opt=config_string))
     if options.val :
         if options.val.find(',') > 0 :
             tests = options.val.split(',')
@@ -76,7 +49,7 @@ if __name__ == '__main__' :
         for ind in xrange(len(tests)) :
             config_string['test'] = tests[ind]
             config_string['data'] = 'oot{}'.format(ind+1)
-            fr.write('python trans.py -r {opt[test]} -z temp_result_woe_zscl.txt -v temp_result_lst.txt {opt[dlm]} -l woe_trans_data_{opt[data]}.log -o {opt[data]}_woe_zscl.csv\n'.format(opt=config_string))
+            fr.write('python trans.py -r {opt[test]} -z woe_result_woe_zscl.txt -v woe_result_lst.txt {opt[dlm]} -l woe_trans_data_{opt[data]}.log -o {opt[data]}_woe_zscl.csv\n'.format(opt=config_string))
 
 
     fr.flush()

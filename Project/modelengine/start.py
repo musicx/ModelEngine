@@ -191,14 +191,11 @@ class TaskScanner(Thread):
                     for item in message.outputs :
                         finished = Event()
                         source_path = item.path
-                        target_folder = os.sep.join((self.engine.output, message.project_id)) if item.is_output\
-                                        else os.sep.join((self.engine.temp, message.project_id, message.task_name))
-                        if not os.path.exists(target_folder) :
-                            os.makedirs(target_folder)
+                        target_folder = os.sep.join((self.engine.output if item.is_output else self.engine.temp, message.project_id))
                         if item.is_folder and not os.path.exists(item.relative_path):
                             target_folder = os.sep.join([target_folder, item.relative_path])
                         fetcher = Fetcher(self.engine, self.system.engines[message.worker], source_path,
-                                          target_folder, finished, is_output=item.is_output)
+                                          target_folder, finished, is_output=item.is_output, is_folder=item.is_folder)
                         fetcher.start()
                         finish_events.append(finished)
                     statusUpdater = StatusUpdater(self.system.projects[message.project_id], message.task_name,
@@ -281,9 +278,9 @@ class TaskScanner(Thread):
 
     def checkFolder(self, project_id, task_name=None):
         if task_name is not None:
-            temp = os.sep.join((self.engine.temp, project_id))
-        else :
             temp = os.sep.join((self.engine.temp, project_id, task_name))
+        else :
+            temp = os.sep.join((self.engine.temp, project_id))
         output = os.sep.join((self.engine.output, project_id))
         delivery = os.sep.join((self.engine.delivery, project_id))
         if not os.path.exists(temp) :
@@ -410,49 +407,53 @@ class Fetcher(Thread) :
 
     def run(self) :
         # add move mechanism if it is local fetcher
-        target_path = self.target + os.sep if not self.target.endswith(os.sep) else self.target
+        target_folder = self.target + os.sep if not self.target.endswith(os.sep) else self.target
         source_path = self.source
         #source_path = "{0}@{1}:{2}".format(self.remote.username, self.remote.address, self.source)
-        if (source_path, target_path) in self.local.fetchings :
-            while self.local.fetchings[(source_path, target_path)] :
+        if (source_path, target_folder) in self.local.fetchings :
+            while self.local.fetchings[(source_path, target_folder)] :
                 time.sleep(5)
             self.finished.set()
             return
-        self.local.fetchings[(source_path, target_path)] = True
+        self.local.fetchings[(source_path, target_folder)] = True
         if self.is_local :
             logging.info("fetch file {0} from local server".format(self.source))
-            if source_path.find(self.local.temp) >= 0 and self.is_output:
+            if source_path.find(self.local.temp) >= 0:
                 # in the temp folder, move to output folder
                 if self.is_folder :
-                    if not os.path.exists(target_path) :
-                        os.makedirs(target_path)
-                    os.rename(source_path, target_path)
-                    logging.debug("move local folder from {0} to {1}".format(source_path, target_path))
+                    os.rename(source_path, target_folder)
+                    logging.debug("move local folder from {0} to {1}".format(source_path, target_folder))
                 else :
-                    target_path = os.sep.join([target_path, os.path.basename(source_path)])
+                    if not os.path.exists(target_folder) :
+                        os.makedirs(target_folder)
+                    target_path = os.sep.join([target_folder, os.path.basename(source_path)])
                     os.rename(source_path, target_path)
                     logging.debug("move local file from {0} to {1}".format(source_path, target_path))
-            elif os.path.dirname(source_path) == os.path.dirname(target_path) :
+            elif os.path.dirname(source_path) == os.path.dirname(target_folder) :
                 logging.debug("source and target are the same : " + source_path)
             else :
                 # not in temp folder, copy to output folder
+                if not os.path.exists(target_folder) :
+                    os.makedirs(target_folder)
                 if self.is_folder :
                     #if os.path.exists(target_path) :
                     #    shutil.rmtree(target_path, ignore_errors=True)
-                    distutils.dir_util.copy_tree(source_path, target_path)
-                    logging.debug("copy local folder from {0} to {1}".format(source_path, target_path))
+                    distutils.dir_util.copy_tree(source_path, target_folder)
+                    logging.debug("copy local folder from {0} to {1}".format(source_path, target_folder))
                 else :
-                    shutil.copy(source_path, target_path)
-                    logging.debug("copy local file from {0} to {1}".format(source_path, target_path))
+                    shutil.copy(source_path, target_folder)
+                    logging.debug("copy local file from {0} to {1}".format(source_path, target_folder))
         else :
             logging.info("fetch file {0} from remote server {1}".format(self.source, self.remote.address))
             transport = None
+            if not os.path.exists(target_folder) :
+                os.makedirs(target_folder)
             try :
                 transport = self.create_transport()
                 scp = SCPClient(transport)
                 #print "scp client established"
-                scp.get(source_path, target_path, recursive=self.is_folder)
-                logging.debug("copy remote file from {0} to {1}".format(source_path, target_path))
+                scp.get(source_path, target_folder, recursive=self.is_folder)
+                logging.debug("copy remote file from {0} to {1}".format(source_path, target_folder))
             except Exception as err:
                 logging.error("SCP error : " + err.message)
             finally :
@@ -469,7 +470,7 @@ class Fetcher(Thread) :
             #                                            stderr=subprocess.STDOUT, shell=True)
             #    #logging.debug("command done")
             #    logging.debug("copy remote file from {0} to {1}".format(source_path, target_path))
-        self.local.fetchings[(source_path, target_path)] = False
+        self.local.fetchings[(source_path, target_folder)] = False
         self.finished.set()
 
     def create_transport(self):
