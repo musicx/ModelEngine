@@ -5,7 +5,8 @@ input :
     train : training dataset path
     delimiter : dataset delimiter
     bad : bad variable name
-    role_ids : key variables roles assignment lines
+    key_pos : key variables position lines, to avoid reading them as numerical vars
+    ###role_ids : key variables roles assignment lines
     keep_vars : keep variables list
 ***************/
 import com.fairisaac.mb.scripting.data.BinningMissingValueMap
@@ -31,19 +32,22 @@ Dataset ds = app.task.importData(
         varDelimiter: '{opt[delimiter]}', // '\007' or ','
         characterSet: 'US-ASCII',
         partialLayout: true
-    ) {{}}
+    ) {{
+    // var( name : "transid", type : "string", position : ind, role : "recordID")
+{opt[key_pos]}
+    }}
 }}.dataset
 
 // Add default roles
-ds.getVariableInfos().each() {{
-    if (it.getName() == 'opt[bad]')
-        it.getVariableRoles().add('target')
-{opt[role_ids]}
-//    else if (it.getName() == 'key')
+//ds.getVariableInfos().each() {{
+//    if (it.getName().toLowerCase() == 'opt[bad]')
+//        it.getVariableRoles().add('target')
+//{{opt[role_ids]}}
+//    else if (it.getName().toLowerCase() == 'key')
 //        it.getVariableRoles().add('recordID')
-    else
-        it.getVariableRoles().add('predictor')
-}}
+//    else
+//        it.getVariableRoles().add('predictor')
+//}}
 
 // Categorize variables
 app.data.categorize(ds, '{opt[bad]}')

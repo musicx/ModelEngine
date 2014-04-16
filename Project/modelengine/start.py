@@ -1,13 +1,11 @@
 import glob
-import logging
 from multiprocessing import Process, JoinableQueue, Event
-import os
 import shutil
+import logging
 import subprocess
 import sys
 import paramiko
-import xmltodict
-import time
+
 import distutils.dir_util
 from scp import SCPClient
 from project import *

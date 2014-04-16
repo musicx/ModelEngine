@@ -17,14 +17,20 @@ if __name__ == '__main__':
     parser.add_option("-d", "--dlm", dest="dlm", action="store", type="string", default=",",
                       help="delimiter char, accept xASCII format, default=','")
     parser.add_option("-v", "--vars", dest="vars", action="store", type="string",
-                      help="variable list separated with ',' and wild characters is supported such as '*_zscl'")
+                      help="model variable list separated with ',' and wild characters is supported such as '*_zscl'")
+    parser.add_option("-s", "--base", dest="base", action="store", type="string",
+                      help="non-training variables need to be kept, separated with ','")
     parser.add_option("-r", "--drop", dest="drop", action="store", type="string",
                       help="drop variable list separated with ','")
     parser.add_option("-n", "--node", dest="node", action="store", type="string",
                       help="nodes in the hidden layer, separated with ','")
     (options, args) = parser.parse_args()
 
-    config_string = {'bad' : options.bad,
+    if not (options.bad and options.train and options.key) :
+        print "train, bad and key are required"
+        exit()
+
+    config_string = {'bad' : options.bad.lower(),
                      'train' : options.train}
     if options.test :
         if options.test.find(';') >= 0 :
@@ -38,7 +44,6 @@ if __name__ == '__main__':
         keys = [options.key.lower()]
     config_string['keys'] = " ".join(keys)
 
-
     if options.dlm.startswith('x') :
         config_string['delimiter'] = '\\' + oct(int(options.dlm[1:], 16))
     else:
@@ -49,15 +54,36 @@ if __name__ == '__main__':
     else :
         nodes = [options.node.strip()]
 
-    config_string['role_ids'] = ''
-    for key in keys :
-        config_string['role_ids'] += "\telse if (it.getName() == '{0}')\n\t\tit.getVariableRoles().add('recordID')\n".format(key)
+    delimiter = chr(int(options.dlm[1:])) if options.dlm.startswith('x') else options.dlm
+    heads = open(options.train).readline().split(delimiter)
+    bases = [x.lower() for x in options.base.split(',')] if options.base else []
+
+    config_string['key_pos'] = ''
+    for head in heads:
+        var = head.strip().lower()
+        if var == config_string['bad'] :
+            role = 'target'
+            var_type = 'numeric'
+        elif var in keys :
+            role = 'recordID'
+            var_type = 'string'
+        elif var in bases :
+            role = 'uninformative'
+            var_type = 'string'
+        else :
+            role = 'predictor'
+            var_type = 'numeric'
+        config_string['key_pos'] += "\tvar( name : \"{0}\", type : \"{1}\", role : \"{2}\")\n".format(head.strip(), var_type, role)
+
+#    config_string['role_ids'] = ''
+#    for key in keys :
+#        config_string['role_ids'] += "\telse if (it.getName().toLowerCase() == '{0}')\n\t\tit.getVariableRoles().add('recordID')\n".format(key)
 
     if not options.vars :
         options.vars = '*_woe_zscl'
     if options.vars.find(',') > 0 :
         options.vars = options.vars.replace(',', ' ')
-    config_string['keep_vars'] = " ".join([options.vars, options.bad, " ".join(keys)])
+    config_string['keep_vars'] = " ".join([options.vars, options.bad, " ".join(keys), " ".join(bases)])
 
     config_string['nodes'] = options.node
     config_string['nodes_num'] = min(len(nodes), 3)

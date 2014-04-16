@@ -4,6 +4,7 @@ This file is used as the template for reading common dataset and save it in data
 input :
     source : raw flat file dataset path
     delimiter : dataset delimiter
+    key_pos : key variables position lines, to avoid reading them as numerical vars
     target : output .mdb file path
 ***************/
 
@@ -30,7 +31,10 @@ Dataset ds = app.task.importData(
         varDelimiter: '{opt[delimiter]}', // '\007' or ','
         characterSet: 'US-ASCII',
         partialLayout: true
-    ) {{}}
+    ) {{
+    // var( name : "transid", type : "string", position : ind, role : "recordID"),
+{opt[key_pos]}
+    }}
 }}.dataset
 
 // Save to datafile
