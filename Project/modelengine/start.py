@@ -424,7 +424,7 @@ class Fetcher(Thread) :
                 else :
                     if not os.path.exists(target_folder) :
                         os.makedirs(target_folder)
-                    target_path = os.sep.join([target_folder, os.path.basename(source_path)])
+                    target_path = target_folder + os.path.basename(source_path)
                     os.rename(source_path, target_path)
                     logging.debug("move local file from {0} to {1}".format(source_path, target_path))
             elif os.path.dirname(source_path) == os.path.dirname(target_folder) :
