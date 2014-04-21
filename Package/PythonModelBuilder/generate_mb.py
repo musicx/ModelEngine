@@ -77,7 +77,8 @@ if __name__ == '__main__':
         else :
             role = 'predictor'
             var_type = 'numeric'
-        config_string['key_pos'] += "\tvar( name : \"{0}\", type : \"{1}\", role : \"{2}\")\n".format(head.strip(), var_type, role)
+        no_setid_head = head.strip() if var != 'setid' else 'no_set_id'
+        config_string['key_pos'] += "\tvar( name : \"{0}\", type : \"{1}\", role : \"{2}\")\n".format(no_setid_head, var_type, role)
 
 #    config_string['role_ids'] = ''
 #    for key in keys :
