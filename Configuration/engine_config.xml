@@ -16,6 +16,7 @@
                 <type>python</type>
                 <type>sas</type>
                 <type>r</type>
+                <type>mb</type>
             </job_types>
         </server>
     </engines>

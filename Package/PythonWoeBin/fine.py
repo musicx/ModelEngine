@@ -246,7 +246,7 @@ class Variable :
                 self.distribution.pct_95 = cums[5]
                 self.distribution.pct_99 = cums[6]
                 self.distribution.mean = nonmiss_total / (nonmiss_cnt + 1e-36)
-                self.distribution.std = math.sqrt((nonmiss_sqr - 2 * nonmiss_total * self.distribution.mean + nonmiss_cnt * self.distribution.mean ** 2) / (nonmiss_cnt - 1 + 1e-36))
+                self.distribution.std = math.sqrt(abs((nonmiss_sqr - 2 * nonmiss_total * self.distribution.mean + nonmiss_cnt * self.distribution.mean ** 2) / (nonmiss_cnt - 1 + 1e-36)))
         self.distincts = None
 
     def newdataset(self):

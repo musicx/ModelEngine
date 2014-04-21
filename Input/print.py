@@ -1,10 +1,13 @@
 import sys
+from time import sleep
 
 lines = []
 for item in sys.argv[1:-1] :
     for line in open(item) :
         if line.strip() != '':
             lines.append(line)
+
+sleep(100)
 
 fn = open(sys.argv[-1], 'w')
 for line in lines :
