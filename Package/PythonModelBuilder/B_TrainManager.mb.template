@@ -9,6 +9,7 @@ input :
     role_ids : key variables roles assignment lines
     model_vars : variables used for modeling
     drop_vars : drop variables list
+    suf : output file name suffix
 ***************/
 
 import com.fairisaac.mb.api.job.launch.LaunchedJob
@@ -19,7 +20,7 @@ User input
 ********************************************************************************/
 requires (heap:'10G') // Allocates RAM for running this script
 String pathToData = './data/'
-String datasetName = 'nn_train' // Name of MB datafile without the .mbd
+String datasetName = '{opt[suf]}' + 'nn_train' // Name of MB datafile without the .mbd
 String targetVariable = '{opt[bad]}'
 String targetLowStates = '0'
 String targetLowScoreLabel = 'Good'
@@ -84,7 +85,7 @@ List propertyFiles = []
 
 numHiddenNodesToTry.each(){{nodes->
     numHiddenLayersToTry.each(){{layers->
-        fileName = './scripts/properties/properties_'+nodes+layers+'.groovy'
+        fileName = './scripts/properties/{opt[suf]}properties_'+nodes+layers+'.groovy'
         ConfigObject properties = new ConfigObject()
         properties.pathToData = pathToData
         properties.datasetName = datasetName
@@ -118,8 +119,8 @@ while (propertyFiles.size()>0){{
 // Plot sensititivity results
 numHiddenNodesToTry.each(){{nodes->
     numHiddenLayersToTry.each(){{layers->
-                String tablePathAndFile = './scripts/models/Sensitivity'+nodes+layers+'.tbl'
-                String outputPathAndFile = './scripts/reports/SensitivityPlot'+nodes+layers+'.html'
+                String tablePathAndFile = './scripts/models/{opt[suf]}Sensitivity'+nodes+layers+'.tbl'
+                String outputPathAndFile = './scripts/reports/{opt[suf]}SensitivityPlot'+nodes+layers+'.html'
                // U_PlotSensitivity.run(tablePathAndFile,outputPathAndFile)
     }}
 }}

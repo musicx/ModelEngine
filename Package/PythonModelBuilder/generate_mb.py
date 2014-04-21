@@ -24,6 +24,8 @@ if __name__ == '__main__':
                       help="drop variable list separated with ','")
     parser.add_option("-n", "--node", dest="node", action="store", type="string",
                       help="nodes in the hidden layer, separated with ','")
+    parser.add_option("-f", "--suffix", dest="suffix", action="store", type="string",
+                      help="optional suffix for output files")
     (options, args) = parser.parse_args()
 
     if not (options.bad and options.train and options.key) :
@@ -31,7 +33,9 @@ if __name__ == '__main__':
         exit()
 
     config_string = {'bad' : options.bad.lower(),
-                     'train' : options.train}
+                     'train' : options.train,
+                     'suf' : options.suffix + '_' if options.suffix is not None and options.suffix.strip() != '' else ''}
+
     if options.test :
         if options.test.find(';') >= 0 :
             tests = options.test.split(';')
@@ -127,12 +131,12 @@ if __name__ == '__main__':
 
     part_e = open('E_ScoreData.mb.template').read()
     for node in nodes :
-        spec = r"./scripts/models/spec_nn_n{}_l1.pmml".format(node)
+        spec = r"./scripts/models/{}spec_nn_n{}_l1.pmml".format(config_string['suf'], node)
         cmd_e = "E_ScoreData_{0}_n{1}".format("train", node)
         config_string['spec'] = spec
-        config_string['name'] = "nn_n{}".format(node)
-        config_string['input'] = r"./data/nn_train.mbd"
-        config_string['output'] = r"./data/scored_train_n{}.csv".format(node)
+        config_string['name'] = "{}nn_n{}".format(config_string['suf'], node)
+        config_string['input'] = r"./data/{}nn_train.mbd".format(config_string['suf'])
+        config_string['output'] = r"./data/{}scored_train_n{}.csv".format(config_string['suf'], node)
         with open('{}.mb'.format(cmd_e), 'w') as fn :
             fn.write(part_e.format(opt=config_string))
         fr.write(cmd.format(cmd_e))
@@ -141,8 +145,8 @@ if __name__ == '__main__':
         if options.test :
             for ind in xrange(len(tests)) :
                 cmd_e = "E_ScoreData_d{0}_n{1}".format(ind, node)
-                config_string['input'] = r"./data/test_d{}.mbd".format(ind)
-                config_string['output'] = r"./data/scored_test_d{0}_n{1}.csv".format(ind, node)
+                config_string['input'] = r"./data/{}test_d{}.mbd".format(config_string['suf'], ind)
+                config_string['output'] = r"./data/{0}scored_test_d{1}_n{2}.csv".format(config_string['suf'], ind, node)
                 with open('{}.mb'.format(cmd_e), 'w') as fn :
                     fn.write(part_e.format(opt=config_string))
                 fr.write(cmd.format(cmd_e))

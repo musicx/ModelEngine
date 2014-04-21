@@ -6,13 +6,14 @@ input :
     delimiter : dataset delimiter
     key_pos : key variables position lines, to avoid reading them as numerical vars
     target : output .mdb file path
+    suf : output file name suffix
 ***************/
 
 import com.fairisaac.mb.scripting.data.BinningMissingValueMap
 
 requires (heap:'2G') // Allocates RAM for running the script
 String pathToData = './data/'
-String datasetName = '{opt[target]}' // Name of MB datafile without the .mbd
+String datasetName = '{opt[suf]}{opt[target]}' // Name of MB datafile without the .mbd
 
 String srcURI = "{opt[source]}"
 String sinkURI = pathToData+datasetName+'.mbd'
