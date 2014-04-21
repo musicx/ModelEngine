@@ -88,8 +88,10 @@ class Stage:
         self.package = sconfig.get('stage_package', None)
         skip = sconfig.get('skip_stage', 'no')
         self.skip = skip is not None and skip.lower() == 'yes'
-        self.delievered = False if self.script is not None else True
-        self.complete = self.delievered
+        self.has_stagetask = True if self.script is not None and self.script.strip() != "" else False
+        self.delievered = False if self.has_stagetask and not self.skip else True
+        self.task_complete = self.delievered
+        self.complete = self.skip
         self.input = []
         if 'stage_input' in sconfig and sconfig['stage_input'] is not None and 'file' in sconfig['stage_input']:
             if type(sconfig['stage_input']['file']) is not list :
@@ -320,20 +322,25 @@ class Project:
                 self.deactivate = True
         elif taskname == stage.name :
             if status == 0 :
-                stage.complete = True
+                stage.task_complete = True
             else :
                 self.deactivate = True
         else :
             # ERROR log
             logging.error("Cannot find corresponding task to update!")
             self.deactivate = True
-        try :
-            result = self.nextTasks()
-            if result == 0 :
-                self.clean()
-        except IOError as err :
-            #TODO : file not found error
-            pass
+        if stage.allTaskComplete() and stage.task_complete :
+            stage.complete = True
+        if stage.allTaskComplete() or stage.complete :
+            try :
+                result = self.nextTasks()
+                if result == 0 :
+                    stage = self.findIncompleteStage()
+                    if stage is None :
+                        self.clean()
+            except IOError as err :
+                #TODO : file not found error
+                pass
 
     def clean(self):
         clean_xml = xmlwitch.Builder()
