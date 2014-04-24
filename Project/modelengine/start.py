@@ -59,6 +59,7 @@ class TaskScanner(Thread):
                 if bad_email is not None :
                     emailer = EmailNotifier("Unknown", bad_email, message, self.engine.delivery)
                     emailer.start()
+                os.rename(filename, filename+".err")
                 continue
 
             if "project" in doc:

@@ -135,7 +135,8 @@ if __name__ == '__main__':
         #    or simply add to the existing drop list.
         # 3. go through the command line input keep patterns
         #    continue to modify the existing keep / drop lists
-        #    keep variables will be removed from earlier drop list, and add to the keep list,
+        #    keep variables will be removed from earlier drop list, OR add to the new/existing keep list
+        # 4. Keep list, if any, will override the drop list at last
         if type_strings is not None :
             keeps, drops = parse_type(type_strings[dind])
         else :
@@ -148,19 +149,19 @@ if __name__ == '__main__':
             variable_names_lower = [x.lower() for x in variable_names]
             if drop_strings is not None :
                 drop_patterns = drop_strings[dind].lower().split(',')
-                drop_variables = set(findPatterns(variable_names_lower, drop_patterns))
+                drop_variables = findPatterns(variable_names_lower, drop_patterns)
+                drops = drops.union(drop_variables) if len(keeps) == 0 else drops
                 keeps = keeps.difference(drop_variables)
-                drops = drops.union(drop_variables) if len(drops) > 0 or type_strings is None else drops
             if keep_strings is not None :
                 keep_patterns = keep_strings[dind].lower().split(',')
-                keep_variables = set(findPatterns(variable_names_lower, keep_patterns))
-                keeps = keeps.union(keep_variables) if len(keeps) > 0 or type_strings is None else keeps
+                keep_variables = findPatterns(variable_names_lower, keep_patterns)
+                keeps = keeps.union(keep_variables) if len(drops) == 0 else keeps
                 drops = drops.difference(keep_variables)
 
             new_variable_names = OrderedDict()
             for ind in xrange(len(variable_names)) :
                 variable_name = variable_names[ind]
-                if variable_name.lower() not in drops or (len(keeps) > 0 and variable_name in keeps) or variable_name.lower() in keys:
+                if (len(drops) > 0 and variable_name.lower() not in drops) or (len(keeps) > 0 and variable_name.lower() in keeps) or (len(drops) == 0 and len(keeps) == 0) or variable_name.lower() in keys:
                     if variable_name.lower() in keys :
                         new_variable_names[ind] = variable_name
                     elif variable_name.lower() not in global_variable_set :
@@ -217,7 +218,7 @@ if __name__ == '__main__':
         row = cur.fetchone()
         if not row :
             break
-        print "dataset_merge", row
+        #print "dataset_merge", row
         fout.write(options.dlm.join([str(x) for x in row]))
         fout.write("\n")
     fout.close()
