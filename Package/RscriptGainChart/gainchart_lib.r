@@ -42,7 +42,9 @@ perf_score <- function(is_bad, score, unit_wgt, dol_wgt, ID, scrvar, data_label,
   loginfo("min score: %s", min_score)
   loginfo("rank: %s", rank)
 
+
   base_step <- ceiling(max_score-min_score)/rank
+  loginfo("generate raw data...")
   raw_data <- cbind(good, bad, unit_wgt, dol_wgt, score, catch_data)
   
   raw_data$pmt <- raw_data$dol_wgt
@@ -52,9 +54,16 @@ perf_score <- function(is_bad, score, unit_wgt, dol_wgt, ID, scrvar, data_label,
   raw_data$bad_pmt <- raw_data$pmt*raw_data$bad
   raw_data$bad <- raw_data$unit_wgt*raw_data$bad
   
+  loginfo("filter out missing scores/pmt/n/good/bad...")
   raw_data <- raw_data[which(!is.na(raw_data$score)),]
+  raw_data$score <- as.numeric(raw_data$score)
+  raw_data <- raw_data[which(!is.na(raw_data$pmt)),]
+  raw_data <- raw_data[which(!is.na(raw_data$n)),]
+  raw_data <- raw_data[which(!is.na(raw_data$good)),]
+  raw_data <- raw_data[which(!is.na(raw_data$bad)),]
   
   #raw_data$score[which(is.na(raw_data$score))] <- NA_score
+  loginfo("calculate score group...")
   if(order_descending)
   {
     raw_data$score_grp <- floor((raw_data$score-min_score)/base_step)*base_step+min_score
@@ -74,6 +83,7 @@ perf_score <- function(is_bad, score, unit_wgt, dol_wgt, ID, scrvar, data_label,
     }
   }
   
+  loginfo("aggregate on score group")
   rank_data <- aggregate(raw_data[c("n", "good","bad","pmt", "good_pmt", "bad_pmt", catch_vars)], by=raw_data["score_grp"], FUN=sum)
   order_data <- rank_data[order(rank_data$score_grp, decreasing=order_descending),]
   order_data$sum_unit <- order_data$n
@@ -208,6 +218,14 @@ score_performance<-function(data_list, target_var, scores_vars,
         sub_data <- sub_data[sub_data[class_vars[k]]==class_matrix[i,k],]
       }
       is_bad <- sub_data[target_var]
+      if (is.numeric(sub_data[score_name]))
+      {
+          loginfo("Score is numeric")
+      }
+      else
+      {
+          loginfo("score is not numeric")
+      }
       score <- sub_data[score_name]
       unit_wgt <- sub_data[unit_weight_var]
       dol_wgt <- sub_data[dollar_weight_var]

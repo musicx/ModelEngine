@@ -49,7 +49,7 @@ def performance(data, bad=None, unit=None, dollar=None, score=None,
         print "bad variable cannot be found in the given dataset"
         return None
 
-    if not unit :
+    if not unit or unit == '1':
         unit = 1
     if unit != 1 and unit not in data :
         print "unit weight cannot be found in the given dataset"
@@ -62,7 +62,7 @@ def performance(data, bad=None, unit=None, dollar=None, score=None,
     total_unit = data[unit].sum()
     total_bad_unit = data['BAD_UNIT'].sum()
 
-    if not dollar :
+    if not dollar or dollar == '1':
         dollar = 1
     if dollar != 1 and dollar not in data :
         print "dollar weight cannot be found in the given dataset"
@@ -130,7 +130,7 @@ def performance(data, bad=None, unit=None, dollar=None, score=None,
     return score_aggregation, opt_unit_aggregation, opt_dollar_aggregation
 
 
-def parse_source(src_string) :
+def parse_json(src_string) :
     if os.path.exists(src_string) :
         line = open(src_string).read()
     else :
@@ -146,21 +146,38 @@ def parse_source(src_string) :
 
 if __name__ == '__main__':
     parser = OptionParser()
-    parser.add_option("-s", "--src", dest="src", help="raw string of scored files encoded with json or json file. example:\n" +
-                                                      '{[{"path":"score.csv","score":["new_score"],"id":["trans_id"],"base":["bad","weight","loss","region"]}]}', action="store", type="string")
-    parser.add_option("-b", "--bad", dest="bad", help="names of bad variables", action="store", type="string")
-    parser.add_option("-w", "--wgt", dest="wgt", help="names of weight variables, format: {unit|1;dollar}", action="store", type="string")
-    parser.add_option("-c", "--cat", dest="cat", help="optional, class combination in format [[class_var1,class_var2],[class_var3]]", action="store", type="string")
-    parser.add_option("-l", "--log", dest="log", help="log file, if not given, stdout is used", action="store", type="string")
-    parser.add_option("-d", "--dlm", dest="dlm", help="delimiter char, accept xASCII format, default=,", action="store", type="string", default=",")
-    parser.add_option("-o", "--out", dest="out", help="output performance file", action="store", type="string")
+    parser.add_option("-j", "--json", dest="json", action="store", type="string",
+                      help="raw string of scored files encoded with json or json file. example:\n" +
+                           '{[{"path":"score.csv","score":["new_score"],"id":["trans_id"],"base":["bad","weight","loss","region"]}]}')
+    parser.add_option("-i", "--input", dest="input", action="store", type="string",
+                      help="input datasets, separated with ','")
+    parser.add_option("-s", "--score", dest="score", action="store", type="string",
+                      help="score variables, separated with ','")
+    parser.add_option("-b", "--bad", dest="bad", action="store", type="string",
+                      help="name of bad variables")
+    parser.add_option("-w", "--wgt", dest="wgt", action="store", type="string",
+                      help="names of weight variables, format: unit|1,dollar")
+    parser.add_option("-c", "--catch", dest="catch", action="store", type="string",
+                      help="names of extra variables for catch rate calculation, separated with ','")
+    parser.add_option("-g", "--group", dest="group", action="store", type="string",
+                      help="optional, group combinations in format class_var1,class_var2;class_var3")
+    parser.add_option("-l", "--log", dest="log", action="store", type="string",
+                      help="log file, if not given, stdout is used")
+    parser.add_option("-d", "--dlm", dest="dlm", action="store", type="string", default=",",
+                      help="delimiter char, accept xASCII format, default=','")
+    parser.add_option("-n", "--name", dest="name", action="store", type="string",
+                      help="names of input datasets, separated with ','")
+    parser.add_option("-o", "--out", dest="out", action="store", type="string",
+                      help="output performance file")
     (options, args) = parser.parse_args()
 
-    if not options.src:
+    if not options.json or not options.input:
         print "You must specify the input files!"
         exit()
 
-    sources = parse_source(options.src)
+    if options.json :
+        sources = parse_json(options.json)
+    
     if sources is None :
         print "Error occurs during parsing the source json"
         exit()

@@ -48,6 +48,7 @@ loginfo("Max score: %s", max_score)
 loginfo("Min score: %s", min_score)
 
 score_rank <- opt$rank
+if(score_rank<10000) {score_rank<-10000}
 opt_rank <- opt$rank
 loginfo("rank: %s", opt$rank)
 
