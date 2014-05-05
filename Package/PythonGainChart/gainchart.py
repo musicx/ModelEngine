@@ -177,7 +177,7 @@ if __name__ == '__main__':
 
     if options.json :
         sources = parse_json(options.json)
-    
+
     if sources is None :
         print "Error occurs during parsing the source json"
         exit()
