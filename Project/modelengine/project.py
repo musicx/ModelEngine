@@ -226,7 +226,9 @@ class Project:
             return -1
         stage = self.findUndelieveredStage()
         if stage is None :
+            logging.debug("Find no stage for next tasks")
             return 0
+        logging.debug("Find stage {} for next tasks".format(stage.name))
         for taskname, task in stage.tasks.iteritems() :
             if task.skip or task.delievered:
                 continue
@@ -239,12 +241,14 @@ class Project:
             #distributor.setDaemon(True)
             distributor.start()
             task.delievered = True
+            logging.debug("deliever task {}".format(taskname))
         if stage.allTaskComplete() and not stage.skip and not stage.delievered:
             script_task_content = self.createWorkTask(stage, self.system.engine)
             distributor = Distributer(self.system.engine, os.sep.join([self.system.engine.delivery, self.project_id]),
                                       self.system.engine, self.system.engine.taskpool, stage.name, script_task_content)
             distributor.start()
             stage.delievered = True
+            logging.debug("deliever stage task {}".format(stage.name))
         return 1
 
     def findUndelieveredStage(self):
@@ -276,7 +280,7 @@ class Project:
                 work_task_xml.package("")
             with work_task_xml.input():
                 for item in task.input:
-                    path = self.findAbsolutePath(item.path, engine)
+                    path = self.findAbsolutePath(item.path, engine, task.name)
                     if not path :
                         logging.error("cannot find input file : " + item.path)
                         raise IOError("file not exist")
@@ -298,13 +302,22 @@ class Project:
                         work_task_xml.file(item.path, id=item.id, type=datatype)
         return str(work_task_xml)
 
-    def findAbsolutePath(self, path, engine):
+    def findAbsolutePath(self, path, engine, taskname=None):
         if (path.startswith(os.sep) or path[1] == ":") and os.path.exists(path) :
             return path
         elif os.path.exists(os.sep.join([engine.temp, self.project_id, path])) :
             return os.sep.join([engine.temp, self.project_id, path])
+        elif os.path.exists(os.sep.join([engine.temp, self.project_id, os.path.basename(path)])) :
+            return os.sep.join([engine.temp, self.project_id, os.path.basename(path)])
         elif os.path.exists(os.sep.join([engine.output, self.project_id, path])) :
             return os.sep.join([engine.output, self.project_id, path])
+        elif os.path.exists(os.sep.join([engine.output, self.project_id, os.path.basename(path)])) :
+            return os.sep.join([engine.output, self.project_id, os.path.basename(path)])
+        if taskname is not None :
+            if os.path.exists(os.sep.join([engine.temp, self.project_id, taskname, path])) :
+                return os.sep.join([engine.temp, self.project_id, taskname, path])
+            elif os.path.exists(os.sep.join([engine.temp, self.project_id, taskname, os.path.basename(path)])) :
+                return os.sep.join([engine.temp, self.project_id, taskname, os.path.basename(path)])
         temp_folder = os.sep.join((engine.temp, self.project_id))
         sub_temp_folders = [x for x in os.listdir(temp_folder) if os.path.isdir(os.sep.join((temp_folder, x)))]
         for sub_temp_folder in sub_temp_folders :
@@ -314,7 +327,9 @@ class Project:
         return None
 
     def updateStatus(self, taskname, status) :
+        logging.debug("Update status for {} with code {}".format(taskname, status))
         stage = self.findIncompleteStage()
+        logging.debug("Stage name : {}".format(stage.name))
         if taskname in stage.tasks :
             if status == 0 :
                 stage.tasks[taskname].complete = True
@@ -389,14 +404,19 @@ class WorkTask:
                                         else os.sep.join([engine.temp, self.project_id, self.task_name, os.path.basename(input_file.path)])
             output_path = input_file.path if input_file.path.startswith(os.sep) or input_file.path[1] == ":" \
                                           else os.sep.join((engine.output, self.project_id, input_file.path))
-            if not os.path.exists(output_path):
-                if not os.path.exists(temp_path) :
-                    missing_files.append(input_file)
-                    missing_flag = True
+            output_path_base = input_file.path if input_file.path.startswith(os.sep) or input_file.path[1] == ":" \
+                                               else os.sep.join((engine.output, self.project_id, os.path.basename(input_file.path)))
+            if not os.path.exists(output_path_base) :
+                if not os.path.exists(output_path):
+                    if not os.path.exists(temp_path) :
+                        missing_files.append(input_file)
+                        missing_flag = True
+                    else :
+                        input_file.path = temp_path
                 else :
-                    input_file.path = temp_path
+                    input_file.path = output_path
             else :
-                input_file.path = output_path
+                input_file.path = output_path_base
             replace_path = os.sep.join([engine.temp, self.project_id, self.task_name, os.path.basename(input_file.path)]) \
                            if missing_flag else input_file.path
             if input_file.id is not None and input_file.id != "##":
