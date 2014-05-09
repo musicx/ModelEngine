@@ -23,7 +23,7 @@ A project is comprised of multiple stages, running sequencially. And a stage con
 The configuration for input / output is in the following format:
 
 + File : The file element contains the file path to the specific file. Either absolute path or relative path are acceptable. If relative path is used, the base folder is the working folder for each task individually.
-    > The file element consists of 2 attributes, `id` and `type`. 
+    The file element consists of 2 attributes, `id` and `type`.
     * `id` should be unique on project level. It is used for file reference among tasks.
         * If `id` is missing, the file cannot be referred / used in later tasks.
     * `type` can be chosen from `data` and `output`. `data` means the file will be copied to the `temp` folder as intermediary file, and will be deleted if you set `clean_after_success` to `yes`. `output` means the file will be copied to the `output` folder when task is finished, and will not be deleted.
