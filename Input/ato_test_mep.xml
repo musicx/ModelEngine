@@ -1,0 +1,115 @@
+<project>
+    <name>ato_test_mep</name>
+    <email>yijiliu@ebay.com</email>
+    <project_input>
+        <!--<file id="base">/x/home/yijiliu/work/modelengine/input/mep_10000.csv</file>-->
+        <!--<file id="basep">/x/home/yijiliu/work/modelengine/input/spear_10000.csv</file>-->
+        <file id="base">/rdp/snap19/riot/buyer_huayin/mb_share/mep_ns2_woe.csv</file>
+        <file id="basep">/rdp/snap19/riot/buyer_huayin/mb_share/spear_ns2_woe.csv</file>
+        <!--<file id="base2">/x/home/yijiliu/work/modelengine/temp/ato_test_mep_1397544730/train_woe_zscl.csv</file>-->
+    </project_input>
+    <clean_after_success></clean_after_success>
+    <stages>
+        <stage>
+            <name>woe_stage</name>
+            <tasks>
+                <task>
+                    <name>task_woe_mep</name>
+                    <job_type>python</job_type>
+                    <script>python woe_wrapper.py -s %base -b ato_bad -w unit_wgt -x payment_transid,*_ns2,pmt_start_date,atom*_seg,*_wgt -f mep</script>
+                    <package>/x/home/yijiliu/work/modelengine/input/python_woe.zip</package>
+                    <skip_task></skip_task>
+                    <task_input></task_input>
+                    <task_output>
+                        <file id="tmp1" type="data">mep_train_woe_zscl.csv</file>
+                        <file type="output">mep_woe_result_woe_zscl.txt</file>
+                        <file type="output">mep_woe_result_uni.txt</file>
+                        <file type="output">mep_woe_result_lst.txt</file>
+                    </task_output>
+                </task>
+                <task>
+                    <name>task_woe_spear</name>
+                    <job_type>python</job_type>
+                    <script>python woe_wrapper.py -s %basep -b ato_bad -w unit_wgt -x payment_transid,*_ns2,pmt_start_date,atom*_seg,*_wgt -f spear</script>
+                    <package>/x/home/yijiliu/work/modelengine/input/python_woe.zip</package>
+                    <skip_task></skip_task>
+                    <task_input></task_input>
+                    <task_output>
+                        <file id="tmp2" type="data">spear_train_woe_zscl.csv</file>
+                        <file type="output">spear_woe_result_woe_zscl.txt</file>
+                        <file type="output">spear_woe_result_uni.txt</file>
+                        <file type="output">spear_woe_result_lst.txt</file>
+                    </task_output>
+                </task>
+            </tasks>
+            <stage_script></stage_script>
+            <stage_package></stage_package>
+            <skip_stage></skip_stage>
+            <stage_input></stage_input>
+            <stage_output></stage_output>
+        </stage>
+        <stage>
+            <name>modeling_stage</name>
+            <tasks>
+                <task>
+                    <name>nn_modeling_task_mep</name>
+                    <job_type>mb</job_type>
+                    <script>python generate_mb.py -k payment_transid -b ato_bad -t %tmp1 -n 15,20 -f mep</script>
+                    <package>/x/home/yijiliu/work/modelengine/input/mb_wrapper.zip</package>
+                    <skip_task></skip_task>
+                    <task_input></task_input>
+                    <task_output>
+                        <file id="score1">data/mep_scored_train_n20.csv</file>
+                        <file id="score2">data/mep_scored_train_n15.csv</file>
+                        <folder type="output">scripts/models</folder>
+                    </task_output>
+                </task>
+                <task>
+                    <name>nn_modeling_task_spear</name>
+                    <job_type>mb</job_type>
+                    <script>python generate_mb.py -k payment_transid -b ato_bad -t %tmp2 -n 15,20 -f spear</script>
+                    <package>/x/home/yijiliu/work/modelengine/input/mb_wrapper.zip</package>
+                    <skip_task></skip_task>
+                    <task_input></task_input>
+                    <task_output>
+                        <file id="score3">data/spear_scored_train_n20.csv</file>
+                        <file id="score4">data/spear_scored_train_n15.csv</file>
+                        <folder type="output">scripts/models</folder>
+                    </task_output>
+                </task>
+            </tasks>
+            <stage_script></stage_script>
+            <stage_package></stage_package>
+            <skip_stage></skip_stage>
+            <stage_input></stage_input>
+            <stage_output></stage_output>
+        </stage>
+        <stage>
+            <name>evaluation_stage</name>
+            <tasks>
+                <task>
+                    <name>merge_train</name>
+                    <job_type>python</job_type>
+                    <script>python merge.py -k payment_transid -m "%base;%score1;%score2;%score3;%score4" -s "ato_bad,unit_wgt,dollar_wgt;;;;" -o scored_train.csv</script>
+                    <package>/x/home/yijiliu/work/modelengine/input/merge.py</package>
+                    <skip_task></skip_task>
+                    <task_input></task_input>
+                    <task_output>
+                        <file id="scored" type="output">scored_train.csv</file>
+                    </task_output>
+                </task>
+            </tasks>
+            <stage_script>Rscript gainchart_main.r -d %scored -t ato_bad -u unit_wgt -w dollar_wgt -s score_mep_nn_n15,score_mep_nn_n20,score_spear_nn_n15,score_spear_nn_n20 -a 1 -i 0 -r 100</stage_script>
+            <stage_package>/x/home/yijiliu/work/modelengine/input/rgain.zip</stage_package>
+            <skip_stage></skip_stage>
+            <stage_input></stage_input>
+            <stage_output>
+                <file type="output">score_table.csv</file>
+                <file type="output">score_raw.csv</file>
+                <file type="output">opt_table.csv</file>
+                <file type="output">opts_raw.csv</file>
+            </stage_output>
+        </stage>
+    </stages>
+</project>
+
