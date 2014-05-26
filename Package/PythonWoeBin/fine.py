@@ -5,6 +5,7 @@ import logging
 from optparse import OptionParser
 import math
 import os
+import sys
 
 __author__ = 'yijiliu'
 
@@ -138,7 +139,7 @@ class Variable :
             bn = ""
             for bad_name in sums :
                 self.bins[bad_name] = bins
-                bn = bad_name
+                bn = bad_name  # it is only used for fetching the weighted total, so it doesn't matter which specific bad it is
             modenum = []
             for cbin in bins :
                 modenum.append((cbin.value, cbin.stats[bn].wtotal()))
@@ -245,9 +246,116 @@ class Variable :
                 self.distribution.pct_90 = cums[4]
                 self.distribution.pct_95 = cums[5]
                 self.distribution.pct_99 = cums[6]
-                self.distribution.mean = nonmiss_total / (nonmiss_cnt + 1e-36)
-                self.distribution.std = math.sqrt(abs((nonmiss_sqr - 2 * nonmiss_total * self.distribution.mean + nonmiss_cnt * self.distribution.mean ** 2) / (nonmiss_cnt - 1 + 1e-36)))
+                if math.isinf(nonmiss_sqr) or math.isinf(nonmiss_total) or math.isinf(nonmiss_total ** 2) :
+                    logging.info("found infinity when z-scaling variable : {}, using 5th and 95th percentile to cap".format(self.name))
+                    if math.isinf(self.cap_bin(mess, pct, sums, (self.distribution.pct_5, self.distribution.pct_95))) :
+                        self.cap_bin(mess, pct, sums, (-1e50, 1e50))
+                else :
+                    self.distribution.mean = nonmiss_total / (nonmiss_cnt + 1e-36)
+                    self.distribution.std = math.sqrt(abs((nonmiss_sqr - 2 * nonmiss_total * self.distribution.mean + nonmiss_cnt * self.distribution.mean ** 2) / (nonmiss_cnt - 1 + 1e-36)))
         self.distincts = None
+
+    def cap_bin(self, mess, pct, sums, cap):
+        nfloat = ignore_exception(ValueError, None)(float)
+        lefts = {}
+        for bad_name in sums :
+            lefts[bad_name] = sums[bad_name].copy()
+            bn = bad_name
+        old_distincts = self.distincts
+        self.distincts = {}
+        for dist in old_distincts :
+            value = nfloat(dist)
+            if value is None :
+                self.distincts[dist] = old_distincts[dist]
+                self.distincts[dist].value = value
+            else :
+                if value > cap[1] :
+                    cvalue = cap[1]
+                elif value < cap[0] :
+                    cvalue = cap[0]
+                else :
+                    cvalue = value
+                if cvalue == value :
+                    value_str = dist
+                else :
+                    evalue = "{0:.6e}".format(cvalue)
+                    numpart = float(evalue[:evalue.find('e')])
+                    numpart = math.ceil(numpart * 1000) * 0.001
+                    value_str = "{0:.3f}".format(numpart) + evalue[evalue.find('e'):]
+                if value_str not in self.distincts :
+                    self.distincts[value_str] = UniBin(value, sums.keys())
+            #self.distincts[value_str].value = value
+            self.distincts[value_str].mergeStats(old_distincts[dist])
+        self.bins = defaultdict(list)
+        sorted_bins = sorted(self.distincts.values(), key=lambda b: b.value)
+        mcut = {}
+        gcut = {}
+        bcut = {}
+        cum_total = 0.0
+        nonmiss_cnt = 0.0
+        nonmiss_total = 0.0
+        nonmiss_sqr = 0.0
+        for bad_name in sums :
+            if mess <= 0 and pct <= 0 :
+                mess = 0.02
+                pct = 0
+            mcut[bad_name] = mess * sums[bad_name].wtotal() if 0 <= mess < 1 else mess
+            gcut[bad_name] = pct * sums[bad_name].wgood if 0 <= pct < 1 else pct
+            bcut[bad_name] = pct * sums[bad_name].wbad if 0 <= pct < 1 else pct
+            if gcut[bad_name] > sums[bad_name].wgood :
+                gcut[bad_name] = 0.02 * sums[bad_name].wgood
+            if bcut[bad_name] > sums[bad_name].wbad :
+                bcut[bad_name] = 0.02 * sums[bad_name].wbad
+            if mcut[bad_name] > sums[bad_name].wtotal() :
+                mcut[bad_name] = 0.02 * sums[bad_name].wtotal()
+        zbin = {}
+        for bad_name in sums :
+            zbin[bad_name] = UniBin(None, [bad_name])
+            self.badrates[bad_name] = BadRate()
+        for cbin in sorted_bins :
+            for bad_name in sums :
+                if cbin.value is not None and zbin[bad_name].value is None :
+                    self.bins[bad_name].append(zbin[bad_name])
+                    zbin[bad_name] = UniBin(cbin.value, [bad_name])
+                    if nonmiss_cnt == 0 :
+                        nonmiss_cnt += lefts[bn].wtotal()
+                elif (  zbin[bad_name].value is not None
+                        and (zbin[bad_name].stats[bad_name].wbad >= bcut[bad_name]
+                        or zbin[bad_name].stats[bad_name].wgood >= gcut[bad_name])
+                        and zbin[bad_name].stats[bad_name].wtotal() >= mcut[bad_name]
+                        and zbin[bad_name].stats[bad_name].wtotal() > 0
+                        and lefts[bad_name].wtotal() >= mcut[bad_name]
+                        and lefts[bad_name].wbad >= bcut[bad_name]
+                        and lefts[bad_name].wgood >= gcut[bad_name]) :
+                    self.bins[bad_name].append(zbin[bad_name])
+                    zbin[bad_name] = UniBin(cbin.value, [bad_name])
+                zbin[bad_name].mergeStats(cbin)
+                if cbin.value is not None :
+                    zbin[bad_name].mergeValue(cbin)
+                    self.badrates[bad_name].nmbad += cbin.stats[bad_name].wbad
+                    self.badrates[bad_name].nonmiss += cbin.stats[bad_name].wtotal()
+                else :
+                    self.badrates[bad_name].mbad += cbin.stats[bad_name].wbad
+                    self.badrates[bad_name].missing += cbin.stats[bad_name].wtotal()
+                self.badrates[bad_name].bad += cbin.stats[bad_name].wbad
+                self.badrates[bad_name].total += cbin.stats[bad_name].wtotal()
+                lefts[bad_name].minus(cbin.stats.get(bad_name, Stats()))
+            if cbin.value is not None :
+                cum_total += cbin.stats[bn].wtotal()
+                nonmiss_total += cbin.stats[bn].wtotal() * cbin.value
+                nonmiss_sqr += cbin.stats[bn].wtotal() * cbin.value * cbin.value
+        for bad_name in sums :
+            self.bins[bad_name].append(zbin[bad_name])
+            self.badrates[bad_name].total = self.badrates[bad_name].bad / (self.badrates[bad_name].total + 1e-36)
+            self.badrates[bad_name].missing = self.badrates[bad_name].mbad / (self.badrates[bad_name].missing + 1e-36)
+            self.badrates[bad_name].nonmiss = self.badrates[bad_name].nmbad / (self.badrates[bad_name].nonmiss + 1e-36)
+        if math.isinf(nonmiss_sqr) or math.isinf(nonmiss_total) or math.isinf(nonmiss_total ** 2) :
+            return float('inf')
+        else :
+            self.distribution.mean = nonmiss_total / (nonmiss_cnt + 1e-36)
+            self.distribution.std = math.sqrt(abs((nonmiss_sqr - 2 * nonmiss_total * self.distribution.mean + nonmiss_cnt * self.distribution.mean ** 2) / (nonmiss_cnt - 1 + 1e-36)))
+            return 0
+
 
     def newdataset(self):
         empty_bins = {}
@@ -371,7 +479,7 @@ def shortVarStr(svalue, nfloat) :
     return "{0:.3f}".format(numpart) + evalue[evalue.find('e'):]
 
 
-def distinctSortVariables(options, bads, wgt, vars, special_type) :
+def distinctSortVariables(options, bads, wgt, vars, special_type, header_count) :
     if len(vars) == 0 :
         return []
     bad_float = ignore_exception(ValueError, 2)(float)
@@ -388,13 +496,15 @@ def distinctSortVariables(options, bads, wgt, vars, special_type) :
         if vars[var_ind].lower() in special_type :
             input_vars[var_ind].special = True
             input_vars[var_ind].type = special_type[vars[var_ind].lower()]
+
+    logging.info("start processing variables : {0}".format(", ".join(vars.values())))
     with open(options.src, "r") as fn :
         line = fn.readline()
         lnum = 0
         while True :
             line = fn.readline()
             if (not line and lnum < 10000) or lnum == 10000 :
-                logging.info("start correcting variable types...")
+                #logging.info("start correcting variable type...")
                 for ind in input_vars :
                     dist_num = len(input_vars[ind].distincts)
                     if input_vars[ind].special :
@@ -422,6 +532,8 @@ def distinctSortVariables(options, bads, wgt, vars, special_type) :
             if line.strip() == '' :
                 continue
             parts = [xi.strip() for xi in line.split(options.dlm)]
+            if len(parts) != header_count :
+                continue
             if len(parts) < max(vars.keys()) :
                 logging.error("column mismatch when parsing develop dataset!")
                 return {}
@@ -459,6 +571,7 @@ def distinctSortVariables(options, bads, wgt, vars, special_type) :
     for ind in input_vars :
         if ind in discard_vars :
             continue
+        logging.debug("start fine bin for variable: {}".format(input_vars[ind].name))
         input_vars[ind].bin(options.mess, options.pct, total_sum.stats)
         binned_vars[input_vars[ind].name.lower()] = input_vars[ind]
     return binned_vars
@@ -486,7 +599,7 @@ def findBin(value, bins, binType) :
         return lb
 
 
-def applyBoundaries(val, options, variables) :
+def applyBoundaries(val, options, variables, header_count) :
     val_bads, val_wgt, val_names = parseKeys(val, options)
     if val_bads is None :
         return
@@ -507,6 +620,8 @@ def applyBoundaries(val, options, variables) :
             if line.strip() == '' :
                 continue
             parts = [xi.strip() for xi in line.split(options.dlm)]
+            if len(parts) != header_count :
+                continue
             if len(parts) < len(val_names) :
                 logging.error("column mismatch when parsing validation dataset!")
                 break
@@ -554,17 +669,22 @@ def applyBoundaries(val, options, variables) :
 def checkHeader(options) :
     with open(options.src) as fn:
         head = fn.readline()
-        value = fn.readline()
         headFields = head.split(options.dlm)
-        valueFields = value.split(options.dlm)
+        value_count = set()
+        for l in range(10) :
+            value = fn.readline()
+            if not value :
+                break
+            valueFields = value.split(options.dlm)
+            value_count.add(len(valueFields))
     if options.head :
         with open(options.head) as fn :
             head = fn.readline()
             headFields = head.split(',')
-    if len(headFields) != len(valueFields) :
+    if len(headFields) not in value_count:
         logging.error('mismatch has been found on header line and following lines')
-        return False
-    return True
+        return 0, False
+    return len(headFields), True
 
 
 def findPatterns(base, patterns) :
@@ -609,9 +729,11 @@ if __name__ == '__main__' :
         logging.basicConfig(level=logging.INFO, format='%(levelname)s - %(message)s')
 
     logging.info("program started...")
-    if not checkHeader(options) :
+    header_count, same_count = checkHeader(options)
+    if not same_count :
         print "header mismatch found in the dataset!"
         exit()
+    logging.info("{} variables from header, records with different values will be discarded".format(header_count))
 
     bads, wgt, vnames = parseKeys(options.src, options)
     if not bads :
@@ -649,11 +771,11 @@ if __name__ == '__main__' :
                 name_batch[vind] = vnames[vind]
         if 0 < options.num <= len(name_batch) :
             # TODO: use multiprocessing to accelerate this process
-            raw = distinctSortVariables(options, bad_names, wgt, name_batch, special_type)
+            raw = distinctSortVariables(options, bad_names, wgt, name_batch, special_type, header_count)
             for variable in raw :
                 variables[variable] = raw[variable]
             name_batch = {}
-    raw = distinctSortVariables(options, bad_names, wgt, name_batch, special_type)
+    raw = distinctSortVariables(options, bad_names, wgt, name_batch, special_type, header_count)
     for variable in raw :
         variables[variable] = raw[variable]
 
@@ -664,7 +786,7 @@ if __name__ == '__main__' :
             for variable in variables :
                 variables[variable].newdataset()
             # TODO : combine this with the last on the batch level
-            applyBoundaries(val, options, variables)
+            applyBoundaries(val, options, variables, header_count)
 
     logging.info("start outputing the binning results...")
     bad_names = list(bad_names.values())
