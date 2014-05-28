@@ -5,7 +5,6 @@ import logging
 from optparse import OptionParser
 import math
 import os
-import sys
 
 __author__ = 'yijiliu'
 
@@ -268,6 +267,7 @@ class Variable :
             if value is None :
                 self.distincts[dist] = old_distincts[dist]
                 self.distincts[dist].value = value
+                value_str = dist
             else :
                 if value > cap[1] :
                     cvalue = cap[1]
@@ -473,9 +473,12 @@ def shortVarStr(svalue, nfloat) :
     fvalue = nfloat(svalue)
     if fvalue is None or fvalue == float('inf') :
         return svalue
-    evalue = "{0:.6e}".format(fvalue)
-    numpart = float(evalue[:evalue.find('e')])
-    numpart = math.ceil(numpart * 1000) * 0.001
+    try :
+        evalue = "{0:.6e}".format(fvalue)
+        numpart = float(evalue[:evalue.find('e')])
+        numpart = math.ceil(numpart * 1000) * 0.001
+    except ValueError as e :
+        return None
     return "{0:.3f}".format(numpart) + evalue[evalue.find('e'):]
 
 
