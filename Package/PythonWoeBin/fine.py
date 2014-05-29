@@ -478,7 +478,7 @@ def shortVarStr(svalue, nfloat) :
         numpart = float(evalue[:evalue.find('e')])
         numpart = math.ceil(numpart * 1000) * 0.001
     except ValueError as e :
-        return None
+        return 'None'
     return "{0:.3f}".format(numpart) + evalue[evalue.find('e'):]
 
 
