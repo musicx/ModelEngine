@@ -9,6 +9,7 @@ import sys
 
 __author__ = 'yijiliu'
 
+
 def ignore_exception(IgnoreException=Exception, DefaultVal=None):
     """ Decorator for ignoring exception from a function
     e.g.   @ignore_exception(DivideByZero)
@@ -24,34 +25,34 @@ def ignore_exception(IgnoreException=Exception, DefaultVal=None):
     return dec
 
 
-def parseBin(options) :
+def parseBin(options):
     if not options.bin or not os.path.exists(options.bin):
         return {}
     zscls = {}
     zfloat = ignore_exception(ValueError, 0)(float)
     ofloat = ignore_exception(ValueError, 1.0)(float)
-    with open(options.bin, 'r') as fn :
+    with open(options.bin, 'r') as fn:
         while True:
             line = fn.readline()
-            if not line :
+            if not line:
                 break
-            if not line.startswith('====') :
+            if not line.startswith('===='):
                 continue
             parts = line.split(',')
-            if parts[2].strip() != 'num' :
+            if parts[2].strip() != 'num':
                 continue
             zscls[parts[1]] = (zfloat(parts[3]), ofloat(parts[4]))
     return zscls
 
 
-def parseVarList(options) :
-    if not options.var or not os.path.exists(options.var) :
+def parseVarList(options):
+    if not options.var or not os.path.exists(options.var):
         return {}
     vardict = {}
-    with open(options.var, 'r') as fn :
-        while True :
+    with open(options.var, 'r') as fn:
+        while True:
             line = fn.readline()
-            if not line :
+            if not line:
                 break
             parts = [x.strip() for x in line.split(",")]
             is_num = True if parts[2] == '1' else False
@@ -59,13 +60,13 @@ def parseVarList(options) :
     return vardict
 
 
-def parseHeader(options) :
-    with open(options.raw, 'r') as fn :
+def parseHeader(options):
+    with open(options.raw, 'r') as fn:
         line = fn.readline()
     parts = line.split(options.dlm)
-    #variables = OrderedDict()
+    # variables = OrderedDict()
     variables = []
-    for part in parts :
+    for part in parts:
         #variables[part.strip()] = None
         variables.append(part.strip())
     return variables
@@ -73,7 +74,7 @@ def parseHeader(options) :
 
 # this is template file for data transformantion
 # following variables should be assigned before this part of code
-#   outputData: path to the output data
+# outputData: path to the output data
 #   firstLine: the header of the output file
 #   rawData: path to the source dataset
 #   rawDataDlm: delimiter of the raw dataset
@@ -136,27 +137,33 @@ with open(rawData, 'r') as fn :
 """
 
 
-def parseDrop(options) :
-    if not options.drop :
+def parseDrop(options):
+    if not options.drop:
         return set()
     drops = set()
     with open(options.drop) as fn:
         while True:
             line = fn.readline()
-            if not line :
+            if not line:
                 break
             drops.add(line.strip().lower())
     return drops
 
 
-if __name__ == "__main__" :
+if __name__ == "__main__":
     parser = OptionParser()
     parser.add_option("-r", "--raw", dest="raw", help="raw csv file", action="store", type="string")
-    parser.add_option("-d", "--dlm", dest="dlm", help="delimiter char, default=,", action="store", type="string", default=",")
-    parser.add_option("-b", "--bin", dest="bin", help="z-scaled input file, choose one or more among {bin, woe, zscl}", action="store", type="string")
-    parser.add_option("-w", "--woe", dest="woe", help="WoE input file, choose one or more among {bin, woe, zscl}", action="store", type="string")
-    parser.add_option("-z", "--zscl", dest="zscl", help="z-scaled WoE input file, choose one or more among {bin, woe, zscl}", action="store", type="string")
-    parser.add_option("-v", "--var", dest="var", help="variable list file, required for woe transform", action="store", type="string")
+    parser.add_option("-d", "--dlm", dest="dlm", help="delimiter char, default=,", action="store", type="string",
+                      default=",")
+    parser.add_option("-b", "--bin", dest="bin", help="z-scaled input file, choose one or more among {bin, woe, zscl}",
+                      action="store", type="string")
+    parser.add_option("-w", "--woe", dest="woe", help="WoE input file, choose one or more among {bin, woe, zscl}",
+                      action="store", type="string")
+    parser.add_option("-z", "--zscl", dest="zscl",
+                      help="z-scaled WoE input file, choose one or more among {bin, woe, zscl}", action="store",
+                      type="string")
+    parser.add_option("-v", "--var", dest="var", help="variable list file, required for woe transform", action="store",
+                      type="string")
     parser.add_option("-p", "--drop", dest="drop", help="drop variable list, optional", action="store", type="string")
     parser.add_option("-l", "--log", dest="log", help="log file", action="store", type="string")
     parser.add_option("-o", "--out", dest="out", help="output file", action="store", type="string")
@@ -165,16 +172,17 @@ if __name__ == "__main__" :
     if not options.raw or not os.path.exists(options.raw):
         print "You must specify the source dataset file!"
         exit()
-    if (not options.var or not os.path.exists(options.var)) and (not options.bin or not os.path.exists(options.bin)) :
+    if (not options.var or not os.path.exists(options.var)) and (not options.bin or not os.path.exists(options.bin)):
         print "You must provide either the fine bin result file (.bin) or the coarse bin result variable list file (_lst.txt)!"
         exit()
-    if not options.out :
+    if not options.out:
         options.out = options.raw + ".out"
-    if options.log :
-        logging.basicConfig(level=logging.DEBUG, format='%(asctime)-15s - %(levelname)s - %(message)s', filename=options.log, filemode='w')
-    else :
+    if options.log:
+        logging.basicConfig(level=logging.DEBUG, format='%(asctime)-15s - %(levelname)s - %(message)s',
+                            filename=options.log, filemode='w')
+    else:
         logging.basicConfig(level=logging.INFO, format='%(levelname)s - %(message)s')
-    if options.dlm.startswith('x') :
+    if options.dlm.startswith('x'):
         options.dlm = chr(int(options.dlm[1:]))
 
     # get the sequence of raw variables
@@ -189,34 +197,34 @@ if __name__ == "__main__" :
     variableNames = []
     writeString = "\n"
     first = True
-    for var in header :
-        if var.lower() in dropVars :
+    for var in header:
+        if var.lower() in dropVars:
             continue
-        if first :
+        if first:
             writeString += "        fout.write('{0}'.format({1}))\n".format('{0}', var)
             first = False
-        else :
+        else:
             writeString += "        fout.write('{0}'.format(rawDataDlm, {1}))\n".format('{0}{1}', var)
         variableNames.append(var)
-    if options.bin :
+    if options.bin:
         for var in header:
-            if var.lower() in dropVars :
+            if var.lower() in dropVars:
                 continue
-            if var in rawZscl :
+            if var in rawZscl:
                 variableNames.append(var + "_zscl")
                 writeString += "        fout.write('{0}'.format(rawDataDlm, {1}))\n".format("{0}{1}", var + "_zscl")
-    if options.woe :
+    if options.woe:
         for var in header:
-            if var.lower() in dropVars :
+            if var.lower() in dropVars:
                 continue
-            if var in woeVars :
+            if var in woeVars:
                 variableNames.append(woeVars[var][0])
                 writeString += "        fout.write('{0}'.format(rawDataDlm, {1}))\n".format("{0}{1}", woeVars[var][0])
-    if options.zscl :
+    if options.zscl:
         for var in header:
-            if var.lower() in dropVars :
+            if var.lower() in dropVars:
                 continue
-            if var in woeVars :
+            if var in woeVars:
                 variableNames.append(woeVars[var][0] + "_zscl")
                 writeString += "        fout.write('{0}'.format(rawDataDlm, {1}))\n".format("{0}{1}", woeVars[var][0] + "_zscl")
     firstLine = options.dlm.join(variableNames)
@@ -227,41 +235,43 @@ if __name__ == "__main__" :
     outputContent += "rawDataDlm = {0}\n".format(repr(options.dlm))
 
     readString = "\n"
-    for ind in xrange(len(header)) :
+    for ind in xrange(len(header)):
         var = header[ind]
-        if var in woeVars and woeVars[var][1] :
+        if var in woeVars and woeVars[var][1]:
             readString += "        {0} = num_parse(parts[{1}])\n".format(var, ind)
-        else :
+        else:
             readString += "        {0} = char_parse(parts[{1}])\n".format(var, ind)
 
     zsclString = "\n"
-    if options.bin :
-        for var in rawZscl :
+    if options.bin:
+        for var in rawZscl:
             zsclString += "        {0}_zscl = None if {0} is None else ({0} - {1}) / ({2} + _eps)\n".format(var, rawZscl[var][0], rawZscl[var][1])
 
     woeString = "\n"
-    if options.woe :
-        for line in open(options.woe) :
+    if options.woe:
+        for line in open(options.woe):
             woeString += "        " + line
 
     zwoeString = "\n"
-    if options.zscl :
-        for line in open(options.zscl) :
+    if options.zscl:
+        for line in open(options.zscl):
             zwoeString += "        " + line
 
     transformString = "\n".join([zsclString, woeString, zwoeString])
 
-    tempFileName = "transform_{0:.0f}_{1:d}.py".format(time.time(), random.randint(0,100))
+    tempFileName = "transform_{0:.0f}_{1:d}.py".format(time.time(), random.randint(0, 100))
 
-    with open(tempFileName, 'w') as fn :
+    with open(tempFileName, 'w') as fn:
         fn.write(outputContent)
         fn.write("\n")
         fn.write(template.format(readString, transformString, writeString))
 
-    if sys.platform.startswith("win") :
-        runningOutput = subprocess.check_output(["cmd /C python " + tempFileName + "& exit 0"], stderr=subprocess.STDOUT, shell=True)
-    else :
-        runningOutput = subprocess.check_output(["python " + tempFileName + "; exit 0"], stderr=subprocess.STDOUT, shell=True)
+    if sys.platform.startswith("win"):
+        runningOutput = subprocess.check_output(["cmd /C python " + tempFileName + "& exit 0"],
+                                                stderr=subprocess.STDOUT, shell=True)
+    else:
+        runningOutput = subprocess.check_output(["python " + tempFileName + "; exit 0"], stderr=subprocess.STDOUT,
+                                                shell=True)
 
     #print "Process Output:"
 

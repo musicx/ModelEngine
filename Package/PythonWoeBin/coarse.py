@@ -127,7 +127,7 @@ class Bin :
             self.windows.append(window)
 
     def Update(self) :
-        lastValue = None # TODO: check this is right
+        lastValue = None  # TODO: check this is right
         init = True
         for window in self.windows :
             self.value = window.value
@@ -140,7 +140,6 @@ class Bin :
                     else :
                         raise "Bin Value Mismatch!"
             lastValue = window.value
-
 
     def CombineWoe(self) :
         bad = sum([window.bad for window in self.windows])
@@ -320,7 +319,7 @@ class Variable:
 
         bn = list(self.original.keys())
         for bin in self.original[bn[0]] :
-            if self.isnumeric : # TODO : check if the logic is alright
+            if self.isnumeric :  # TODO : check if the logic is alright
                 #if len(bin.value) == 1 and not bin.value.isdigit() :
                 if bin.value is None :
                     #bin.rank = 0
@@ -447,7 +446,7 @@ def GreedyNoMonotony(bins) :
     return bins
 
 def GreedySearchTree(bins, inc) :
-    nodes = {(-1,-1) : [None, [], 0]}
+    nodes = {(-1, -1) : [None, [], 0]}
     for i in xrange(len(bins)) :
         #nodes[(i, j)] = [bins[i:j], [(0,i-1),(i, j)], iv]
         for j in xrange(i, len(bins)) :
@@ -455,7 +454,7 @@ def GreedySearchTree(bins, inc) :
             if i == 0 :
                 nodes[(i, j)] = [cbin, [(i, j)], cbin.windows[0].iv]
             else :
-                enodes = [(x, i-1) for x in xrange(i) if nodes.has_key((x, i-1))]
+                enodes = [(x, i-1) for x in xrange(i) if (x, i-1) in nodes]
                 cmonos = [x for x in enodes if CheckMonotony(nodes[x][0], cbin, inc)]
                 if len(cmonos) == 0 :
                     continue
@@ -465,12 +464,12 @@ def GreedySearchTree(bins, inc) :
                 cmetric = Evaluate(cmax[2], cbin)
                 nodes[(i, j)] = [cbin, clist, cmetric]
 
-    enodes = [(x, len(bins)-1) for x in xrange(len(bins)) if nodes.has_key((x, len(bins)-1))]
+    enodes = [(x, len(bins)-1) for x in xrange(len(bins)) if (x, len(bins)-1) in nodes]
     mnodes = [nodes[x] for x in enodes if nodes[x][2] == max([nodes[y][2] for y in enodes])]
     if len(mnodes) == 1 :
         snodes = mnodes[0]
     else :
-        snodes = mnodes.sort(cmp=lambda x,y : cmp(len(x[1]), len(y[1])), reverse=True)[0]
+        snodes = mnodes.sort(cmp=lambda x, y : cmp(len(x[1]), len(y[1])), reverse=True)[0]
     return [nodes[x][0] for x in snodes[1]]
 
 def Evaluate(cvalue, cbin) :
@@ -530,14 +529,14 @@ def numRebin(bins, options) :
         sbin = bins.pop(0)
         default += sbin.windows[0].total
         if CheckValid(sbin, 0) and sbin.windows[0].rawTotal > drpThreshold :
-            sbins.append(sbin) # continual minus integar and zero
+            sbins.append(sbin)  # continual minus integar and zero
     if len(bins) == 0 :
         return sbins, (1, "No effective bin", 1.0)
     if bins[len(bins) - 1].value in [1e5, 1e6, 1e7, 1e8, 1e9]:
         sbin = bins.pop()
         default += sbin.windows[0].total
         if CheckValid(sbin, 0) and sbin.windows[0].rawTotal > drpThreshold :
-            sbins.append(sbin) # end special value
+            sbins.append(sbin)  # end special value
     if len(bins) == 0 :
         return sbins, (1, "No effective bin", 1.0)
     st[2] = default / total
@@ -619,7 +618,7 @@ def Slope(bins, window) :
     length = len(weights)
     wgtSum = sum(weights)
     avgWeight = wgtSum * 1.0 / length
-    avgY = reduce(lambda x,y : x + y, range(length)) * 1.0 / length
+    avgY = reduce(lambda x, y : x + y, range(length)) * 1.0 / length
     total = 0.0
     for i in range(length) :
         total += (weights[i] - avgWeight) * (i - avgY)
@@ -695,7 +694,7 @@ def charRebin(bins, options) :
 
 def SortCharBinsCombine(pbins) :
     cWoes = [(i, pbins[i].CombineWoe()) for i in range(len(pbins))]
-    cWoes.sort(key=lambda x:x[1])
+    cWoes.sort(key=lambda x: x[1])
     sbins = []
     for cWoe in cWoes :
         sbins.append(pbins[cWoe[0]])
@@ -727,12 +726,12 @@ def AggregateSmallBins(sbins, threshold) :
                 bini = sbins.pop(ind)
                 diff = sbins[ind].windows[0].rawTotal - sbins[ind - 1].windows[0].rawTotal
                 if diff > 0:
-                    ind = ind - 1
+                    ind -= 1
                 elif diff < 0 :
                     ind = ind
                 elif bini.windows[0].woe > 0 :
-                    ind = ind - 1
-                else : # bini.windows[0].woe <= 0
+                    ind -= 1
+                else :  # bini.windows[0].woe <= 0
                     ind = ind
                 binj = sbins.pop(ind)
                 binm = Bin.MergeBins([bini, binj])
