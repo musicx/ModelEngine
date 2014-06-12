@@ -1,0 +1,129 @@
+import com.fairisaac.mb.common.data.base.BaseTable
+requires (heap:'8G') // Allocates RAM for running this script
+/********************************************************************************
+Parse Properties File
+********************************************************************************/
+List args = app.settings.get('mb.clprop.args')
+String propertiesLocation = ''
+args.each(){{
+    if (it.contains('PropFile')) {{
+        propertiesLocation=it.toString().tokenize('=')[1]}}}}
+def properties = new ConfigSlurper().parse(new File(propertiesLocation).toURL())
+app.logger.info(properties.toString())
+String pathToData = properties.pathToData
+String datasetName = properties.datasetName
+String targetVariable = properties.targetVariable
+String targetLowStates = properties.targetLowStates
+String targetLowScoreLabel = properties.targetLowScoreLabel
+String targetHighStates = properties.targetHighStates
+String targetHighScoreLabel = properties.targetHighScoreLabel
+String sampleWeight = properties.sampleWeight
+String setidVariable = properties.setidVariable
+int numNodes = properties.numNodes
+int numLayers = properties.numLayers
+String prepareModelForReasonCodes = properties.prepareModelForReasonCodes
+String excludedVariables = properties.excludedVariables
+String includedVariables = properties.includedVariables
+/********************************************************************************
+Get a handle to the data and transform the target to {{0,1}}
+********************************************************************************/
+Dataset ds = app.data.open(in:pathToData+datasetName+'.mbd'){{
+    binaryTarget(
+        vars: targetVariable+'=binaryTargetNN',
+        low: targetLowStates,
+        lowLabel: targetLowScoreLabel,
+        high: targetHighStates,
+        highLabel: targetHighScoreLabel,
+        otherGroupLabel: 'Other')}}
+Dataset dstemp = app.data.create()
+app.data.copy(in:ds,out:dstemp)
+Dataset ds1 = app.data.open(in:dstemp,filter:app.filter.where('binaryTargetNN < 2.0'))        
+/********************************************************************************
+Train and test the neural network
+********************************************************************************/
+app.logger.info('########## Training NN with '+numNodes+' hidden nodes and '+numLayers+' hidden layers ##########')
+TaskResult nnTrainResult = app.task.nnet(
+   in: ds1,
+   target: 'binaryTargetNN',
+   weight: sampleWeight,
+   setid: setidVariable, 
+   exclude:  excludedVariables,
+   splitTest: true,
+   //splitRatio: 0.75,
+   sensitivity: true, 
+   momentum: 0.500, ,
+   learningRate: 0.0010,  
+   learningAccel: 1.1, // Default 1.0
+   learningDecel: 0.9, 
+   interlayerGain: 4.0,
+   backtrack: true,
+   smoothing: "enabled",
+   stepSize: 1000,
+   epochs: 500, // default 250 is too low, 500 is ok, 1000 is better
+   batchingEpoch: 800,
+   rmsEpochIncrease: 25,
+   retryOnLocalMinimum: true,
+   sampleWithReplacement: true,
+   samplesPerEpoch: 0,
+   rmsDeltaLimit: 0.0000001,
+   rmsSlope: 8,
+   forceLastWeights: false, 
+   seed:25,
+   reasonCodesEnabled: prepareModelForReasonCodes,
+   trainedModel: null) {{
+           architecture {{
+               hiddenLayer (nodes: new Integer(numNodes),activation: 'tanh')
+		       if (numLayers>=2){{
+		       hiddenLayer (nodes: new Integer(numNodes),activation: 'tanh')}}
+		       if (numLayers>=3) {{
+               hiddenLayer (nodes: new Integer(numNodes),activation: 'tanh')}}
+		       if (numLayers>=4) {{
+               hiddenLayer (nodes: new Integer(numNodes),activation: 'tanh')}}
+		       if (numLayers>=5) {{
+               hiddenLayer (nodes: new Integer(numNodes),activation: 'tanh')}}
+		       if (numLayers>=6) {{
+               hiddenLayer (nodes: new Integer(numNodes),activation: 'tanh')}}
+
+               outputLayer (activation: 'logistic')  
+		  }}
+		  /****** Data has been z-scaled already
+		   scale (
+		          z: includedVariables,
+		          linear0: '',
+		          linear: '',
+		          log: '' )
+		   *******/
+		   
+}}
+
+
+/********************************************************************************
+Export the model to PMML
+********************************************************************************/
+m1 = nnTrainResult.model
+m1.setName('Model'+numNodes+numLayers)
+app.model.save(m1, './scripts/models/{opt[suf]}spec_nn_n'+numNodes+'_l'+numLayers+'.pmml')
+app.logger.info('###### Finished NN Training/pmml with '+numNodes+' hidden nodes ##########')
+    
+    
+   /********************************************************************************
+Save the variable results to a dataset
+********************************************************************************/
+app.table.toCSV(nnTrainResult.variable,'./scripts/models/{opt[suf]}variable_n'+numNodes+'_l'+numLayers+'.csv')
+    
+   
+   /********************************************************************************
+Save the sensitivity results to a dataset
+********************************************************************************/
+app.table.toCSV(nnTrainResult.sensitivity,'./scripts/models/{opt[suf]}sensitivity_n'+numNodes+'_l'+numLayers+'.csv')
+app.logger.info('########## Finished NN Training with '+numNodes+' hidden nodes ##########')
+/********************************************************************************
+Save the sensitivity results to a table
+********************************************************************************/
+File f1 = new File('./scripts/reports/{opt[suf]}sensitivity_n'+numNodes+'_l'+numLayers+'.tbl')
+f1.delete()
+nnTrainResult.sensitivity.save(f1)
+
+app.logger.info('###### Finished sensitivity for '+numNodes+' hidden nodes ##########')
+ 
+    

@@ -1,12 +1,11 @@
 /***************
 edited by Eric Liu
-This file is used as the template for reading training dataset and save it as nn_train.mbd in data sub-directory
+This file is used as the template for reading initial dataset and save it as nn_sense.mbd in data sub-directory
 input :
-    train : training dataset path
+    input : dataset path
     delimiter : dataset delimiter
     bad : bad variable name
     key_pos : key variables position lines, to avoid reading them as numerical vars
-    ###role_ids : key variables roles assignment lines
     keep_vars : keep variables list
     suf : output file name suffix
 ***************/
@@ -14,9 +13,9 @@ import com.fairisaac.mb.scripting.data.BinningMissingValueMap
 
 requires (heap:'2G') // Allocates RAM for running the script
 String pathToData = './data/'
-String datasetName = '{opt[suf]}' + 'nn_train' // Name of MB datafile without the .mbd
+String datasetName = '{opt[suf]}' + 'nn_sense' // Name of MB datafile without the .mbd
 
-String srcURI = "{opt[train]}"
+String srcURI = "{opt[input]}"
 String sinkURI = pathToData+datasetName+'_init.mbd'
 
 new File('./data').mkdir()

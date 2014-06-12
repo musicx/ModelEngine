@@ -10,10 +10,8 @@ if __name__ == '__main__':
                       help="primary key variables separated with ','")
     parser.add_option("-b", "--bad", dest="bad", action="store", type="string",
                       help="target bad tagging variable")
-    parser.add_option("-t", "--train", dest="train", action="store", type="string",
+    parser.add_option("-i", "--input", dest="input", action="store", type="string",
                       help="training dataset file")
-    parser.add_option("-e", "--test", dest="test", action="store", type="string",
-                      help="test dataset files separated with ';'")
     parser.add_option("-d", "--dlm", dest="dlm", action="store", type="string", default=",",
                       help="delimiter char, accept xASCII format, default=','")
     parser.add_option("-v", "--vars", dest="vars", action="store", type="string",
@@ -28,12 +26,12 @@ if __name__ == '__main__':
                       help="optional suffix for output files")
     (options, args) = parser.parse_args()
 
-    if not (options.bad and options.train and options.key) :
-        print "train, bad and key are required"
+    if not (options.bad and options.input and options.key) :
+        print "data, bad and key are required"
         exit()
 
     config_string = {'bad' : options.bad.lower(),
-                     'train' : options.train,
+                     'input' : options.input,
                      'suf' : options.suffix + '_' if options.suffix is not None and options.suffix.strip() != '' else ''}
 
     if options.test :
@@ -100,7 +98,7 @@ if __name__ == '__main__':
         options.drop = options.drop.replace(',', ' ')
     config_string['drop_vars'] = "" if not options.drop else options.drop
 
-    fr = open('run_mb_nn.sh', 'w')
+    fr = open('run_mb_sense.sh', 'w')
     cmd = r"/export/mb/share1/MB7.3.1/mbsh {0}.mb -Dmb.logging.suppress=true -Xmx40g  > {0}.log 2>&1"
 
     part_a = open('A_ReadData.mb.template').read()
@@ -109,53 +107,18 @@ if __name__ == '__main__':
     fr.write(cmd.format("A_ReadTrainData"))
     fr.write("\n\n")
 
-    part_b = open('B_TrainManager.mb.template').read()
+    part_b = open('B_Manager.mb.template').read()
     with open('B_TrainManager.mb', 'w') as fn :
         fn.write(part_b.format(opt=config_string))
     fr.write(cmd.format("B_TrainManager"))
     fr.write("\n\n")
 
-    part_c = open('C_TrainWorker.mb.template').read()
+    part_c = open('C_Worker.mb.template').read()
     with open('C_TrainWorker.mb', 'w') as fn :
         fn.write(part_c.format(opt=config_string))
 
-    if options.test:
-        part_d = open('D_ReadData.mb.template').read()
-        for ind in xrange(len(tests)) :
-            cmd_d = "D_ReadData_d{}".format(ind)
-            config_string['source'] = tests[ind]
-            config_string['target'] = "test_d{}".format(ind)
-            with open('{}.mb'.format(cmd_d), 'w') as fn :
-                fn.write(part_d.format(opt=config_string))
-            fr.write(cmd.format(cmd_d))
-            fr.write("\n\n")
-
-    part_e = open('E_ScoreData.mb.template').read()
-    for node in nodes :
-        spec = r"./scripts/models/{}spec_nn_n{}_l1.pmml".format(config_string['suf'], node)
-        cmd_e = "E_ScoreData_{0}_n{1}".format("train", node)
-        config_string['spec'] = spec
-        config_string['name'] = "{}nn_n{}".format(config_string['suf'], node)
-        config_string['input'] = r"./data/{}nn_train.mbd".format(config_string['suf'])
-        config_string['output'] = r"./data/{}scored_train_n{}.csv".format(config_string['suf'], node)
-        with open('{}.mb'.format(cmd_e), 'w') as fn :
-            fn.write(part_e.format(opt=config_string))
-        fr.write(cmd.format(cmd_e))
-        fr.write("\n")
-
-        if options.test :
-            for ind in xrange(len(tests)) :
-                cmd_e = "E_ScoreData_d{0}_n{1}".format(ind, node)
-                config_string['input'] = r"./data/{}test_d{}.mbd".format(config_string['suf'], ind)
-                config_string['output'] = r"./data/{0}scored_test_d{1}_n{2}.csv".format(config_string['suf'], ind, node)
-                with open('{}.mb'.format(cmd_e), 'w') as fn :
-                    fn.write(part_e.format(opt=config_string))
-                fr.write(cmd.format(cmd_e))
-                fr.write("\n")
-            fr.write("\n")
-
     fr.flush()
     fr.close()
-    call(["chmod", "777", "run_mb_nn.sh"])
+    call(["chmod", "777", "run_mb_sense.sh"])
 
-    call(['bash', "run_mb_nn.sh"])
+    call(['bash', "run_mb_sense.sh"])
