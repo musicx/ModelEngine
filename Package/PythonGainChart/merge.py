@@ -161,7 +161,10 @@ if __name__ == '__main__':
             new_variable_names = OrderedDict()
             for ind in xrange(len(variable_names)) :
                 variable_name = variable_names[ind]
-                if (len(drops) > 0 and variable_name.lower() not in drops) or (len(keeps) > 0 and variable_name.lower() in keeps) or (len(drops) == 0 and len(keeps) == 0) or variable_name.lower() in keys:
+                if ((len(drops) > 0 and variable_name.lower() not in drops)
+                        or (len(keeps) > 0 and variable_name.lower() in keeps)
+                        or (len(drops) == 0 and len(keeps) == 0)
+                        or variable_name.lower() in keys):
                     if variable_name.lower() in keys :
                         new_variable_names[ind] = variable_name
                     elif variable_name.lower() not in global_variable_set :

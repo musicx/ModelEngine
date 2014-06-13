@@ -16,12 +16,10 @@ if __name__ == '__main__':
                       help="delimiter char, accept xASCII format, default=','")
     parser.add_option("-v", "--vars", dest="vars", action="store", type="string",
                       help="model variable list separated with ',' and wild characters is supported such as '*_zscl'")
-    parser.add_option("-s", "--base", dest="base", action="store", type="string",
-                      help="non-training variables need to be kept, separated with ','")
     parser.add_option("-r", "--drop", dest="drop", action="store", type="string",
                       help="drop variable list separated with ','")
-    parser.add_option("-n", "--node", dest="node", action="store", type="string",
-                      help="nodes in the hidden layer, separated with ','")
+    parser.add_option("-n", "--num", dest="num", action="store", type="integer", default=500,
+                      help="target number of variables, final list will contain less than this number, no guarantee of equalism")
     parser.add_option("-f", "--suffix", dest="suffix", action="store", type="string",
                       help="optional suffix for output files")
     (options, args) = parser.parse_args()
@@ -34,12 +32,6 @@ if __name__ == '__main__':
                      'input' : options.input,
                      'suf' : options.suffix + '_' if options.suffix is not None and options.suffix.strip() != '' else ''}
 
-    if options.test :
-        if options.test.find(';') >= 0 :
-            tests = options.test.split(';')
-        else :
-            tests = [options.test]
-
     if options.key.find(',') >= 0 :
         keys = [x.lower() for x in options.key.split(',')]
     else :
@@ -51,14 +43,16 @@ if __name__ == '__main__':
     else:
         config_string['delimiter'] = options.dlm
 
-    if options.node.find(',') >= 0 :
-        nodes = [x.strip() for x in options.node.split(',')]
-    else :
-        nodes = [options.node.strip()]
+    try :
+        vnum = int(options.num)
+        if vnum <= 0 :
+            vnum = 500
+    except ValueError as e:
+        vnum = 500
+    config_string['vnum'] = '{}'.format(vnum)
 
     delimiter = chr(int(options.dlm[1:])) if options.dlm.startswith('x') else options.dlm
-    heads = open(options.train).readline().split(delimiter)
-    bases = [x.lower() for x in options.base.split(',')] if options.base else []
+    heads = open(options.input).readline().split(delimiter)
 
     config_string['key_pos'] = ''
     for head in heads:
@@ -68,9 +62,6 @@ if __name__ == '__main__':
             var_type = 'numeric'
         elif var in keys :
             role = 'recordID'
-            var_type = 'string'
-        elif var in bases :
-            role = 'uninformative'
             var_type = 'string'
         else :
             role = 'predictor'
@@ -86,10 +77,7 @@ if __name__ == '__main__':
         options.vars = '*_woe_zscl'
     if options.vars.find(',') > 0 :
         options.vars = options.vars.replace(',', ' ')
-    config_string['keep_vars'] = " ".join([options.vars, options.bad, " ".join(keys), " ".join(bases)])
-
-    config_string['nodes'] = options.node
-    config_string['nodes_num'] = min(len(nodes), 3)
+    config_string['keep_vars'] = " ".join([options.vars, options.bad, " ".join(keys)])
     config_string['model_vars'] = "'{}'".format(options.vars)
 
     if not options.drop :
@@ -102,19 +90,19 @@ if __name__ == '__main__':
     cmd = r"/export/mb/share1/MB7.3.1/mbsh {0}.mb -Dmb.logging.suppress=true -Xmx40g  > {0}.log 2>&1"
 
     part_a = open('A_ReadData.mb.template').read()
-    with open('A_ReadTrainData.mb', 'w') as fn :
+    with open('A_ReadData.mb', 'w') as fn :
         fn.write(part_a.format(opt=config_string))
-    fr.write(cmd.format("A_ReadTrainData"))
+    fr.write(cmd.format("A_ReadData"))
     fr.write("\n\n")
 
     part_b = open('B_Manager.mb.template').read()
-    with open('B_TrainManager.mb', 'w') as fn :
+    with open('B_Manager.mb', 'w') as fn :
         fn.write(part_b.format(opt=config_string))
-    fr.write(cmd.format("B_TrainManager"))
+    fr.write(cmd.format("B_Manager"))
     fr.write("\n\n")
 
     part_c = open('C_Worker.mb.template').read()
-    with open('C_TrainWorker.mb', 'w') as fn :
+    with open('C_Worker.mb', 'w') as fn :
         fn.write(part_c.format(opt=config_string))
 
     fr.flush()

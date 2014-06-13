@@ -5,7 +5,7 @@ input :
     input : training dataset path
     delimiter : dataset delimiter
     bad : bad variable name
-    role_ids : key variables roles assignment lines
+    vnum : target number of variables
     model_vars : variables used for modeling
     drop_vars : drop variables list
     suf : output file name suffix
@@ -78,38 +78,38 @@ String excludedVariables = (allVariables-include).join(' ') + ' ' + myExclude
 String includedVariables = include.join(' ')
 app.logger.info(includedVariables)
 
-Boolean has_more_500 = true
-File f1 = new File('./scripts/reports/{opt[suf]}Sensitivity51.tbl')
+Boolean has_more_vars = true
+File f1 = new File('./scripts/reports/{opt[suf]}sensitivity_n5_l1.tbl')
 if (f1.exists()) {{
     Table u1 = new BaseTable().load(f1)
     int var_count = u1.getRowCount()
-    app.table.toCSV(u1, 'models/Sensitivity51_' + var_count + '.csv')
-    File toSave = new File('models/Sensitivity51_' + var_count + '.tbl')
+    app.table.toCSV(u1, './scripts/models/{opt[suf]}sensitivity_n5_l1_v' + var_count + '.csv')
+    File toSave = new File('./scripts/models/{opt[suf]}sensitivity_n5_l1_v' + var_count + '.tbl')
     toSave.delete()
     u1.save(toSave)
-    if (var_count > 500) {{
-        has_more_500 = true
+    if (var_count > {opt[vnum]}) {{
+        has_more_vars = true
         int end = var_count * 0.8
         include = []
         for (j in 0..end)
             include += u1.getRow(j).get('name')
     }}
     else
-        has_more_500 = false
+        has_more_vars = false
     excludedVariables = (allVariables - include).join(' ') + myExclude
     includedVariables = include.join(' ')
     app.logger.info(includedVariables)
     app.logger.info(excludedVariables)
 }}
 
-while (has_more_500) {{
+while (has_more_vars) {{
     // Create the properties files
     String fileName
     List propertyFiles = []
 
     numHiddenNodesToTry.each(){{nodes->
         numHiddenLayersToTry.each(){{layers->
-            fileName = './scripts/properties/{opt[suf]}properties_'+nodes+layers+'.groovy'
+            fileName = './scripts/properties/{opt[suf]}properties_n5_l1.groovy'
             ConfigObject properties = new ConfigObject()
             properties.pathToData = pathToData
             properties.datasetName = datasetName
@@ -140,23 +140,23 @@ while (has_more_500) {{
         app.job.waitForChildren()
     }}
 
-    f1 = new File('./scripts/reports/{opt[suf]}Sensitivity51.tbl')
+    f1 = new File('./scripts/reports/{opt[suf]}sensitivity_n5_l1.tbl')
     u1 = new BaseTable().load(f1)
     var_count = u1.getRowCount()
-    app.table.toCSV(u1, 'models/Sensitivity51_' + var_count + '.csv')
-    toSave = new File('models/Sensitivity51_' + var_count + '.tbl')
+    app.table.toCSV(u1, './scripts/models/{opt[suf]}sensitivity_n5_l1_v' + var_count + '.csv')
+    toSave = new File('./scripts/models/{opt[suf]}sensitivity_n5_l1_v' + var_count + '.tbl')
     toSave.delete()
     u1.save(toSave)
 
-    if (var_count > 500) {{
-        has_more_500 = true
+    if (var_count > {opt[vnum]}) {{
+        has_more_vars = true
         int end = var_count * 0.8
         include = []
         for (j in 0..end)
             include += u1.getRow(j).get('name')
     }}
     else
-        has_more_500 = false
+        has_more_vars = false
     excludedVariables = (allVariables - include).join(' ') + myExclude
     includedVariables = include.join(' ')
     app.logger.info(includedVariables)
@@ -165,8 +165,8 @@ while (has_more_500) {{
     // Plot sensititivity results
     numHiddenNodesToTry.each(){{nodes->
         numHiddenLayersToTry.each(){{layers->
-                    String tablePathAndFile = './scripts/models/{opt[suf]}Sensitivity'+nodes+layers+'.tbl'
-                    String outputPathAndFile = './scripts/reports/{opt[suf]}SensitivityPlot'+nodes+layers+'.html'
+                    String tablePathAndFile = './scripts/models/{opt[suf]}sensitivity_n5_l1.tbl'
+                    String outputPathAndFile = './scripts/reports/{opt[suf]}sensitivityPlot_n5_l1.html'
                    // U_PlotSensitivity.run(tablePathAndFile,outputPathAndFile)
         }}
     }}
