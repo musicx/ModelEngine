@@ -18,12 +18,14 @@ if __name__ == '__main__':
                       help="delimiter char, accept xASCII format, default=','")
     parser.add_option("-v", "--vars", dest="vars", action="store", type="string",
                       help="model variable list separated with ',' and wild characters is supported such as '*_zscl'")
-    parser.add_option("-s", "--base", dest="base", action="store", type="string",
+    parser.add_option("-i", "--include", dest="base", action="store", type="string",
                       help="non-training variables need to be kept, separated with ','")
     parser.add_option("-r", "--drop", dest="drop", action="store", type="string",
                       help="drop variable list separated with ','")
-    parser.add_option("-n", "--node", dest="node", action="store", type="string",
-                      help="nodes in the hidden layer, separated with ','")
+    parser.add_option("-n", "--node", dest="node", action="store", type="string", default='20',
+                      help="nodes in the hidden layer, separated with ',', default=20")
+    parser.add_option("-s", "--seed", dest="seed", action="store", type="string", default='25',
+                      help="random seeds to try with, separated with ',', default=25")
     parser.add_option("-f", "--prefix", dest="prefix", action="store", type="string",
                       help="optional prefix for output files")
     (options, args) = parser.parse_args()
@@ -91,7 +93,8 @@ if __name__ == '__main__':
     config_string['keep_vars'] = " ".join([options.vars, options.bad, " ".join(keys), " ".join(bases)])
 
     config_string['nodes'] = options.node
-    config_string['nodes_num'] = min(len(nodes), 3)
+    config_string['seeds'] = options.seed
+    config_string['jobs'] = min(len(nodes) * len(options.seed.split(',')), 3)
     config_string['model_vars'] = "'{}'".format(options.vars)
 
     if not options.drop :

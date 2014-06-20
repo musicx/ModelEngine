@@ -19,6 +19,7 @@ String targetHighStates = properties.targetHighStates
 String targetHighScoreLabel = properties.targetHighScoreLabel
 String sampleWeight = properties.sampleWeight
 String setidVariable = properties.setidVariable
+int seedToTry = properties.seedToTry
 int numNodes = properties.numNodes
 int numLayers = properties.numLayers
 String prepareModelForReasonCodes = properties.prepareModelForReasonCodes
@@ -41,7 +42,7 @@ Dataset ds1 = app.data.open(in:dstemp,filter:app.filter.where('binaryTargetNN < 
 /********************************************************************************
 Train and test the neural network
 ********************************************************************************/
-app.logger.info('########## Training NN with '+numNodes+' hidden nodes and '+numLayers+' hidden layers ##########')
+app.logger.info('########## Training NN with '+numNodes+' hidden nodes and '+numLayers+' hidden layers and ' + seedToTry + ' seeds ##########')
 TaskResult nnTrainResult = app.task.nnet(
    in: ds1,
    target: 'binaryTargetNN',
@@ -68,7 +69,7 @@ TaskResult nnTrainResult = app.task.nnet(
    rmsDeltaLimit: 0.0000001,
    rmsSlope: 8,
    forceLastWeights: false, 
-   seed:25,
+   seed:seedToTry,
    reasonCodesEnabled: prepareModelForReasonCodes,
    trainedModel: null) {{
            architecture {{
@@ -102,28 +103,28 @@ Export the model to PMML
 ********************************************************************************/
 m1 = nnTrainResult.model
 m1.setName('Model'+numNodes+numLayers)
-app.model.save(m1, './scripts/models/{opt[pre]}spec_nn_n'+numNodes+'_l'+numLayers+'.pmml')
-app.logger.info('###### Finished NN Training/pmml with '+numNodes+' hidden nodes ##########')
+app.model.save(m1, './scripts/models/{opt[pre]}spec_nn_n'+numNodes+'_l'+numLayers+'_s'+seedToTry+'.pmml')
+app.logger.info('###### Finished NN Training/pmml with '+numNodes+' hidden nodes and ' + seedToTry + ' seeds ##########')
     
     
    /********************************************************************************
 Save the variable results to a dataset
 ********************************************************************************/
-app.table.toCSV(nnTrainResult.variable,'./scripts/models/{opt[pre]}variable_n'+numNodes+'_l'+numLayers+'.csv')
+app.table.toCSV(nnTrainResult.variable,'./scripts/models/{opt[pre]}variable_n'+numNodes+'_l'+numLayers+'_s'+seedToTry+'.csv')
     
    
    /********************************************************************************
 Save the sensitivity results to a dataset
 ********************************************************************************/
-app.table.toCSV(nnTrainResult.sensitivity,'./scripts/models/{opt[pre]}sensitivity_n'+numNodes+'_l'+numLayers+'.csv')
-app.logger.info('########## Finished NN Training with '+numNodes+' hidden nodes ##########')
+app.table.toCSV(nnTrainResult.sensitivity,'./scripts/models/{opt[pre]}sensitivity_n'+numNodes+'_l'+numLayers+'_s'+seedToTry+'.csv')
+app.logger.info('########## Finished NN Training with '+numNodes+' hidden nodes and ' + seedToTry + ' seeds ##########')
 /********************************************************************************
 Save the sensitivity results to a table
 ********************************************************************************/
-File f1 = new File('./scripts/reports/{opt[pre]}sensitivity_n'+numNodes+'_l'+numLayers+'.tbl')
+File f1 = new File('./scripts/reports/{opt[pre]}sensitivity_n'+numNodes+'_l'+numLayers+'_s'+seedToTry+'.tbl')
 f1.delete()
 nnTrainResult.sensitivity.save(f1)
 
-app.logger.info('###### Finished sensitivity for '+numNodes+' hidden nodes ##########')
+app.logger.info('###### Finished sensitivity for '+numNodes+' hidden nodes and ' + seedToTry + ' seeds ##########')
  
     

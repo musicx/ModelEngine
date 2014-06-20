@@ -6,6 +6,8 @@ input :
     delimiter : dataset delimiter
     bad : bad variable name
     nodes : node numbers separated by comma
+    jobs : number of concurrent jobs
+    seeds : seed numbers separated by comma
     role_ids : key variables roles assignment lines
     model_vars : variables used for modeling
     drop_vars : drop variables list
@@ -31,8 +33,9 @@ String inputVariables = {opt[model_vars]}
 
 String sampleWeight = null //'e.g. sampleWeight3'
 String setidVariable = 'setid' //'e.g. trainTestEval'
-int numConcurrentJobs = {opt[nodes_num]} // number of simultaneous training jobs
-List numHiddenNodesToTry = [{opt[nodes]}]
+int numConcurrentJobs = {opt[jobs]} // number of simultaneous training jobs
+List numHiddenNodesToTry  = [{opt[nodes]}]
+List seedsToTry           = [{opt[seeds]}]
 List numHiddenLayersToTry = [1]
 String prepareModelForReasonCodes = 'trainOnly' // trainOnly trainAndReasonCode
 
@@ -85,24 +88,27 @@ List propertyFiles = []
 
 numHiddenNodesToTry.each(){{nodes->
     numHiddenLayersToTry.each(){{layers->
-        fileName = './scripts/properties/{opt[pre]}properties_'+nodes+layers+'.groovy'
-        ConfigObject properties = new ConfigObject()
-        properties.pathToData = pathToData
-        properties.datasetName = datasetName
-        properties.targetVariable = targetVariable
-        properties.targetLowStates = targetLowStates
-        properties.targetLowScoreLabel = targetLowScoreLabel
-        properties.targetHighStates = targetHighStates
-        properties.targetHighScoreLabel = targetHighScoreLabel
-        properties.sampleWeight = sampleWeight
-        properties.setidVariable = setidVariable
-        properties.numNodes = nodes
-        properties.numLayers = layers
-        properties.prepareModelForReasonCodes = prepareModelForReasonCodes
-        properties.excludedVariables = excludedVariables
-        properties.includedVariables = includedVariables
-        new File(fileName).withWriter{{writer->properties.writeTo(writer)}}
-        propertyFiles.add(fileName)
+        seedsToTry.each(){{rseed->
+            fileName = './scripts/properties/{opt[pre]}properties_n'+nodes+'_l'+layers+'_s'+rseed+'.groovy'
+            ConfigObject properties = new ConfigObject()
+            properties.pathToData = pathToData
+            properties.datasetName = datasetName
+            properties.targetVariable = targetVariable
+            properties.targetLowStates = targetLowStates
+            properties.targetLowScoreLabel = targetLowScoreLabel
+            properties.targetHighStates = targetHighStates
+            properties.targetHighScoreLabel = targetHighScoreLabel
+            properties.sampleWeight = sampleWeight
+            properties.setidVariable = setidVariable
+            properties.numNodes = nodes
+            properties.numLayers = layers
+            properties.seedToTry = rseed
+            properties.prepareModelForReasonCodes = prepareModelForReasonCodes
+            properties.excludedVariables = excludedVariables
+            properties.includedVariables = includedVariables
+            new File(fileName).withWriter{{writer->properties.writeTo(writer)}}
+            propertyFiles.add(fileName)
+        }}
     }}
 }}
 // Launch the jobs numConcurrentJobs at a time
@@ -119,8 +125,10 @@ while (propertyFiles.size()>0){{
 // Plot sensititivity results
 numHiddenNodesToTry.each(){{nodes->
     numHiddenLayersToTry.each(){{layers->
-                String tablePathAndFile = './scripts/models/{opt[pre]}Sensitivity'+nodes+layers+'.tbl'
-                String outputPathAndFile = './scripts/reports/{opt[pre]}SensitivityPlot'+nodes+layers+'.html'
-               // U_PlotSensitivity.run(tablePathAndFile,outputPathAndFile)
+        seedsToTry.each(){{rseed->
+            String tablePathAndFile = './scripts/models/{opt[pre]}sensitivity_n'+nodes+'_l'+layers+'_s'+rseed+'.tbl'
+            String outputPathAndFile = './scripts/reports/{opt[pre]}sensitivityplot_n'+nodes+'_l'+layers+'_s'+rseed+'.html'
+            // U_PlotSensitivity.run(tablePathAndFile,outputPathAndFile)
+        }}
     }}
 }}
