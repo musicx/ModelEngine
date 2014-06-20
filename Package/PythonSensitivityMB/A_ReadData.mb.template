@@ -7,13 +7,13 @@ input :
     bad : bad variable name
     key_pos : key variables position lines, to avoid reading them as numerical vars
     keep_vars : keep variables list
-    suf : output file name suffix
+    pre : output file name prefix
 ***************/
 import com.fairisaac.mb.scripting.data.BinningMissingValueMap
 
 requires (heap:'2G') // Allocates RAM for running the script
 String pathToData = './data/'
-String datasetName = '{opt[suf]}' + 'nn_sense' // Name of MB datafile without the .mbd
+String datasetName = '{opt[pre]}' + 'nn_sense' // Name of MB datafile without the .mbd
 
 String srcURI = "{opt[input]}"
 String sinkURI = pathToData+datasetName+'_init.mbd'

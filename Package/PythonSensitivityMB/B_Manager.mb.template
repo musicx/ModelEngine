@@ -8,7 +8,7 @@ input :
     vnum : target number of variables
     model_vars : variables used for modeling
     drop_vars : drop variables list
-    suf : output file name suffix
+    pre : output file name prefix
 ***************/
 
 import com.fairisaac.mb.api.job.launch.LaunchedJob
@@ -19,7 +19,7 @@ User input
 ********************************************************************************/
 requires (heap:'10G') // Allocates RAM for running this script
 String pathToData = './data/'
-String datasetName = '{opt[suf]}' + 'nn_sense' // Name of MB datafile without the .mbd
+String datasetName = '{opt[pre]}' + 'nn_sense' // Name of MB datafile without the .mbd
 String targetVariable = '{opt[bad]}'
 String targetLowStates = '0'
 String targetLowScoreLabel = 'Good'
@@ -79,12 +79,12 @@ String includedVariables = include.join(' ')
 app.logger.info(includedVariables)
 
 Boolean has_more_vars = true
-File f1 = new File('./scripts/reports/{opt[suf]}sensitivity_n5_l1.tbl')
+File f1 = new File('./scripts/reports/{opt[pre]}sensitivity_n5_l1.tbl')
 if (f1.exists()) {{
     Table u1 = new BaseTable().load(f1)
     int var_count = u1.getRowCount()
-    app.table.toCSV(u1, './scripts/models/{opt[suf]}sensitivity_n5_l1_v' + var_count + '.csv')
-    File toSave = new File('./scripts/models/{opt[suf]}sensitivity_n5_l1_v' + var_count + '.tbl')
+    app.table.toCSV(u1, './scripts/models/{opt[pre]}sensitivity_n5_l1_v' + var_count + '.csv')
+    File toSave = new File('./scripts/models/{opt[pre]}sensitivity_n5_l1_v' + var_count + '.tbl')
     toSave.delete()
     u1.save(toSave)
     if (var_count > {opt[vnum]}) {{
@@ -109,7 +109,7 @@ while (has_more_vars) {{
 
     numHiddenNodesToTry.each(){{nodes->
         numHiddenLayersToTry.each(){{layers->
-            fileName = './scripts/properties/{opt[suf]}properties_n5_l1.groovy'
+            fileName = './scripts/properties/{opt[pre]}properties_n5_l1.groovy'
             ConfigObject properties = new ConfigObject()
             properties.pathToData = pathToData
             properties.datasetName = datasetName
@@ -140,11 +140,11 @@ while (has_more_vars) {{
         app.job.waitForChildren()
     }}
 
-    f1 = new File('./scripts/reports/{opt[suf]}sensitivity_n5_l1.tbl')
+    f1 = new File('./scripts/reports/{opt[pre]}sensitivity_n5_l1.tbl')
     u1 = new BaseTable().load(f1)
     var_count = u1.getRowCount()
-    app.table.toCSV(u1, './scripts/models/{opt[suf]}sensitivity_n5_l1_v' + var_count + '.csv')
-    toSave = new File('./scripts/models/{opt[suf]}sensitivity_n5_l1_v' + var_count + '.tbl')
+    app.table.toCSV(u1, './scripts/models/{opt[pre]}sensitivity_n5_l1_v' + var_count + '.csv')
+    toSave = new File('./scripts/models/{opt[pre]}sensitivity_n5_l1_v' + var_count + '.tbl')
     toSave.delete()
     u1.save(toSave)
 
@@ -165,8 +165,8 @@ while (has_more_vars) {{
     // Plot sensititivity results
     numHiddenNodesToTry.each(){{nodes->
         numHiddenLayersToTry.each(){{layers->
-                    String tablePathAndFile = './scripts/models/{opt[suf]}sensitivity_n5_l1.tbl'
-                    String outputPathAndFile = './scripts/reports/{opt[suf]}sensitivityPlot_n5_l1.html'
+                    String tablePathAndFile = './scripts/models/{opt[pre]}sensitivity_n5_l1.tbl'
+                    String outputPathAndFile = './scripts/reports/{opt[pre]}sensitivityPlot_n5_l1.html'
                    // U_PlotSensitivity.run(tablePathAndFile,outputPathAndFile)
         }}
     }}

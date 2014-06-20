@@ -149,14 +149,16 @@ if __name__ == "__main__":
                     filter_index[vind] = filters[variable_names_lower[vind]]
 
             # Start reading and writing data
-            with open(output_files[find]) as fo :
+            with open(output_files[find], 'w') as fo :
+                fo.write(options.dlm.join([variable_names[x] for x in output_index]))
+                fo.write("\n")
                 while True :
                     line = fn.readline()
                     if not line :
                         break
                     values = line.split(options.dlm)
                     skip = False
-                    for cind, cval in filter_index :
+                    for cind, cval in filter_index.iteritems() :
                         if (values[cind].strip() == cval[0]) != cval[1] :
                             skip = True
                             break

@@ -20,8 +20,8 @@ if __name__ == '__main__':
                       help="drop variable list separated with ','")
     parser.add_option("-n", "--num", dest="num", action="store", type="integer", default=500,
                       help="target number of variables, final list will contain less than this number, no guarantee of equalism")
-    parser.add_option("-f", "--suffix", dest="suffix", action="store", type="string",
-                      help="optional suffix for output files")
+    parser.add_option("-f", "--prefix", dest="prefix", action="store", type="string",
+                      help="optional prefix for output files")
     (options, args) = parser.parse_args()
 
     if not (options.bad and options.input and options.key) :
@@ -30,7 +30,7 @@ if __name__ == '__main__':
 
     config_string = {'bad' : options.bad.lower(),
                      'input' : options.input,
-                     'suf' : options.suffix + '_' if options.suffix is not None and options.suffix.strip() != '' else ''}
+                     'pre' : options.prefix + '_' if options.prefix is not None and options.prefix.strip() != '' else ''}
 
     if options.key.find(',') >= 0 :
         keys = [x.lower() for x in options.key.split(',')]
