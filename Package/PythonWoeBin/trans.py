@@ -70,7 +70,7 @@ def parseHeader(options):
             headFields = head.split(',')
     variables = []
     for part in headFields:
-        variables.append(part.strip())
+        variables.append(part.strip().replace(':', '_'))
     return variables
 
 

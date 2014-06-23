@@ -675,14 +675,14 @@ def checkHeader(options) :
         headFields = head.split(options.dlm)
         value_count = set()
         for l in range(10) :
-            value = fn.readline()
+            value = fn.readline().replace(':', '_')
             if not value :
                 break
             valueFields = value.split(options.dlm)
             value_count.add(len(valueFields))
     if options.head :
         with open(options.head) as fn :
-            head = fn.readline()
+            head = fn.readline().replace(':', '_')
             headFields = head.split(',')
     if len(headFields) not in value_count:
         logging.error('mismatch has been found on header line and following lines')
