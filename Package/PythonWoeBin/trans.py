@@ -63,11 +63,13 @@ def parseVarList(options):
 def parseHeader(options):
     with open(options.raw, 'r') as fn:
         line = fn.readline()
-    parts = line.split(options.dlm)
-    # variables = OrderedDict()
+        headFields = line.split(options.dlm)
+    if options.head :
+        with open(options.head) as fn :
+            head = fn.readline()
+            headFields = head.split(',')
     variables = []
-    for part in parts:
-        #variables[part.strip()] = None
+    for part in headFields:
         variables.append(part.strip())
     return variables
 
@@ -157,11 +159,12 @@ if __name__ == "__main__":
                       default=",")
     parser.add_option("-b", "--bin", dest="bin", help="z-scaled input file, choose one or more among {bin, woe, zscl}",
                       action="store", type="string")
+    parser.add_option("-e", "--head", dest="head", help="optional head line file, must use ',' as delimiter",
+                      action="store", type="string")
     parser.add_option("-w", "--woe", dest="woe", help="WoE input file, choose one or more among {bin, woe, zscl}",
                       action="store", type="string")
-    parser.add_option("-z", "--zscl", dest="zscl",
-                      help="z-scaled WoE input file, choose one or more among {bin, woe, zscl}", action="store",
-                      type="string")
+    parser.add_option("-z", "--zscl", dest="zscl", help="z-scaled WoE input file, choose one or more among {bin, woe, zscl}",
+                      action="store", type="string")
     parser.add_option("-v", "--var", dest="var", help="variable list file, required for woe transform", action="store",
                       type="string")
     parser.add_option("-p", "--drop", dest="drop", help="drop variable list, optional", action="store", type="string")
