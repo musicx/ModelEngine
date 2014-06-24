@@ -140,27 +140,29 @@ if __name__ == '__main__':
 
     part_e = open('E_ScoreData.mb.template').read()
     for node in nodes :
-        spec = r"./scripts/models/{}spec_nn_n{}_l1.pmml".format(config_string['pre'], node)
-        cmd_e = "E_ScoreData_{0}_n{1}".format("train", node)
-        config_string['spec'] = spec
-        config_string['name'] = "{}nn_n{}".format(config_string['pre'], node)
-        config_string['input'] = r"./data/{}nn_train.mbd".format(config_string['pre'])
-        config_string['output'] = r"./data/{}scored_train_n{}.csv".format(config_string['pre'], node)
-        with open('{}.mb'.format(cmd_e), 'w') as fn :
-            fn.write(part_e.format(opt=config_string))
-        fr.write(cmd.format(cmd_e))
-        fr.write("\n")
-
-        if options.test :
-            for ind in xrange(len(tests)) :
-                cmd_e = "E_ScoreData_d{0}_n{1}".format(ind, node)
-                config_string['input'] = r"./data/{}test_d{}.mbd".format(config_string['pre'], ind)
-                config_string['output'] = r"./data/{0}scored_test_d{1}_n{2}.csv".format(config_string['pre'], ind, node)
-                with open('{}.mb'.format(cmd_e), 'w') as fn :
-                    fn.write(part_e.format(opt=config_string))
-                fr.write(cmd.format(cmd_e))
-                fr.write("\n")
+        for seed in options.seed.split(','):
+            seed = seed.strip()
+            spec = r"./scripts/models/{}spec_nn_n{}_l1_s{}.pmml".format(config_string['pre'], node, seed)
+            cmd_e = "E_ScoreData_{0}_n{1}_s{2}".format("train", node, seed)
+            config_string['spec'] = spec
+            config_string['name'] = "{}nn_n{}_s{}".format(config_string['pre'], node, seed)
+            config_string['input'] = r"./data/{}nn_train.mbd".format(config_string['pre'])
+            config_string['output'] = r"./data/{}scored_train_n{}_s{}.csv".format(config_string['pre'], node, seed)
+            with open('{}.mb'.format(cmd_e), 'w') as fn :
+                fn.write(part_e.format(opt=config_string))
+            fr.write(cmd.format(cmd_e))
             fr.write("\n")
+
+            if options.test :
+                for ind in xrange(len(tests)) :
+                    cmd_e = "E_ScoreData_d{0}_n{1}_s{2}".format(ind, node, seed)
+                    config_string['input'] = r"./data/{}test_d{}.mbd".format(config_string['pre'], ind)
+                    config_string['output'] = r"./data/{0}scored_test_d{1}_n{2}_s{3}.csv".format(config_string['pre'], ind, node, seed)
+                    with open('{}.mb'.format(cmd_e), 'w') as fn :
+                        fn.write(part_e.format(opt=config_string))
+                    fr.write(cmd.format(cmd_e))
+                    fr.write("\n")
+                fr.write("\n")
 
     fr.flush()
     fr.close()
