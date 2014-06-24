@@ -421,18 +421,24 @@ def parseType(options) :
     return special, ikeeps, idrops
 
 
-def parseKeys(csv, options) :
+def parseKeys(csv, options, hind=0) :
     # return bads, wgt, vnames
     # list of bad taggings
     # var of weight
     # names of all variables
     with open(csv, "r") as fn:
-        head = fn.readline()
+        head = fn.readline().replace(':', '_')
         vnames = [x.strip() for x in head.split(options.dlm)]
     if options.head :
-        with open(options.head, "r") as fn :
-            head = fn.readline()
-            vnames = [x.strip() for x in head.split(",")]
+        head_files = options.head.split(',')
+        if len(head_files) == 1:
+            with open(head_files[0], "r") as fn :
+                head = fn.readline().replace(':', '_')
+                vnames = [x.strip() for x in head.split(",")]
+        else :
+            with open(head_files[hind], "r") as fn :
+                head = fn.readline().replace(':', '_')
+                vnames = [x.strip() for x in head.split(",")]
     heads = [x.lower() for x in vnames]
     sbads = set([x.lower().strip() for x in options.bad.split(",")])
     if options.wgt :
@@ -602,8 +608,8 @@ def findBin(value, bins, binType) :
         return lb
 
 
-def applyBoundaries(val, options, variables, header_count) :
-    val_bads, val_wgt, val_names = parseKeys(val, options)
+def applyBoundaries(val, options, variables, header_count, hind) :
+    val_bads, val_wgt, val_names = parseKeys(val, options, hind)
     if val_bads is None :
         return
     val_bad_names = {}
@@ -675,14 +681,14 @@ def checkHeader(options) :
         headFields = head.split(options.dlm)
         value_count = set()
         for l in range(10) :
-            value = fn.readline().replace(':', '_')
+            value = fn.readline()
             if not value :
                 break
             valueFields = value.split(options.dlm)
             value_count.add(len(valueFields))
     if options.head :
         with open(options.head) as fn :
-            head = fn.readline().replace(':', '_')
+            head = fn.readline()
             headFields = head.split(',')
     if len(headFields) not in value_count:
         logging.error('mismatch has been found on header line and following lines')
@@ -738,6 +744,11 @@ if __name__ == '__main__' :
         exit()
     logging.info("{} variables from header, records with different values will be discarded".format(header_count))
 
+    if options.head and options.val :
+        if len(options.head.split(',')) != 1 and len(options.head.split(',')) != len(options.val.split(',')) + 1 :
+            print "header number not match dataset number!"
+            exit()
+
     bads, wgt, vnames = parseKeys(options.src, options)
     if not bads :
         print "bad variables parsing error!"
@@ -785,11 +796,11 @@ if __name__ == '__main__' :
     if options.val :
         logging.info("start applying fine bin boundaries to other datasets...")
         vals = [x.strip() for x in options.val.split(",")]
-        for val in vals :
+        for dind in xrange(len(vals)) :
             for variable in variables :
                 variables[variable].newdataset()
             # TODO : combine this with the last on the batch level
-            applyBoundaries(val, options, variables, header_count)
+            applyBoundaries(vals[dind], options, variables, header_count, dind+1)
 
     logging.info("start outputing the binning results...")
     bad_names = list(bad_names.values())
