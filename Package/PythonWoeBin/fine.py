@@ -629,11 +629,12 @@ def applyBoundaries(val, options, variables, header_count, hind) :
             if line.strip() == '' :
                 continue
             parts = [xi.strip() for xi in line.split(options.dlm)]
-            if len(parts) != header_count :
-                continue
+            #if len(parts) != header_count :
+            #    continue
             if len(parts) < len(val_names) :
-                logging.error("column mismatch when parsing validation dataset!")
-                break
+                #logging.error("column mismatch when parsing validation dataset!")
+                #break
+                continue
             weight = 1 if val_wgt < 0 else wfloat(parts[val_wgt])
             bad_values = {}
             for bad_ind in val_bads :
