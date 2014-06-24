@@ -20,7 +20,9 @@ String sinkURI = pathToData+datasetName+'.mbd'
 
 new File('./data').mkdir()
 
-// Import data 
+// Import data
+vars = app.report.createTable('./var_table.txt', true)
+
 Dataset ds = app.task.importData(
     in: srcURI,
     out: sinkURI,
@@ -31,10 +33,11 @@ Dataset ds = app.task.importData(
     layout (
         varDelimiter: '{opt[delimiter]}', // '\007' or ','
         characterSet: 'US-ASCII',
-        partialLayout: true
+        partialLayout: true,
+        varTable: vars
     ) {{
     // var( name : "transid", type : "string", position : ind, role : "recordID"),
-{opt[key_pos]}
+//{opt[key_pos]}
     }}
 }}.dataset
 

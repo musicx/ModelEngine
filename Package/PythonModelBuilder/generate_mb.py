@@ -64,7 +64,9 @@ if __name__ == '__main__':
     heads = open(options.train).readline().split(delimiter)
     bases = [x.lower() for x in options.base.split(',')] if options.base else []
 
+    key_pos = ''
     config_string['key_pos'] = ''
+    var_table = 'name, type, role\n'
     for head in heads:
         var = head.strip().lower()
         if var == config_string['bad'] :
@@ -80,7 +82,10 @@ if __name__ == '__main__':
             role = 'predictor'
             var_type = 'numeric'
         no_setid_head = head.strip() if var != 'setid' else 'no_set_id'
-        config_string['key_pos'] += "\tvar( name : \"{0}\", type : \"{1}\", role : \"{2}\")\n".format(no_setid_head, var_type, role)
+        key_pos += "\tvar( name : \"{0}\", type : \"{1}\", role : \"{2}\")\n".format(no_setid_head, var_type, role)
+        var_table += "{},{},{}\n".format(no_setid_head, var_type, role)
+    with open('var_table.txt', 'w') as fv :
+        fv.write(var_table)
 
 #    config_string['role_ids'] = ''
 #    for key in keys :
