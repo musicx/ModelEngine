@@ -54,6 +54,8 @@ if __name__ == '__main__':
     delimiter = chr(int(options.dlm[1:])) if options.dlm.startswith('x') else options.dlm
     heads = open(options.input).readline().split(delimiter)
 
+    var_table = 'name, type, role\n'
+    key_pos = ''
     config_string['key_pos'] = ''
     for head in heads:
         var = head.strip().lower()
@@ -67,8 +69,10 @@ if __name__ == '__main__':
             role = 'predictor'
             var_type = 'numeric'
         no_setid_head = head.strip() if var != 'setid' else 'no_set_id'
-        config_string['key_pos'] += "\tvar( name : \"{0}\", type : \"{1}\", role : \"{2}\")\n".format(no_setid_head, var_type, role)
-
+        key_pos += "\tvar( name : \"{0}\", type : \"{1}\", role : \"{2}\")\n".format(no_setid_head, var_type, role)
+        var_table += "{},{},{}\n".format(no_setid_head, var_type, role)
+    with open('var_table.txt', 'w') as fv :
+        fv.write(var_table)
 #    config_string['role_ids'] = ''
 #    for key in keys :
 #        config_string['role_ids'] += "\telse if (it.getName().toLowerCase() == '{0}')\n\t\tit.getVariableRoles().add('recordID')\n".format(key)
