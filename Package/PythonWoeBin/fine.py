@@ -356,7 +356,6 @@ class Variable :
             self.distribution.std = math.sqrt(abs((nonmiss_sqr - 2 * nonmiss_total * self.distribution.mean + nonmiss_cnt * self.distribution.mean ** 2) / (nonmiss_cnt - 1 + 1e-36)))
             return 0
 
-
     def newdataset(self):
         empty_bins = {}
         for bad_name in self.bins :

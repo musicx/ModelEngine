@@ -8,6 +8,20 @@ import numpy as np
 __author__ = 'yijiliu'
 
 
+def ignore_exception(IgnoreException=Exception, DefaultVal=None):
+    """ Decorator for ignoring exception from a function
+    e.g.   @ignore_exception(DivideByZero)
+    e.g.2. ignore_exception(DivideByZero)(Divide)(2/0)
+    """
+    def dec(function):
+        def _dec(*args, **kwargs):
+            try:
+                return function(*args, **kwargs)
+            except IgnoreException:
+                return DefaultVal
+        return _dec
+    return dec
+
 def aggregation(data, variables, totals, key, higher_worse):
     aggregated = data[variables].aggregate(np.sum).reset_index()
     agg_rank = "AGG_TEMP_RANK"
@@ -146,6 +160,8 @@ def parse_json(src_string):
     # for source in sources :
     #    if not os.path.exists(source["path"]) :
     #        return None
+    if "input" not in sources or "score" not in sources or "bad" not in sources :
+        return None
     return sources
 
 
@@ -153,19 +169,21 @@ if __name__ == '__main__':
     parser = OptionParser()
     parser.add_option("-j", "--json", dest="json", action="store", type="string",
                       help="raw string of scored files encoded with json or json file. example:\n" +
-                           '{[{"path":"score.csv","score":["new_score"],"id":["trans_id"],"base":["bad","weight","loss","region"]}]}')
+                           '{"input":["score.csv"],"score":["new_score"],"bad":["is_bad"],"weight":["unit","dollar"],"catch":["loss"],"group":{"group_name":["region"]}}')
+    # following parts can be ignored if json is given
     parser.add_option("-i", "--input", dest="input", action="store", type="string",
                       help="input datasets, separated with ','")
     parser.add_option("-s", "--score", dest="score", action="store", type="string",
                       help="score variables, separated with ','")
     parser.add_option("-b", "--bad", dest="bad", action="store", type="string",
                       help="name of bad variables")
-    parser.add_option("-w", "--wgt", dest="wgt", action="store", type="string",
-                      help="names of weight variables, format: unit|1,dollar")
+    parser.add_option("-w", "--wgt", dest="wgt", action="store", type="string", default="dummy",
+                      help="names of weight variables, separated by ',', default is dummy")
     parser.add_option("-c", "--catch", dest="catch", action="store", type="string",
                       help="names of extra variables for catch rate calculation, separated with ','")
     parser.add_option("-g", "--group", dest="group", action="store", type="string",
-                      help="optional, group combinations in format class_var1,class_var2;class_var3")
+                      help="optional, group combinations in format class_var1,class_var2|class_var3")
+    # following parts are optional
     parser.add_option("-l", "--log", dest="log", action="store", type="string",
                       help="log file, if not given, stdout is used")
     parser.add_option("-d", "--dlm", dest="dlm", action="store", type="string", default=",",
@@ -176,34 +194,111 @@ if __name__ == '__main__':
                       help="output performance file")
     (options, args) = parser.parse_args()
 
-    if not options.json or not options.input:
-        print "You must specify the input files!"
-        exit()
+    nfloat = ignore_exception(ValueError, None)(float)
 
+    config = {"input"  : [],
+              "score"  : [],
+              "bad"    : [],
+              "weight" : [1,1],
+              "catch"  : [],
+              "group"  : {},
+              "dlm"    : ',',
+              "name"   : []}
     if options.json:
         sources = parse_json(options.json)
+        if sources is None:
+            logging.error("Error occurs during parsing the source json")
+            exit()
+        print sources
 
-    if sources is None:
-        print "Error occurs during parsing the source json"
-        exit()
-    print sources
+        if type(sources['input']) is list:
+            config['input'].extend(sources['input'])
+        elif type(sources['input']) is str:
+            config['input'].append(sources['input'])
+        else:
+            logging.error("Error parsing input field in json")
+            exit()
+        
+        if type(sources['score']) is list:
+            config['score'].extend(sources['score'])
+        elif type(sources['score']) is str:
+            config['score'].append(sources['score'])
+        else:
+            logging.error("Error parsing score field in json")
+            exit()
+            
+        if type(sources['bad']) is list:
+            config['bad'].extend(sources['bad'])
+        elif type(sources['bad']) is str:
+            config['bad'].append(sources['bad'])
+        else:
+            logging.error("Error parsing bad field in json")
+            exit()
 
-    if not options.bad:
-        print "You must specify the bad variables!"
-        exit()
+        if "weight" in sources :
+            if type(sources['weight']) is list:
+                config['weight'].extend(sources['weight'])
+            elif type(sources['weight']) is str:
+                config['weight'].append(sources['weight'])
+            else:
+                logging.error("Error parsing weight field in json")
+                exit()
+        if len(config['weight']) == 0 :
+            config['weight'].append("dummy")
 
-    if not options.wgt:
-        print "You must specify the weight variables!"
-        exit()
-    if options.wgt.find(';') < 0:
-        print "Error occurs during parsing the weight"
-        exit()
-    else:
-        unit_weight = options.wgt[:options.wgt.find(';')]
-        dollar_weight = options.wgt[options.wgt.find(';') + 1:]
+        if "catch" in sources :
+            if type(sources['catch']) is list:
+                config['catch'].extend(sources['catch'])
+            elif type(sources['catch']) is str:
+                config['catch'].append(sources['catch'])
+            else:
+                logging.error("Error parsing catch field in json")
+                exit()
 
-    if options.dlm.startswith('x'):
-        options.dlm = chr(int(options.dlm[1:]))
+        if "group" in sources :
+            for group_name, group_vars in sources['group'] :
+                if type(group_vars) is str:
+                    config['group'][group_name] = [group_vars]
+                elif type(group_vars) is list:
+                    config['group'][group_name] = group_vars
+                else :
+                    logging.err("Error parsing group fileds in json")
+                    exit()
+    else :
+        if not options.input:
+            logging.error("Input datasets must be specified")
+            exit()
+        config['input'] = [x.strip() for x in options.input.split(',')]
+
+        if not options.score:
+            logging.error("Score variables must be specified")
+            exit()
+        config['score'] = [x.strip() for x in options.score.split(',')]
+
+        if not options.bad:
+            logging.error("Bad variables must be specified")
+            exit()
+        config['bad'] = [x.strip() for x in options.bad.split(',')]
+
+        if options.wgt:
+            config['weight'] = [x.strip() for x in options.wgt.split(',')]
+        if len(config['weight']) == 0:
+            config['weight'].append('dummy')
+
+        if options.catch:
+            config['catch'] = [x.strip() for x in options.catch.split(',')]
+
+        if options.group:
+            groups = options.group.split('|')
+            for group in groups :
+                config['group'][group] = [x.strip() for x in group.split(',')]
+
+    config['dlm'] = chr(int(options.dlm[1:])) if options.dlm.startswith('x') else options.dlm
+
+    config['name'] = ["data_{}".format(x) for x in xrange(1, len(config['input'])+1)]
+    names = [x.strip() for x in options.name.split(',')]
+    for ind in xrange(min(len(names), len(config['input']))) :
+        config['name'][ind] = names[ind]
 
     if options.log:
         logging.basicConfig(level=logging.DEBUG, format='%(asctime)-15s - %(levelname)s - %(message)s',
