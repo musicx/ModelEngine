@@ -156,13 +156,16 @@ def operation_performance(data, score, weights=['dummy'], bads=['is_bad'], group
     raw = data[[score] + weights + bads + groups + catches]
     score_rank = score + "_rank"
     # Assuming higher score indicates higher risk
-    # TODO: wrong here
     raw[score_rank] = raw.groupby(groups)[score].transform(pd.Series.rank, method='min',
                                                            ascending=False, na_option='bottom')
     score_groups = groups + [score_rank]
     raw.sort(columns=score_groups, inplace=True)
-    raw.loc[:, score_rank] = raw.groupby(groups)[rank_base].cumsum() / raw.groupby(groups)[rank_base].transform(pd.Series.sum)
+    rank_cumsum = pd.DataFrame(raw.groupby(score_groups)[rank_base].sum().groupby(level=-2).cumsum(),
+                               columns=["rank_cumsum"]).reset_index()
+    raw = raw.merge(rank_cumsum, how="left", on=score_groups)
+    raw.loc[:, score_rank] = raw['rank_cumsum'] / raw.groupby(groups)[rank_base].transform(pd.Series.sum)
     raw.loc[:, score_rank] = raw[score_rank].apply(lambda x: np.ceil(x * points) * (1.0 / points))
+    raw.pop('rank_cumsum')
 
     bad_dummy_names = {}
     full_bads_dummy_names = []
@@ -471,8 +474,8 @@ if __name__ == '__main__':
     #big_raw[score_vars] = big_raw[score_vars][big_raw[score_vars] < 0].combine_first(mapped_scores)
     # or
     max_ind = big_raw[score_vars].max() <= 1
-    if any(max_ind) :
-        logging.info("auto-mapping is found to be necessary, start...")
+    if any(list(max_ind)) :
+        logging.info("score scaling is found to be necessary, start...")
         big_raw[score_vars] = big_raw[score_vars].apply(lambda x: x * ((max_ind & (x > 0)) * 999 + 1), axis=1)
 
     operation_raw_list = []
