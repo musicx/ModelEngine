@@ -23,133 +23,6 @@ def ignore_exception(IgnoreException=Exception, DefaultVal=None):
         return _dec
     return dec
 
-not_used = '''
-def aggregation(data, variables, totals, key, higher_worse):
-    aggregated = data[variables].aggregate(np.sum).reset_index()
-    agg_rank = "AGG_TEMP_RANK"
-    aggregated[agg_rank] = aggregated[key].rank(method='min', ascending=not higher_worse)
-    agg_sorted = aggregated.sort(columns=agg_rank)
-
-    agg_sorted['CUM_TOTAL_UNIT'] = agg_sorted[variables[0]].cumsum(axis=0)
-    agg_sorted['CUM_TOTAL_DOLLAR'] = agg_sorted[variables[1]].cumsum(axis=0)
-    agg_sorted['CUM_BAD_UNIT'] = agg_sorted[variables[2]].cumsum(axis=0)
-    agg_sorted['CUM_BAD_DOLLAR'] = agg_sorted[variables[3]].cumsum(axis=0)
-    return_columns = [key, 'CUM_BAD_UNIT', 'CUM_TOTAL_UNIT', 'CUM_BAD_DOLLAR', 'CUM_TOTAL_DOLLAR']
-    for catch_variable in variables[4:]:
-        agg_sorted['CUM_' + catch_variable.upper()] = agg_sorted[catch_variable].cumsum(axis=0)
-        return_columns.append('CUM_' + catch_variable.upper())
-    agg_sorted.drop_duplicates(cols=[agg_rank], take_last=True, inplace=True)
-
-    agg_sorted['OPERATION_UNIT'] = agg_sorted['CUM_TOTAL_UNIT'] / (totals[0] + 1e-30)
-    agg_sorted['OPERATION_DOLLAR'] = agg_sorted['CUM_TOTAL_DOLLAR'] / (totals[1] + 1e-30)
-    agg_sorted['CATCH_BAD_UNIT'] = agg_sorted['CUM_BAD_UNIT'] / (totals[2] + 1e-30)
-    agg_sorted['CATCH_BAD_DOLLAR'] = agg_sorted['CUM_BAD_DOLLAR'] / (totals[3] + 1e-30)
-    agg_sorted['HIT_BAD_UNIT'] = agg_sorted['CUM_BAD_UNIT'] / (agg_sorted['CUM_TOTAL_UNIT'] + 1e-30)
-    agg_sorted['HIT_BAD_DOLLAR'] = agg_sorted['CUM_BAD_DOLLAR'] / (agg_sorted['CUM_TOTAL_DOLLAR'] + 1e-30)
-    return_columns.extend(['CATCH_BAD_UNIT', 'CATCH_BAD_DOLLAR', 'HIT_BAD_UNIT', 'HIT_BAD_DOLLAR',
-                           'OPERATION_UNIT', 'OPERATION_DOLLAR'])
-    catch_variables_totals = zip(variables[4:], totals[4:])
-    for catch_variable, catch_total in catch_variables_totals:
-        agg_sorted['CATCH_' + catch_variable.upper()] = agg_sorted['CUM_' + catch_variable.upper()] / (
-            catch_total + 1e-30)
-        return_columns.append('CATCH_' + catch_variable.upper())
-    return agg_sorted[return_columns]
-
-
-def performance(data, bad=None, unit=None, dollar=None, score=None,
-                maximum=None, minimum=None, higher_worse=True,
-                catch_variables=None, score_interval=0.01, opt_interval=0.01):
-    if score not in data:
-        print "score variable cannot be found in the given dataset"
-        return None
-
-    if bad not in data:
-        print "bad variable cannot be found in the given dataset"
-        return None
-
-    if not unit or unit == '1':
-        unit = 1
-    if unit != 1 and unit not in data:
-        print "unit weight cannot be found in the given dataset"
-        return None
-    elif unit == 1:
-        data['dummy_unit'] = 1
-        unit = 'dummy_unit'
-    data[unit] = data[unit].fillna(0)
-    data['BAD_UNIT'] = data[unit] * (data['bad'] == 1)
-    total_unit = data[unit].sum()
-    total_bad_unit = data['BAD_UNIT'].sum()
-
-    if not dollar or dollar == '1':
-        dollar = 1
-    if dollar != 1 and dollar not in data:
-        print "dollar weight cannot be found in the given dataset"
-        return None
-    elif dollar == 1:
-        data['dummy_dollar'] = 1
-        dollar = 'dummy_dollar'
-    data[dollar] = data[dollar].fillna(0)
-    data['BAD_DOLLAR'] = data[dollar] * (data['bad'] == 1)
-    total_dollar = data[dollar].sum()
-    total_bad_dollar = data['BAD_DOLLAR'].sum()
-
-    if catch_variables is None:
-        catch_variables = []
-    total_catch = {}
-    for catch_variable in catch_variables:
-        data[catch_variable] = data[catch_variable].fillna(0)
-        data[catch_variable] = data[catch_variable] * data[unit]
-        total_catch[catch_variable] = data[catch_variable].sum()
-
-    if maximum is None:
-        maximum = data[score].max()
-    else:
-        data[score] = data[score].apply(lambda x: maximum if x > maximum else x)
-
-    if minimum is None:
-        minimum = data[score].min()
-    else:
-        data[score] = data[score].apply(lambda x: minimum if x < minimum else x)
-
-    new_score = 'TEMP_NORMALIZED_SCORE'
-    new_rank = 'TEMP_RANK'
-    data[new_score] = data[score].apply(
-        lambda x: np.floor(x * 10000) * 0.0001 if higher_worse else np.ceil(x * 10000) * 0.0001)
-    lower_worse = not higher_worse
-    data[new_rank] = data[new_score].rank(method='min', ascending=lower_worse)
-
-    sorted_data = data.sort(columns=new_rank)
-    sorted_data['CUM_TOTAL_UNIT'] = sorted_data[unit].cumsum(axis=0)
-    sorted_data['CUM_TOTAL_DOLLAR'] = sorted_data[dollar].cumsum(axis=0)
-    sorted_data['OPERATION_UNIT'] = sorted_data['CUM_TOTAL_UNIT'] / (total_unit + 1e-30)
-    sorted_data['OPERATION_DOLLAR'] = sorted_data['CUM_TOTAL_DOLLAR'] / (total_dollar + 1e-30)
-
-    aggregation_variables = [unit, dollar, 'BAD_UNIT', 'BAD_DOLLAR']
-    aggregation_variables.extend(catch_variables)
-    aggregation_totals = [total_unit, total_dollar, total_bad_unit, total_bad_dollar]
-    for catch_variable in catch_variables:
-        aggregation_totals.append(total_catch[catch_variable])
-
-    agg_score = 'TEMP_AGGREGATE_SCORE'
-    sorted_data[agg_score] = np.floor(sorted_data[new_score] * 1.0 / score_interval) * score_interval if higher_worse \
-        else np.ceil(sorted_data[new_score] * 1.0 / score_interval) * score_interval
-    score_grouped = sorted_data.groupby(agg_score)
-    score_aggregation = aggregation(score_grouped, aggregation_variables, aggregation_totals, agg_score, higher_worse)
-
-    agg_opt_unit = 'TEMP_AGGREGATE_OPT_UNIT'
-    sorted_data[agg_opt_unit] = np.ceil(sorted_data['OPERATION_UNIT'] * 1.0 / opt_interval) * opt_interval
-    opt_unit_grouped = sorted_data.groupby(agg_opt_unit)
-    opt_unit_aggregation = aggregation(opt_unit_grouped, aggregation_variables, aggregation_totals, agg_opt_unit, False)
-
-    agg_opt_dollar = 'TEMP_AGGREGATE_OPT_DOLLAR'
-    sorted_data[agg_opt_dollar] = np.ceil(sorted_data['OPERATION_DOLLAR'] * 1.0 / opt_interval) * opt_interval
-    opt_dollar_grouped = sorted_data.groupby(agg_opt_dollar)
-    opt_dollar_aggregation = aggregation(opt_dollar_grouped, aggregation_variables, aggregation_totals, agg_opt_dollar,
-                                         False)
-
-    return score_aggregation, opt_unit_aggregation, opt_dollar_aggregation
-'''
-
 
 def operation_performance(data, score, weights=['dummy'], bads=['is_bad'], groups=['window_name'],
                           catches=[], points=100., rank_base='dummy') :
@@ -160,8 +33,10 @@ def operation_performance(data, score, weights=['dummy'], bads=['is_bad'], group
                                                            ascending=False, na_option='bottom')
     score_groups = groups + [score_rank]
     raw.sort(columns=score_groups, inplace=True)
-    rank_cumsum = pd.DataFrame(raw.groupby(score_groups)[rank_base].sum().groupby(level=-2).cumsum(),
-                               columns=["rank_cumsum"]).reset_index()
+    #rank_cumsum = pd.DataFrame(raw.groupby(score_groups)[rank_base].sum().groupby(level=-2).cumsum(),
+    #                           columns=["rank_cumsum"]).reset_index()
+    rank_cumsum = pd.DataFrame(raw.groupby(score_groups)[rank_base].sum().groupby(level=-2).cumsum().reset_index())
+    rank_cumsum.columns = pd.Index(score_groups + ['rank_cumsum'])
     raw = raw.merge(rank_cumsum, how="left", on=score_groups)
     raw.loc[:, score_rank] = raw['rank_cumsum'] / raw.groupby(groups)[rank_base].transform(pd.Series.sum)
     raw.loc[:, score_rank] = raw[score_rank].apply(lambda x: np.ceil(x * points) * (1.0 / points))
@@ -186,7 +61,7 @@ def operation_performance(data, score, weights=['dummy'], bads=['is_bad'], group
 
     score_cut_offs = raw.groupby(score_groups)[score].min()
     sums = raw.groupby(score_groups)[weights_bads_names + weights + catches].sum()
-    totals = sums.sum(level=-2) #TODO: what if there is no base level such as dataset, etc
+    totals = sums.sum(level=-2)       #TODO: what if there is no base level such as dataset, etc
     sums = sums.groupby(level=-2).cumsum()
     catch_rates = sums.divide(totals + 1e-20, axis=0)
     catch_rates.columns = [x + '|catch_rate' for x in catch_rates.columns]
@@ -201,7 +76,7 @@ def operation_performance(data, score, weights=['dummy'], bads=['is_bad'], group
     hit_rates.columns = pd.Index(hit_rate_names)
 
     raw_output = pd.concat([score_cut_offs, sums, catch_rates, hit_rates], axis=1)
-    raw_output.reset_index()
+    raw_output.reset_index(inplace=True)
     raw_output['score_name'] = score
     raw_output['rank_base'] = rank_base
     raw_output['group_name'] = ",".join(groups)
@@ -252,7 +127,7 @@ def score_performance(data, score, weights=['dummy'], bads=['is_bad'], groups=['
     hit_rates.columns = pd.Index(hit_rate_names)
 
     raw_output = pd.concat([sums, catch_rates, hit_rates], axis=1)
-    raw_output.reset_index()
+    raw_output.reset_index(inplace=True)
     raw_output['score_name'] = score
     raw_output['group_name'] = ",".join(groups)
     return raw_output
@@ -410,7 +285,7 @@ if __name__ == '__main__':
 
     delimiter = chr(int(options.dlm[1:])) if options.dlm.startswith('x') else options.dlm
 
-    data_names = ["data_{}".format(x) for x in xrange(1, len(input_data)+1)]
+    data_names = ["data_{}".format(x) for x in xrange(1, max(1, len(input_data))+1)]
     if options.name :
         names = [x.strip().lower() for x in options.name.split(',')]
         for ind in xrange(min(len(names), len(input_data))) :
@@ -427,7 +302,8 @@ if __name__ == '__main__':
         if add_windows :
             groups[group_name].insert(0, 'window_name')
         group_vars = group_vars.union(groups[group_name])
-    if add_windows :
+    if add_windows or len(groups) == 0:
+        add_windows = add_windows or len(groups) == 0
         groups['windows'] = ['window_name']
         group_vars.add('window_name')
     group_vars = list(group_vars)
@@ -480,7 +356,6 @@ if __name__ == '__main__':
 
     operation_raw_list = []
     score_raw_list = []
-    #TODO: empty groups need to be taken care of
     for group_name, score_var, weight_var in itertools.product(groups, score_vars, weight_vars) :
         logging.info("handling {0} based on {1} in group {2}".format(score_var, weight_var, group_name))
         operation_raw = operation_performance(data=big_raw, score=score_var,
@@ -500,8 +375,8 @@ if __name__ == '__main__':
     #output_final_results(full_operation_results, full_operation_raws, full_score_results, full_score_raws)
 
     with pd.ExcelWriter(options.out+'.xlsx') as writer :
-        full_operation_raws.to_excel(writer, sheet_name="operation_raw")
-        full_score_raws.to_excel(writer, sheet_name="score_raw")
+        full_operation_raws.to_excel(writer, sheet_name="operation_raw", index=False)
+        full_score_raws.to_excel(writer, sheet_name="score_raw", index=False)
     logging.info("export finished")
 
     # test code
