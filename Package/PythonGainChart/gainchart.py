@@ -161,22 +161,22 @@ def operation_performance(data, score, weights=['dummy'], bads=['is_bad'], group
                                                            ascending=False, na_option='bottom')
     score_groups = groups + [score_rank]
     raw.sort(columns=score_groups, inplace=True)
-    raw[score_rank] = raw.groupby(groups)[rank_base].cumsum() / raw.groupby(groups)[rank_base].transform(pd.Series.sum)
-    raw[score_rank] = raw[score_rank].apply(lambda x: np.ceil(x * points) * (1.0 / points))
+    raw.loc[:, score_rank] = raw.groupby(groups)[rank_base].cumsum() / raw.groupby(groups)[rank_base].transform(pd.Series.sum)
+    raw.loc[:, score_rank] = raw[score_rank].apply(lambda x: np.ceil(x * points) * (1.0 / points))
 
     bad_dummy_names = {}
     full_bads_dummy_names = []
     for bad in bads :
         bad_dummy = pd.get_dummies(raw[bad])
         bad_dummy.rename(columns=dict(zip(bad_dummy.columns,
-                                          ["{}_{}".format(x[0], x[1])
+                                          ["{}|{}".format(x[0], x[1])
                                            for x in zip([bad] * len(bad_dummy.columns), bad_dummy.columns)])),
                          inplace=True)
         raw = raw.merge(bad_dummy, left_index=True, right_index=True)
         bad_dummy_names[bad] = list(bad_dummy.columns)
         full_bads_dummy_names.extend(bad_dummy.columns)
 
-    weights_bads_names = [x + '_' + y for x in weights for y in full_bads_dummy_names]
+    weights_bads_names = [x + '|' + y for x in weights for y in full_bads_dummy_names]
     weights_bads_raw = pd.concat([raw[full_bads_dummy_names].mul(raw[x], axis=0) for x in weights], axis=1)
     weights_bads_raw.columns = pd.Index(weights_bads_names)
     raw[weights_bads_names] = weights_bads_raw
@@ -186,14 +186,14 @@ def operation_performance(data, score, weights=['dummy'], bads=['is_bad'], group
     totals = sums.sum(level=-2) #TODO: what if there is no base level such as dataset, etc
     sums = sums.groupby(level=-2).cumsum()
     catch_rates = sums.divide(totals + 1e-20, axis=0)
-    catch_rates.columns = [x + '_cr' for x in catch_rates.columns]
+    catch_rates.columns = [x + '|catch_rate' for x in catch_rates.columns]
     hit_rate_list = []
     hit_rate_names = []
     for weight in weights :
-        weight_bads_names = [weight + '_' + x for x in full_bads_dummy_names]
+        weight_bads_names = [weight + '|' + x for x in full_bads_dummy_names]
         hit_rate = sums[weight_bads_names].divide(sums[weight] + 1e-20, axis=0)
         hit_rate_list.append(hit_rate)
-        hit_rate_names.extend([x + '_hr' for x in weight_bads_names])
+        hit_rate_names.extend([x + '|hit_rate' for x in weight_bads_names])
     hit_rates = pd.concat(hit_rate_list, axis=1)
     hit_rates.columns = pd.Index(hit_rate_names)
 
@@ -211,7 +211,7 @@ def score_performance(data, score, weights=['dummy'], bads=['is_bad'], groups=['
     # Assuming higher score indicates higher risk
     raw.loc[(raw[score] > high), score] = high
     raw.loc[(raw[score] < low), score] = low
-    raw[score].fillna(low, inplace=True)
+    raw.fillna({score : low}, inplace=True)
     raw[score_rank] = raw[score].apply(lambda x: np.ceil(x * 1.0 / step) * step)
 
     bad_dummy_names = {}
@@ -219,32 +219,32 @@ def score_performance(data, score, weights=['dummy'], bads=['is_bad'], groups=['
     for bad in bads :
         bad_dummy = pd.get_dummies(raw[bad])
         bad_dummy.rename(columns=dict(zip(bad_dummy.columns,
-                                          ["{}_{}".format(x[0], x[1])
+                                          ["{}|{}".format(x[0], x[1])
                                            for x in zip([bad] * len(bad_dummy.columns), bad_dummy.columns)])),
                          inplace=True)
         raw = raw.merge(bad_dummy, left_index=True, right_index=True)
         bad_dummy_names[bad] = list(bad_dummy.columns)
         full_bads_dummy_names.extend(bad_dummy.columns)
 
-    weights_bads_names = [x + '_' + y for x in weights for y in full_bads_dummy_names]
+    weights_bads_names = [x + '|' + y for x in weights for y in full_bads_dummy_names]
     weights_bads_raw = pd.concat([raw[full_bads_dummy_names].mul(raw[x], axis=0) for x in weights], axis=1)
     weights_bads_raw.columns = pd.Index(weights_bads_names)
     raw[weights_bads_names] = weights_bads_raw
 
     score_groups = groups + [score_rank]
     sums = raw.groupby(score_groups)[weights_bads_names + weights + catches].sum()
-    sums.sort_index(ascending=False)
+    sums.sort_index(ascending=False, inplace=True)
     totals = sums.sum(level=-2)
     sums = sums.groupby(level=-2).cumsum()
     catch_rates = sums.divide(totals + 1e-20, axis=0)
-    catch_rates.columns = [x + '_cr' for x in catch_rates.columns]
+    catch_rates.columns = [x + '|catch_rate' for x in catch_rates.columns]
     hit_rate_list = []
     hit_rate_names = []
     for weight in weights :
-        weight_bads_names = [weight + '_' + x for x in full_bads_dummy_names]
+        weight_bads_names = [weight + '|' + x for x in full_bads_dummy_names]
         hit_rate = sums[weight_bads_names].divide(sums[weight] + 1e-20, axis=0)
         hit_rate_list.append(hit_rate)
-        hit_rate_names.extend([x + '_hr' for x in weight_bads_names])
+        hit_rate_names.extend([x + '|hit_rate' for x in weight_bads_names])
     hit_rates = pd.concat(hit_rate_list, axis=1)
     hit_rates.columns = pd.Index(hit_rate_names)
 
@@ -408,9 +408,10 @@ if __name__ == '__main__':
     delimiter = chr(int(options.dlm[1:])) if options.dlm.startswith('x') else options.dlm
 
     data_names = ["data_{}".format(x) for x in xrange(1, len(input_data)+1)]
-    names = [x.strip().lower() for x in options.name.split(',')]
-    for ind in xrange(min(len(names), len(input_data))) :
-        data_names[ind] = names[ind]
+    if options.name :
+        names = [x.strip().lower() for x in options.name.split(',')]
+        for ind in xrange(min(len(names), len(input_data))) :
+            data_names[ind] = names[ind]
     add_windows = True if len(data_names) > 1 else False
 
     score_vars = [x.lower() for x in score_vars]
@@ -432,7 +433,7 @@ if __name__ == '__main__':
         logging.basicConfig(level=logging.DEBUG, format='%(asctime)-15s - %(levelname)s - %(message)s',
                             filename=options.log, filemode='w')
     else:
-        logging.basicConfig(level=logging.INFO, format='%(levelname)s - %(message)s')
+        logging.basicConfig(level=logging.INFO, format='%(asctime)-15s - %(levelname)s - %(message)s')
 
     if len(options.range.split(',')) != 3:
         logging.error("Score range must be given in format low,step,high")
@@ -461,36 +462,44 @@ if __name__ == '__main__':
         logging.info("file {0} has been read : {1}".format(data_names[ind], filepath))
         ind += 1
     big_raw = pd.concat(data_list)[score_vars + weight_vars + bad_vars + catch_vars + group_vars]
-    big_raw[weight_vars + bad_vars + catch_vars].fillna(0, inplace=True)
+    logging.info("fill missing weight, bad, and catch variables with 0")
+    big_raw.fillna(pd.Series([0] * len([weight_vars + bad_vars + catch_vars]),
+                             index=[weight_vars + bad_vars + catch_vars]), inplace=True)
 
     # score auto-mapping. This step will map [0,1] ranged score to [0,1000], without touching minus scores.
     #mapped_scores = big_raw[score_vars] * ((big_raw[score_vars].max() <= 1) * 999 + 1)
     #big_raw[score_vars] = big_raw[score_vars][big_raw[score_vars] < 0].combine_first(mapped_scores)
     # or
     max_ind = big_raw[score_vars].max() <= 1
-    big_raw[score_vars] = big_raw[score_vars].apply(lambda x: x * ((max_ind & (x > 0)) * 999 + 1), axis=1)
+    if any(max_ind) :
+        logging.info("auto-mapping is found to be necessary, start...")
+        big_raw[score_vars] = big_raw[score_vars].apply(lambda x: x * ((max_ind & (x > 0)) * 999 + 1), axis=1)
 
     operation_raw_list = []
     score_raw_list = []
     #TODO: empty groups need to be taken care of
     for group_name, score_var, weight_var in itertools.product(groups, score_vars, weight_vars) :
+        logging.info("handling {0} based on {1} in group {2}".format(score_var, weight_var, group_name))
         operation_raw = operation_performance(data=big_raw, score=score_var,
                                               weights=weight_vars, bads=bad_vars,
                                               groups=groups[group_name], catches=catch_vars,
                                               points=point, rank_base=weight_var)
+        logging.info("operation point based analysis done")
         score_raw = score_performance(data=big_raw, score=score_var, weights=weight_vars,
                                       bads=bad_vars, groups=groups[group_name], catches=catch_vars,
                                       low=low, step=step, high=high)
+        logging.info("score based analysis done")
         operation_raw_list.append(operation_raw)
         score_raw_list.append(score_raw)
     full_operation_raws = pd.concat(operation_raw_list)
     full_score_raws = pd.concat(score_raw_list)
+    logging.info("all analysis done, start output...")
     #output_final_results(full_operation_results, full_operation_raws, full_score_results, full_score_raws)
 
-    with pd.ExcelWriter(options.output+'.xlsx') as writer :
+    with pd.ExcelWriter(options.out+'.xlsx') as writer :
         full_operation_raws.to_excel(writer, sheet_name="operation_raw")
         full_score_raws.to_excel(writer, sheet_name="score_raw")
-
+    logging.info("export finished")
 
     # test code
 simple_test = '''
