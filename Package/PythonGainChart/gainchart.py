@@ -23,6 +23,7 @@ def ignore_exception(IgnoreException=Exception, DefaultVal=None):
         return _dec
     return dec
 
+not_used = '''
 def aggregation(data, variables, totals, key, higher_worse):
     aggregated = data[variables].aggregate(np.sum).reset_index()
     agg_rank = "AGG_TEMP_RANK"
@@ -147,6 +148,8 @@ def performance(data, bad=None, unit=None, dollar=None, score=None,
                                          False)
 
     return score_aggregation, opt_unit_aggregation, opt_dollar_aggregation
+'''
+
 
 def operation_performance(data, score, weights=['dummy'], bads=['is_bad'], groups=['window_name'],
                           catches=[], points=100., rank_base='dummy') :
@@ -490,39 +493,38 @@ if __name__ == '__main__':
 
 
     # test code
-    if False:
-        test = pd.DataFrame(np.random.randn(100,2)+1, columns=['S1','S2'])
-        test['d'] = pd.Series(['dev']*50+['oot']*50)
-        test['b'] = test['S1'].map(lambda x: 1 if x > 1.3 and np.random.random() > 0.3 else 0)
-        test['c'] = test['S2'].map(lambda x: 1 if x > 1.4 and np.random.random() > 0.2 else 0)
-        test['w'] = 1
-        test['y'] = 2
-        test[[x+'_r' for x in ['S1','S2']]] = test.groupby('d').transform(pd.Series.rank, method="min")[['S1','S2']]
-        test[[x+'_r' for x in ['S1','S2']]] /= test[['d'] + [x+'_r' for x in ['S1','S2']]].groupby('d').transform(pd.Series.count)*1.0 + 1
-        test[[x+'_r' for x in ['S1','S2']]] = test[[x+'_r' for x in ['S1','S2']]].applymap(lambda x: np.floor(x * 10) * 0.1)
-        test1 = test[['d','S1','S1_r','w','y','b','c']]
-        b_dm = pd.get_dummies(test1['b'])
-        b_dm.rename(columns=dict(zip(b_dm.columns, ["{}{}".format(x[0],x[1]) for x in zip(['b_']*len(b_dm.columns), b_dm.columns)])), inplace=True)
-        test1 = test1.merge(b_dm, left_index=True, right_index=True)
-        c_dm = pd.get_dummies(test1['c'])
-        c_dm.rename(columns=dict(zip(c_dm.columns, ["{}{}".format(x[0],x[1]) for x in zip(['c_']*len(c_dm.columns), c_dm.columns)])), inplace=True)
-        test1 = test1.merge(c_dm, left_index=True, right_index=True)
-        sum_columns = [x + '_' + y for x in ['w', 'y'] for y in ['b_0', 'b_1', 'c_0', 'c_1']]
-        wb1 = pd.concat([test1[['b_0', 'b_1', 'c_0', 'c_1']].mul(test1[x], axis=0) for x in ['w', 'y']], axis=1)
-        wb1.columns = pd.Index(sum_columns)
-        test1[sum_columns] = wb1[sum_columns]
-        sums1 = test1.groupby(['d', 'S1_r'])[['w','y']+sum_columns].sum()
-        totals = sums1.sum(level=-2)
-        sums1 = sums1.groupby(level=-2).cumsum()
+simple_test = '''
+test = pd.DataFrame(np.random.randn(100,2)+1, columns=['S1','S2'])
+test['d'] = pd.Series(['dev']*50+['oot']*50)
+test['b'] = test['S1'].map(lambda x: 1 if x > 1.3 and np.random.random() > 0.3 else 0)
+test['c'] = test['S2'].map(lambda x: 1 if x > 1.4 and np.random.random() > 0.2 else 0)
+test['w'] = 1
+test['y'] = 2
+test[[x+'_r' for x in ['S1','S2']]] = test.groupby('d').transform(pd.Series.rank, method="min")[['S1','S2']]
+test[[x+'_r' for x in ['S1','S2']]] /= test[['d'] + [x+'_r' for x in ['S1','S2']]].groupby('d').transform(pd.Series.count)*1.0 + 1
+test[[x+'_r' for x in ['S1','S2']]] = test[[x+'_r' for x in ['S1','S2']]].applymap(lambda x: np.floor(x * 10) * 0.1)
+test1 = test[['d','S1','S1_r','w','y','b','c']]
+b_dm = pd.get_dummies(test1['b'])
+b_dm.rename(columns=dict(zip(b_dm.columns, ["{}{}".format(x[0],x[1]) for x in zip(['b_']*len(b_dm.columns), b_dm.columns)])), inplace=True)
+test1 = test1.merge(b_dm, left_index=True, right_index=True)
+c_dm = pd.get_dummies(test1['c'])
+c_dm.rename(columns=dict(zip(c_dm.columns, ["{}{}".format(x[0],x[1]) for x in zip(['c_']*len(c_dm.columns), c_dm.columns)])), inplace=True)
+test1 = test1.merge(c_dm, left_index=True, right_index=True)
+sum_columns = [x + '_' + y for x in ['w', 'y'] for y in ['b_0', 'b_1', 'c_0', 'c_1']]
+wb1 = pd.concat([test1[['b_0', 'b_1', 'c_0', 'c_1']].mul(test1[x], axis=0) for x in ['w', 'y']], axis=1)
+wb1.columns = pd.Index(sum_columns)
+test1[sum_columns] = wb1[sum_columns]
+sums1 = test1.groupby(['d', 'S1_r'])[['w','y']+sum_columns].sum()
+totals = sums1.sum(level=-2)
+sums1 = sums1.groupby(level=-2).cumsum()
 
-
-        tg1 = test1.groupby(['d', 'S1_r', 'b'])
-        sum1 = test.groupby(['d','S1_r','b'])['w','y'].agg(sum).unstack().fillna(0)
-        sum2 = test.groupby(['d','S2_r','b'])['w','y'].agg(sum).unstack().fillna(0)
-        sum1.index.set_names(['d','s'],inplace=True)
-        sum2.index.set_names(['d','s'],inplace=True)
-        sum1.columns = pd.MultiIndex(levels=[['s1']] + sum1.columns.levels, labels=[[0]*4] + sum1.columns.labels, names=['score','weight','bad'])
-        sum1.columns=sum1.columns.droplevel()
-        sum1.stack(level=0).swaplevel(1,2).sortlevel()
-
+tg1 = test1.groupby(['d', 'S1_r', 'b'])
+sum1 = test.groupby(['d','S1_r','b'])['w','y'].agg(sum).unstack().fillna(0)
+sum2 = test.groupby(['d','S2_r','b'])['w','y'].agg(sum).unstack().fillna(0)
+sum1.index.set_names(['d','s'],inplace=True)
+sum2.index.set_names(['d','s'],inplace=True)
+sum1.columns = pd.MultiIndex(levels=[['s1']] + sum1.columns.levels, labels=[[0]*4] + sum1.columns.labels, names=['score','weight','bad'])
+sum1.columns=sum1.columns.droplevel()
+sum1.stack(level=0).swaplevel(1,2).sortlevel()
+'''
 
