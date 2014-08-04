@@ -25,10 +25,10 @@ def ignore_exception(IgnoreException=Exception, DefaultVal=None):
     return dec
 
 
-def operation_performance(data, score, weights=['dummy'], bads=['is_bad'], groups=['window_name'],
-                          catches=[], points=100., rank_base='dummy') :
+def operation_performance(data, score, weights=['dummy_weight'], bads=['is_bad'], groups=['window_name'],
+                          catches=[], points=100., rank_base='dummy_weight') :
     raw = data[[score] + weights + bads + groups + catches]
-    score_rank = score + "_rank"
+    score_rank = "cut_off"
     # Assuming higher score indicates higher risk
     raw[score_rank] = raw.groupby(groups)[score].transform(pd.Series.rank, method='min',
                                                            ascending=False, na_option='bottom')
@@ -61,6 +61,7 @@ def operation_performance(data, score, weights=['dummy'], bads=['is_bad'], group
     raw[weights_bads_names] = weights_bads_raw
 
     score_cut_offs = raw.groupby(score_groups)[score].min()
+    score_cut_offs.name = 'cut_off_score'
     sums = raw.groupby(score_groups)[weights_bads_names + weights + catches].sum()
     totals = sums.sum(level=-2)       #TODO: what if there is more levels
     sums = sums.groupby(level=-2).cumsum()
@@ -83,10 +84,10 @@ def operation_performance(data, score, weights=['dummy'], bads=['is_bad'], group
     raw_output['group_name'] = ",".join(groups)
     return raw_output
 
-def score_performance(data, score, weights=['dummy'], bads=['is_bad'], groups=['window_name'],
+def score_performance(data, score, weights=['dummy_weight'], bads=['is_bad'], groups=['window_name'],
                       catches=[], low=0, step=5, high=1000):
     raw = data[[score] + weights + bads + groups + catches]
-    score_rank = score + "_rank"
+    score_rank = "cut_off"
     # Assuming higher score indicates higher risk
     raw.loc[(raw[score] > high), score] = high
     raw.loc[(raw[score] < low), score] = low
@@ -163,7 +164,7 @@ if __name__ == '__main__':
                       help="score variables, separated with ','")
     parser.add_option("-b", "--bad", dest="bad", action="store", type="string",
                       help="name of bad variables")
-    parser.add_option("-w", "--wgt", dest="wgt", action="store", type="string", default="dummy",
+    parser.add_option("-w", "--wgt", dest="wgt", action="store", type="string", default="dummy_weight",
                       help="names of weight variables, separated by ',', default is dummy")
     parser.add_option("-c", "--catch", dest="catch", action="store", type="string",
                       help="names of extra variables for catch rate calculation, separated with ','")
@@ -235,7 +236,7 @@ if __name__ == '__main__':
                 logging.error("Error parsing weight field in json")
                 exit()
         if len(weight_vars) == 0 :
-            weight_vars.append("dummy")
+            weight_vars.append("dummy_weight")
 
         if "catch" in sources :
             if type(sources['catch']) is list:
@@ -274,7 +275,7 @@ if __name__ == '__main__':
         if options.wgt:
             weight_vars = [x.strip() for x in options.wgt.split(',')]
         if len(weight_vars) == 0:
-            weight_vars.append('dummy')
+            weight_vars.append('dummy_weight')
 
         if options.catch:
             catch_vars = [x.strip() for x in options.catch.split(',')]
@@ -342,7 +343,7 @@ if __name__ == '__main__':
 
         if add_windows :
             cur_data['window_name'] = data_names[ind]
-        cur_data['dummy'] = 1
+        cur_data['dummy_weight'] = 1
         data_list.append(cur_data)
         logging.info("file {0} has been read : {1}".format(data_names[ind], filepath))
         ind += 1
@@ -376,13 +377,72 @@ if __name__ == '__main__':
         operation_raw_list[group_name].append(operation_raw)
         score_raw_list[group_name].append(score_raw)
     logging.info("all raw analysis done, start creating pivot tables...")
+
+    pivot_index_name = ['cut_off']
+    pivot_column_name = ['score_name']
+    pivot_bad_rate_names = ['{}|{}|1|{}'.format(x[2], x[0], x[1])
+                            for x in itertools.product(bad_vars, ['catch_rate', 'hit_rate'], weight_vars)]
+    pivot_catch_names = ['{}|catch_rate'.format(x) for x in catch_vars]
+    pivot_pop_names = ['{}|catch_rate'.format(x) for x in weight_vars]
+    pivot_base_names = pivot_index_name + pivot_column_name + pivot_bad_rate_names + pivot_catch_names + pivot_pop_names
     with pd.ExcelWriter(options.out+'.xlsx') as writer :
         for group_name in groups :
-            group_operation_raws = pd.concat(operation_raw_list[group_name])
-            group_score_raws = pd.concat(score_raw_list[group_name])
+            pivot_raw_columns = groups[group_name] + pivot_base_names
+            group_operation_raws = pd.concat(operation_raw_list[group_name])[pivot_raw_columns + ['rank_base']]
+            group_score_raws = pd.concat(score_raw_list[group_name])[pivot_raw_columns]
 
+            #group_operation_raws['rank_base'] = group_operation_raws['rank_base'].apply(
+            #    lambda x : "ranked based on {}".format(x)
+            #)
+
+            if len(weight_vars) > 1 and len(bad_vars) > 1 :
+                bad_rate_show_names = ["{0}_rate of {1} based on {2}".format(x[1], x[0], x[2])
+                                       for x in itertools.product(bad_vars, ['catch', 'hit'], weight_vars)]
+            elif len(weight_vars) > 1 and len(bad_vars) == 1 :
+                bad_rate_show_names = ["{0}_rate based on {1}".format(x[0], x[1])
+                                       for x in itertools.product(['catch', 'hit'], weight_vars)]
+            elif len(weight_vars) == 1 and len(bad_vars) > 1 :
+                bad_rate_show_names = ["{0}_rate of {1}".format(x[1], x[0])
+                                       for x in itertools.product(bad_vars, ['catch', 'hit'])]
+            else :
+                bad_rate_show_names = ['catch_rate', 'hit_rate']
+            bad_rate_rename_map = dict(zip(pivot_bad_rate_names, bad_rate_show_names))
+            catch_rename_map = dict(zip(pivot_catch_names, ['{} catch_rate'.format(x) for x in catch_vars]))
+            pop_rename_map = dict(zip(pivot_pop_names, ['{} wise oprt_point'.format(x) for x in weight_vars]))
+
+            group_operation_raws.to_csv(options.out + '_operation_raw.csv', index=False)
+            group_score_raws.to_csv(options.out + '_score_raw.csv', index=False)
+
+            for name_maps in [bad_rate_rename_map, catch_rename_map, pop_rename_map] :
+                group_operation_raws.rename(columns=name_maps, inplace=True)
+                group_score_raws.rename(columns=name_maps, inplace=True)
+
+            group_operation_pivot = pd.pivot_table(group_operation_raws, index=['cut_off'],
+                                                   columns=['rank_base']+groups[group_name]+['score_name'])
+            group_score_pivot = pd.pivot_table(group_score_raws, index=['cut_off'],
+                                               columns=groups[group_name]+['score_name'])
+            group_score_pivot.sort_index(ascending=False, inplace=True)
+
+            group_operation_pivot.fillna(method='pad', inplace=True)
+            group_score_pivot.fillna(method='pad', inplace=True)
+
+            group_operation_pivot.to_csv(options.out + '_operation_pivot.csv')
+            group_score_pivot.to_csv(options.out + '_score_pivot.csv')
+
+            group_operation_pivot.index.name = None
+            group_score_pivot.index.name = None
+            excel_operation_columns_names = list(group_operation_pivot.columns.names)
+            excel_operation_columns_names.pop()
+            excel_operation_columns_names.append('cut_off')
+            excel_score_columns_names = list(group_score_pivot.columns.names)
+            excel_score_columns_names.pop()
+            excel_score_columns_names.append('cut_off')
+            group_operation_pivot.columns.names = excel_operation_columns_names
+            group_score_pivot.columns.names = excel_score_columns_names
 
             try :
+                group_operation_pivot.to_excel(writer, sheet_name="operation_pivot")
+                group_score_pivot.to_excel(writer, sheet_name="score_pivot")
                 group_operation_raws.to_excel(writer, sheet_name="operation_raw", index=False)
                 group_score_raws.to_excel(writer, sheet_name="score_raw", index=False)
             except RuntimeError as e :
