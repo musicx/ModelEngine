@@ -1,5 +1,9 @@
 .idea/
+.DS_Store
 *.pyc
+*.csv
+*.zip
+*.gz
 Temp/
 Output/
 Delivery/

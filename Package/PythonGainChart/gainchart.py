@@ -1,6 +1,7 @@
 import json
 import logging
 import itertools
+import collections
 from optparse import OptionParser
 import os
 import pandas as pd
@@ -61,7 +62,7 @@ def operation_performance(data, score, weights=['dummy'], bads=['is_bad'], group
 
     score_cut_offs = raw.groupby(score_groups)[score].min()
     sums = raw.groupby(score_groups)[weights_bads_names + weights + catches].sum()
-    totals = sums.sum(level=-2)       #TODO: what if there is no base level such as dataset, etc
+    totals = sums.sum(level=-2)       #TODO: what if there is more levels
     sums = sums.groupby(level=-2).cumsum()
     catch_rates = sums.divide(totals + 1e-20, axis=0)
     catch_rates.columns = [x + '|catch_rate' for x in catch_rates.columns]
@@ -279,8 +280,8 @@ if __name__ == '__main__':
             catch_vars = [x.strip() for x in options.catch.split(',')]
 
         if options.group:
-            groups = options.group.split('|')
-            for group in groups :
+            group_names = options.group.split('|')
+            for group in group_names :
                 groups[group] = [x.strip() for x in group.split(',')]
 
     delimiter = chr(int(options.dlm[1:])) if options.dlm.startswith('x') else options.dlm
@@ -334,6 +335,11 @@ if __name__ == '__main__':
             continue
         cur_data = pd.read_csv(filepath, sep=delimiter)
         cur_data.rename(columns=dict(zip(cur_data.columns, [x.lower() for x in cur_data.columns])), inplace=True)
+
+        # TODO: just for test here
+        #cur_data['even'] = cur_data['char_cp_cust_id'].map(lambda x : 1 if x % 10 < 5 else 0)
+        cur_data['clsn_scr_new'] = cur_data['clsn_scr']
+
         if add_windows :
             cur_data['window_name'] = data_names[ind]
         cur_data['dummy'] = 1
@@ -354,8 +360,8 @@ if __name__ == '__main__':
         logging.info("score scaling is found to be necessary, start...")
         big_raw[score_vars] = big_raw[score_vars].apply(lambda x: x * ((max_ind & (x > 0)) * 999 + 1), axis=1)
 
-    operation_raw_list = []
-    score_raw_list = []
+    operation_raw_list = collections.defaultdict(list)
+    score_raw_list = collections.defaultdict(list)
     for group_name, score_var, weight_var in itertools.product(groups, score_vars, weight_vars) :
         logging.info("handling {0} based on {1} in group {2}".format(score_var, weight_var, group_name))
         operation_raw = operation_performance(data=big_raw, score=score_var,
@@ -367,17 +373,24 @@ if __name__ == '__main__':
                                       bads=bad_vars, groups=groups[group_name], catches=catch_vars,
                                       low=low, step=step, high=high)
         logging.info("score based analysis done")
-        operation_raw_list.append(operation_raw)
-        score_raw_list.append(score_raw)
-    full_operation_raws = pd.concat(operation_raw_list)
-    full_score_raws = pd.concat(score_raw_list)
-    logging.info("all analysis done, start output...")
+        operation_raw_list[group_name].append(operation_raw)
+        score_raw_list[group_name].append(score_raw)
+    logging.info("all raw analysis done, start creating pivot tables...")
+    with pd.ExcelWriter(options.out+'.xlsx') as writer :
+        for group_name in groups :
+            group_operation_raws = pd.concat(operation_raw_list[group_name])
+            group_score_raws = pd.concat(score_raw_list[group_name])
+
+
+            try :
+                group_operation_raws.to_excel(writer, sheet_name="operation_raw", index=False)
+                group_score_raws.to_excel(writer, sheet_name="score_raw", index=False)
+            except RuntimeError as e :
+                logging.error(e.message)
+
+    logging.info("all work done")
     #output_final_results(full_operation_results, full_operation_raws, full_score_results, full_score_raws)
 
-    with pd.ExcelWriter(options.out+'.xlsx') as writer :
-        full_operation_raws.to_excel(writer, sheet_name="operation_raw", index=False)
-        full_score_raws.to_excel(writer, sheet_name="score_raw", index=False)
-    logging.info("export finished")
 
     # test code
 simple_test = '''
