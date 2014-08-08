@@ -6,8 +6,12 @@ from optparse import OptionParser
 import os
 import pandas as pd
 import numpy as np
+import bokeh.plotting as bplt
+from bokeh.objects import Range1d, HoverTool, ColumnDataSource
 
 __author__ = 'yijiliu'
+
+PREDEFINE_COLORS = ['blue', 'red', 'green', 'yellow', 'steelblue', 'orangered', 'springgreen', 'gold']
 
 
 def ignore_exception(IgnoreException=Exception, DefaultVal=None):
@@ -63,7 +67,7 @@ def operation_performance(data, score, weights=['dummy_weight'], bads=['is_bad']
     score_cut_offs = raw.groupby(score_groups)[score].min()
     score_cut_offs.name = 'cut_off_score'
     sums = raw.groupby(score_groups)[weights_bads_names + weights + catches].sum()
-    totals = sums.sum(level=-2)       #TODO: what if there is more levels
+    totals = sums.sum(level=-2)       # TODO: what if there is more levels
     sums = sums.groupby(level=-2).cumsum()
     catch_rates = sums.divide(totals + 1e-20, axis=0)
     catch_rates.columns = [x + '|catch_rate' for x in catch_rates.columns]
@@ -386,6 +390,14 @@ if __name__ == '__main__':
     pivot_pop_names = ['{}|catch_rate'.format(x) for x in weight_vars]
     pivot_base_names = pivot_index_name + pivot_column_name + pivot_bad_rate_names + pivot_catch_names + pivot_pop_names
     writer = pd.ExcelWriter(options.out+'.xlsx')
+
+    bplt.output_file(options.out+'_gainchart.html', title=options.out+' gainchart report')
+    TOOLS = "pan, wheel_zoom, box_zoom, reset, hover, previewsave"
+    has_drawed_something = False
+    operation_x_range = Range1d(start=-0.1, end=1.1)
+    score_x_range = Range1d(start=1010, end=-10)
+    common_y_range = Range1d(start=-0.1, end=1.1)
+
     for group_name in groups :
         pivot_raw_columns = groups[group_name] + pivot_base_names
         group_operation_raws = pd.concat(operation_raw_list[group_name])[pivot_raw_columns + ['rank_base']]
@@ -408,7 +420,7 @@ if __name__ == '__main__':
             bad_rate_show_names = ['catch_rate', 'hit_rate']
         bad_rate_rename_map = dict(zip(pivot_bad_rate_names, bad_rate_show_names))
         catch_rename_map = dict(zip(pivot_catch_names, ['{} catch_rate'.format(x) for x in catch_vars]))
-        pop_rename_map = dict(zip(pivot_pop_names, ['{} wise oprt_point'.format(x) for x in weight_vars]))
+        pop_rename_map = dict(zip(pivot_pop_names, ['{} wise operation_point'.format(x) for x in weight_vars]))
 
         group_operation_raws.to_csv(options.out + '_operation_raw.csv', index=False)
         group_score_raws.to_csv(options.out + '_score_raw.csv', index=False)
@@ -432,19 +444,21 @@ if __name__ == '__main__':
         group_operation_pivot.index.name = None
         group_score_pivot.index.name = None
         excel_operation_columns_names = list(group_operation_pivot.columns.names)
+        group_operation_columns_names_backup = list(group_operation_pivot.columns.names)
         excel_operation_columns_names.pop()
         excel_operation_columns_names.append('cut_off')
         excel_score_columns_names = list(group_score_pivot.columns.names)
+        group_score_columns_names_backup = list(group_score_pivot.columns.names)
         excel_score_columns_names.pop()
         excel_score_columns_names.append('cut_off')
         group_operation_pivot.columns.names = excel_operation_columns_names
         group_score_pivot.columns.names = excel_score_columns_names
 
-        if group_name == "window_name" :
+        if group_name == "windows" :
             group_sheet_name = ""
         else :
-            group_names_for_sheet = [x for x in groups[group_name] if x != 'windows_name']
-            group_sheet_name = ','.join(group_names_for_sheet)
+            group_names_for_sheet = [x for x in groups[group_name] if x != 'window_name']
+            group_sheet_name = ','.join(group_names_for_sheet) + ' '
         try :
             group_operation_pivot.to_excel(writer, sheet_name=group_sheet_name + "operation_pivot")
             group_score_pivot.to_excel(writer, sheet_name=group_sheet_name + "score_pivot")
@@ -453,42 +467,65 @@ if __name__ == '__main__':
         except RuntimeError as e :
             logging.error(e.message)
 
+        group_operation_pivot.columns.names = group_operation_columns_names_backup
+        group_score_pivot.columns.names = group_score_columns_names_backup
+
+        # TODO: for x in product(group, bad, weight, (rank_base + 1(score))),
+        # draw score * window * (group - 1) lines for the catch_rate,
+        # hover the hit rate and other rates / operation points
+        for bad_name, weight_name in itertools.product(bad_vars, weight_vars) :
+            catch_rate_name = bad_rate_rename_map['{}|{}|1|catch_rate'.format(weight_name, bad_name)]
+            hit_rate_name = bad_rate_rename_map['{}|{}|1|hit_rate'.format(weight_name, bad_name)]
+            chart_columns_names = [catch_rate_name, hit_rate_name] + catch_rename_map.values() + pop_rename_map.values()
+
+            for base_name in weight_vars :
+                if has_drawed_something:
+                    bplt.figure()
+                else :
+                    has_drawed_something = True
+                bplt.hold()
+
+                # replace because    it will have group variables as multiple levels in this position \|/
+                #draw_data = group_operation_pivot.loc[:, pd.IndexSlice[chart_columns_names, base_name, :, :]]
+                #draw_data = draw_data.stack(level=1).reset_index(level=1, drop=True)
+                draw_data = group_operation_pivot.xs(base_name, level='rank_base', axis=1)[chart_columns_names]
+
+                data_x = list(draw_data.index.values)
+                try:
+                    line_size = len(draw_data[catch_rate_name].columns)
+                except AttributeError as e:
+                    line_size = 1
+
+                for line_ind in xrange(line_size):
+                    if line_size > 1:
+                        data_y = list(draw_data[catch_rate_name].iloc[:, line_ind].values)
+                        line_names = list(draw_data[catch_rate_name].iloc[:, line_ind].name)
+                    else :
+                        data_y = list(draw_data[catch_rate_name].values)
+                        line_names = list(draw_data[catch_rate_name].name)  # TODO: not sure if [1:] should be removed
+                    column_data = {'hit_rate': list(draw_data.loc[:, tuple([hit_rate_name] + line_names)].values)}
+                    catch_lists = {}
+                    hover_tips = [("catch rate", "$y"), ("hit rate", "@hit_rate")]
+                    for catch_rename_name in catch_rename_map.values() :
+                        column_data[catch_rename_name.replace(' ', '_')] = list(draw_data.loc[:, tuple([catch_rename_name] + line_names)].values)
+                        hover_tips.append((catch_rename_name, '@'+catch_rename_name.replace(' ', '_')))
+                    pop_lists = []
+                    for pop_rename_name in pop_rename_map.values():
+                        column_data[pop_rename_name.replace(' ', '_')] = list(draw_data.loc[:, tuple([pop_rename_name] + line_names)].values)
+                        hover_tips.append((pop_rename_name, '@'+pop_rename_name.replace(' ', '_')))
+                    hover_source = ColumnDataSource(column_data)
+                    bplt.scatter(data_x, data_y, source=hover_source, tools=TOOLS,
+                                 size=7, fill_alpha=.5, color=PREDEFINE_COLORS[line_ind],
+                                 legend=', '.join(line_names), title=catch_rate_name,
+                                 #line_width=2, line_join='round',
+                                 x_range=operation_x_range, y_range=common_y_range)
+                    cur_hover = [t for t in bplt.curplot().tools if isinstance(t, HoverTool)][0]
+                    cur_hover.tooltips = collections.OrderedDict(hover_tips)
+
+    logging.info("start saving report...")
+    writer.close()
+    bplt.save()
     logging.info("all work done")
 
 
-    # test code
-simple_test = '''
-test = pd.DataFrame(np.random.randn(100,2)+1, columns=['S1','S2'])
-test['d'] = pd.Series(['dev']*50+['oot']*50)
-test['b'] = test['S1'].map(lambda x: 1 if x > 1.3 and np.random.random() > 0.3 else 0)
-test['c'] = test['S2'].map(lambda x: 1 if x > 1.4 and np.random.random() > 0.2 else 0)
-test['w'] = 1
-test['y'] = 2
-test[[x+'_r' for x in ['S1','S2']]] = test.groupby('d').transform(pd.Series.rank, method="min")[['S1','S2']]
-test[[x+'_r' for x in ['S1','S2']]] /= test[['d'] + [x+'_r' for x in ['S1','S2']]].groupby('d').transform(pd.Series.count)*1.0 + 1
-test[[x+'_r' for x in ['S1','S2']]] = test[[x+'_r' for x in ['S1','S2']]].applymap(lambda x: np.floor(x * 10) * 0.1)
-test1 = test[['d','S1','S1_r','w','y','b','c']]
-b_dm = pd.get_dummies(test1['b'])
-b_dm.rename(columns=dict(zip(b_dm.columns, ["{}{}".format(x[0],x[1]) for x in zip(['b_']*len(b_dm.columns), b_dm.columns)])), inplace=True)
-test1 = test1.merge(b_dm, left_index=True, right_index=True)
-c_dm = pd.get_dummies(test1['c'])
-c_dm.rename(columns=dict(zip(c_dm.columns, ["{}{}".format(x[0],x[1]) for x in zip(['c_']*len(c_dm.columns), c_dm.columns)])), inplace=True)
-test1 = test1.merge(c_dm, left_index=True, right_index=True)
-sum_columns = [x + '_' + y for x in ['w', 'y'] for y in ['b_0', 'b_1', 'c_0', 'c_1']]
-wb1 = pd.concat([test1[['b_0', 'b_1', 'c_0', 'c_1']].mul(test1[x], axis=0) for x in ['w', 'y']], axis=1)
-wb1.columns = pd.Index(sum_columns)
-test1[sum_columns] = wb1[sum_columns]
-sums1 = test1.groupby(['d', 'S1_r'])[['w','y']+sum_columns].sum()
-totals = sums1.sum(level=-2)
-sums1 = sums1.groupby(level=-2).cumsum()
-
-tg1 = test1.groupby(['d', 'S1_r', 'b'])
-sum1 = test.groupby(['d','S1_r','b'])['w','y'].agg(sum).unstack().fillna(0)
-sum2 = test.groupby(['d','S2_r','b'])['w','y'].agg(sum).unstack().fillna(0)
-sum1.index.set_names(['d','s'],inplace=True)
-sum2.index.set_names(['d','s'],inplace=True)
-sum1.columns = pd.MultiIndex(levels=[['s1']] + sum1.columns.levels, labels=[[0]*4] + sum1.columns.labels, names=['score','weight','bad'])
-sum1.columns=sum1.columns.droplevel()
-sum1.stack(level=0).swaplevel(1,2).sortlevel()
-'''
 
