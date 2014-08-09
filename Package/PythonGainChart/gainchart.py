@@ -492,35 +492,34 @@ if __name__ == '__main__':
 
                 data_x = list(draw_data.index.values)
                 try:
-                    line_size = len(draw_data[catch_rate_name].columns)
+                    line_names_list = list(draw_data[catch_rate_name].columns)
                 except AttributeError as e:
-                    line_size = 1
-
-                for line_ind in xrange(line_size):
-                    if line_size > 1:
-                        data_y = list(draw_data[catch_rate_name].iloc[:, line_ind].values)
-                        line_names = list(draw_data[catch_rate_name].iloc[:, line_ind].name)
-                    else :
-                        data_y = list(draw_data[catch_rate_name].values)
-                        line_names = list(draw_data[catch_rate_name].name)  # TODO: not sure if [1:] should be removed
+                    line_names_list = list(draw_data[catch_rate_name].name)
+                line_ind = 0
+                for line_names_tuple in line_names_list:
+                    line_names = list(line_names_tuple)
+                    data_y = list(draw_data[tuple([catch_rate_name] + line_names)].values)
                     column_data = {'hit_rate': list(draw_data.loc[:, tuple([hit_rate_name] + line_names)].values)}
                     catch_lists = {}
                     hover_tips = [("catch rate", "$y"), ("hit rate", "@hit_rate")]
                     for catch_rename_name in catch_rename_map.values() :
                         column_data[catch_rename_name.replace(' ', '_')] = list(draw_data.loc[:, tuple([catch_rename_name] + line_names)].values)
-                        hover_tips.append((catch_rename_name, '@'+catch_rename_name.replace(' ', '_')))
+                        hover_tips.append((catch_rename_name.replace('catch_rate', 'catch'), '@'+catch_rename_name.replace(' ', '_')))
                     pop_lists = []
                     for pop_rename_name in pop_rename_map.values():
                         column_data[pop_rename_name.replace(' ', '_')] = list(draw_data.loc[:, tuple([pop_rename_name] + line_names)].values)
-                        hover_tips.append((pop_rename_name, '@'+pop_rename_name.replace(' ', '_')))
+                        hover_tips.append((pop_rename_name.replace('wise operation_point', 'opt'), '@'+pop_rename_name.replace(' ', '_')))
                     hover_source = ColumnDataSource(column_data)
                     bplt.scatter(data_x, data_y, source=hover_source, tools=TOOLS,
                                  size=7, fill_alpha=.5, color=PREDEFINE_COLORS[line_ind],
                                  legend=', '.join(line_names), title=catch_rate_name,
                                  #line_width=2, line_join='round',
+                                 xaxis=base_name + ' operation point', yaxis='catch rate',
                                  x_range=operation_x_range, y_range=common_y_range)
                     cur_hover = [t for t in bplt.curplot().tools if isinstance(t, HoverTool)][0]
                     cur_hover.tooltips = collections.OrderedDict(hover_tips)
+                    bplt.legend().orientation = "bottom_right"
+                    line_ind += 1
 
     logging.info("start saving report...")
     writer.close()
