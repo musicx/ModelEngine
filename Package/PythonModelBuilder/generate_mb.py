@@ -1,5 +1,6 @@
 from optparse import OptionParser
 from subprocess import call
+import os
 
 
 __author__ = 'yijiliu'
@@ -17,7 +18,7 @@ if __name__ == '__main__':
     parser.add_option("-d", "--dlm", dest="dlm", action="store", type="string", default=",",
                       help="delimiter char, accept xASCII format, default=','")
     parser.add_option("-v", "--vars", dest="vars", action="store", type="string",
-                      help="model variable list separated with ',' and wild characters is supported such as '*_zscl'")
+                      help="model variable list separated with ',', wild characters is supported such as '*_zscl'. Or a file containing variable list can also work, 1 variable per line")
     parser.add_option("-i", "--include", dest="base", action="store", type="string",
                       help="non-training variables need to be kept, separated with ','")
     parser.add_option("-r", "--drop", dest="drop", action="store", type="string",
@@ -95,6 +96,9 @@ if __name__ == '__main__':
         options.vars = '*_woe_zscl'
     if options.vars.find(',') > 0 :
         options.vars = options.vars.replace(',', ' ')
+    elif os.path.exists(options.vars) :
+        vlines = open(options.vars).readlines()
+        options.vars = " ".join([x.strip() for x in vlines])
     config_string['keep_vars'] = " ".join([options.vars, options.bad, " ".join(keys), " ".join(bases)])
 
     config_string['nodes'] = options.node
