@@ -18,7 +18,7 @@ if __name__ == '__main__':
                       help="model variable list separated with ',' and wild characters is supported such as '*_zscl'")
     parser.add_option("-r", "--drop", dest="drop", action="store", type="string",
                       help="drop variable list separated with ','")
-    parser.add_option("-n", "--num", dest="num", action="store", type="integer", default=500,
+    parser.add_option("-n", "--num", dest="num", action="store", type="int", default=500,
                       help="target number of variables, final list will contain less than this number, no guarantee of equalism")
     parser.add_option("-f", "--prefix", dest="prefix", action="store", type="string",
                       help="optional prefix for output files")
@@ -28,9 +28,10 @@ if __name__ == '__main__':
         print "data, bad and key are required"
         exit()
 
+    pre_string = options.prefix + '_' if options.prefix is not None and options.prefix.strip() != '' else ''
     config_string = {'bad' : options.bad.lower(),
                      'input' : options.input,
-                     'pre' : options.prefix + '_' if options.prefix is not None and options.prefix.strip() != '' else ''}
+                     'pre' : pre_string}
 
     if options.key.find(',') >= 0 :
         keys = [x.lower() for x in options.key.split(',')]
@@ -108,6 +109,8 @@ if __name__ == '__main__':
     part_c = open('C_Worker.mb.template').read()
     with open('C_Worker.mb', 'w') as fn :
         fn.write(part_c.format(opt=config_string))
+
+    fr.write('more +2 scripts/models/{}sensitivity_n5_l1.csv | cut -d, -f1 > {}sensitivity_list.csv \n'.format(pre_string))
 
     fr.flush()
     fr.close()
