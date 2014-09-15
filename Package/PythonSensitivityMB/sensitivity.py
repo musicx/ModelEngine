@@ -110,7 +110,7 @@ if __name__ == '__main__':
     with open('C_Worker.mb', 'w') as fn :
         fn.write(part_c.format(opt=config_string))
 
-    fr.write('more +2 scripts/models/{}sensitivity_n5_l1.csv | cut -d, -f1 > {}sensitivity_list.csv \n'.format(pre_string))
+    fr.write('more +2 scripts/models/{0}sensitivity_n5_l1.csv | cut -d, -f1 > {0}sensitivity_list.csv \n'.format(pre_string))
 
     fr.flush()
     fr.close()
