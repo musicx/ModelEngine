@@ -6,13 +6,100 @@ from optparse import OptionParser
 import os
 import pandas as pd
 import numpy as np
-import bokeh.plotting as bplt
-from bokeh.objects import Range1d, HoverTool, ColumnDataSource
+# import bokeh.plotting as bplt
+# from bokeh.objects import Range1d, HoverTool, ColumnDataSource
 
 __author__ = 'yijiliu'
 
-PREDEFINE_COLORS = ['blue', 'red', 'green', 'yellow', 'steelblue', 'orangered', 'springgreen', 'gold']
+HIGHCHART_BASE_BEGIN = '''<!DOCTYPE html>
+<html>
+    <head>
+        <script src="http://ajax.aspnetcdn.com/ajax/jQuery/jquery-1.7.2.min.js"></script>
+        <script src="http://code.highcharts.com/highcharts.js"></script>
+    </head>
+    <body>
+'''
 
+HIGHCHART_DIV = '\t<div id="container%d" sytle="height: 400px; min-width: 600px"></div>\n<hr/>\n'
+
+HIGHCHART_DATA_TEMPLATE = '<script>\n%s\n'
+
+HIGHCHART_FUNCTION_TEMPLATE = '$(function () {%s\n});\n</script>\n'
+
+HIGHCHART_SERIES_TEMPLATE = '{\n\t\t\tdata: data_%d,\n\t\t\tname: \'%s\'\n\t\t}'
+
+HIGHCHART_TOOLTIP_TEMPLATE = 's += \'%s: \' + this.point.%s + \'%%'
+
+HIGHCHART_CHART_TEMPLATE = '''\t$('#container%(cid)d').highcharts({
+        chart: {
+            zoomType: 'x',
+            resetZoomButton: {
+                position: {
+                    // align: 'right', // by default
+                    // verticalAlign: 'top', // by default
+                    x: -10,
+                    y: 10
+                },
+                relativeTo: 'chart'
+            }
+        },
+
+        title: {
+            text : '%(title)s'
+        },
+        subtitle : {
+            text: '%(subtitle)s'
+        },
+
+        tooltip: {
+            shared: true,
+            useHTML: true,
+            headerFormat: '%(score)s <table> %(tiphead)s',
+            pointFormat: %(tiptable)s,
+            footerFormat: '</table>'
+        },
+
+        yAxis: {
+            title: {
+                text: 'catch rate'
+            },
+            labels: {
+                formatter: function() {
+                    return this.value + '%%';
+                }
+            },
+            gridLineWidth: 1,
+            max : 100,
+            min : 0
+        },
+
+        xAxis: {
+            title: {
+                text: '%(x)s'
+            },
+            %(suf)s
+            reversed: %(reverse)s,
+            gridLineWidth: 1
+        },
+
+        credits : {
+            enabled: false
+        },
+
+        legend: {
+            align : 'right',
+            verticalAlign: 'middle',
+            layout : 'vertical',
+            borderWidth : 1
+        },
+
+        series: [%(series)s]
+    });
+'''
+
+HIGHCHART_BASE_END = '''\t</body>
+</html>
+'''
 
 def ignore_exception(IgnoreException=Exception, DefaultVal=None):
     """ Decorator for ignoring exception from a function
@@ -106,7 +193,8 @@ def score_performance(data, score, weights=['dummy_weight'], bads=['is_bad'], gr
                                           ["{}|{}".format(x[0], x[1])
                                            for x in zip([bad] * len(bad_dummy.columns), bad_dummy.columns)])),
                          inplace=True)
-        raw = raw.merge(bad_dummy, left_index=True, right_index=True)
+        #raw = raw.merge(bad_dummy, left_index=True, right_index=True)
+        raw = pd.concat([raw, bad_dummy], axis=1)
         bad_dummy_names[bad] = list(bad_dummy.columns)
         full_bads_dummy_names.extend(bad_dummy.columns)
 
@@ -199,7 +287,7 @@ if __name__ == '__main__':
     catch_vars = []
     groups = {}
     data_names = []
-    
+
     if options.json:
         sources = parse_json(options.json)
         if sources is None:
@@ -214,7 +302,7 @@ if __name__ == '__main__':
         else:
             logging.error("Error parsing input field in json")
             exit()
-        
+
         if type(sources['score']) is list:
             score_vars.extend(sources['score'])
         elif type(sources['score']) is str:
@@ -222,7 +310,7 @@ if __name__ == '__main__':
         else:
             logging.error("Error parsing score field in json")
             exit()
-            
+
         if type(sources['bad']) is list:
             bad_vars.extend(sources['bad'])
         elif type(sources['bad']) is str:
@@ -360,8 +448,8 @@ if __name__ == '__main__':
     #mapped_scores = big_raw[score_vars] * ((big_raw[score_vars].max() <= 1) * 999 + 1)
     #big_raw[score_vars] = big_raw[score_vars][big_raw[score_vars] < 0].combine_first(mapped_scores)
     # or
-    max_ind = big_raw[score_vars].max() <= 1
-    if any(list(max_ind)) :
+    max_ind = big_raw[score_vars].max() <= 1 + 1e-10
+    if max_ind.any() :
         logging.info("score scaling is found to be necessary, start...")
         big_raw[score_vars] = big_raw[score_vars].apply(lambda x: x * ((max_ind & (x > 0)) * 999 + 1), axis=1)
 
@@ -391,12 +479,21 @@ if __name__ == '__main__':
     pivot_base_names = pivot_index_name + pivot_column_name + pivot_bad_rate_names + pivot_catch_names + pivot_pop_names
     writer = pd.ExcelWriter(options.out+'.xlsx')
 
-    bplt.output_file(options.out+'_gainchart.html', title=options.out+' gainchart report')
-    TOOLS = "pan, wheel_zoom, box_zoom, reset, hover, previewsave"
-    has_drawed_something = False
-    operation_x_range = Range1d(start=-0.1, end=1.1)
-    score_x_range = Range1d(start=1010, end=-10)
-    common_y_range = Range1d(start=-0.1, end=1.1)
+    # initialization for bokeh usage
+    # bplt.output_file(options.out+'_gainchart.html', title=options.out+' gainchart report')
+    # TOOLS = "pan, wheel_zoom, box_zoom, resize, reset, hover, previewsave"
+    # has_drawed_something = False
+    # operation_x_range = Range1d(start=-0.04, end=1.04)
+    # score_x_range = Range1d(start=1040, end=-40)
+    # common_y_range = Range1d(start=-0.04, end=1.04)
+
+    # initialization for highchart output
+    hc_file = open(options.out + '_charts.html', 'w')
+    hc_file.write(HIGHCHART_BASE_BEGIN)
+    high_line_ind = 0
+    high_container_ind = 0
+    high_data_string = []
+    high_chart_string = []
 
     for group_name in groups :
         pivot_raw_columns = groups[group_name] + pivot_base_names
@@ -424,6 +521,9 @@ if __name__ == '__main__':
 
         group_operation_raws.to_csv(options.out + '_operation_raw.csv', index=False)
         group_score_raws.to_csv(options.out + '_score_raw.csv', index=False)
+        # sub = raw.loc[(raw['rank_base']=='unit_weight'), ['window_name', 'cut_off', 'score_name', 'unit_weight|is_unauth_collusion|1|catch_rate']]
+        # line = sub.loc[(sub.window_name == 'data_1') & (sub.score_name == 'clsn_scr'), ['cut_off','unit_weight|is_unauth_collusion|1|catch_rate']]
+        # data = '[' + ','.join(["[{:.2f},{:.4f}]".format(x[0], x[1]) for x in line.to_records(index=False)]) + ']'
 
         for name_maps in [bad_rate_rename_map, catch_rename_map, pop_rename_map] :
             group_operation_raws.rename(columns=name_maps, inplace=True)
@@ -438,11 +538,11 @@ if __name__ == '__main__':
         group_operation_pivot.fillna(method='pad', inplace=True)
         group_score_pivot.fillna(method='pad', inplace=True)
 
+        group_operation_pivot.index.name = None
+        group_score_pivot.index.name = None
         group_operation_pivot.to_csv(options.out + '_operation_pivot.csv')
         group_score_pivot.to_csv(options.out + '_score_pivot.csv')
 
-        group_operation_pivot.index.name = None
-        group_score_pivot.index.name = None
         excel_operation_columns_names = list(group_operation_pivot.columns.names)
         group_operation_columns_names_backup = list(group_operation_pivot.columns.names)
         excel_operation_columns_names.pop()
@@ -470,7 +570,32 @@ if __name__ == '__main__':
         group_operation_pivot.columns.names = group_operation_columns_names_backup
         group_score_pivot.columns.names = group_score_columns_names_backup
 
-        # TODO: for x in product(group, bad, weight, (rank_base + 1(score))),
+        # draw carts using highcharts
+        high_tooltip_string = ["s += 'catch: ' + this.y + '%",
+                               "s += 'hit: ' + this.point.hit_rate + '%"]
+        high_tiptable_head = '<tr><th>line</th><th>catch</th><th>hit</th>'
+        high_tiptable_string = "'<tr><td style=\"color:{series.color}\">{series.name}:</td><td>,{point.y}%</td><td>,{point.hit_rate}%</td>'"
+        for catch_rename_name in catch_rename_map.values() :
+            series_catch_name = catch_rename_name.replace(' catch_rate', '')
+            high_tooltip_string.append(HIGHCHART_TOOLTIP_TEMPLATE % (series_catch_name, series_catch_name))
+            high_tiptable_head += '<th>%s</th>' % series_catch_name
+            high_tiptable_string += " + '<td>,{point.%s}%%</td>'" % series_catch_name
+        for pop_rename_name in pop_rename_map.values() :
+            series_pop_name = pop_rename_name.replace(' wise operation_point', '_opt')
+            if series_pop_name.lower().startswith('unit') or series_pop_name.startswith('dummy') :
+                series_pop_short_name = '# opt'
+            elif series_pop_name.lower().startswith('dollar') :
+                series_pop_short_name = '$ opt'
+            else :
+                series_pop_short_name = series_pop_name
+            high_tooltip_string.append(HIGHCHART_TOOLTIP_TEMPLATE % (series_pop_short_name, series_pop_name))
+            high_tiptable_head += '<th>%s</th>' % series_pop_short_name
+            high_tiptable_string += " + '<td>,{point.%s}%%</td>'" % series_pop_name
+        high_tooltip_string = '<br/>\';\n\t\t\t\t'.join(high_tooltip_string) + '\';'
+        high_tiptable_head += "</tr>"
+        high_tiptable_string += " + '</tr>'"
+
+        # for x in product(group, bad, weight, (rank_base + 1(score))),
         # draw score * window * (group - 1) lines for the catch_rate,
         # hover the hit rate and other rates / operation points
         for bad_name, weight_name in itertools.product(bad_vars, weight_vars) :
@@ -479,52 +604,142 @@ if __name__ == '__main__':
             chart_columns_names = [catch_rate_name, hit_rate_name] + catch_rename_map.values() + pop_rename_map.values()
 
             for base_name in weight_vars :
-                if has_drawed_something:
-                    bplt.figure()
-                else :
-                    has_drawed_something = True
-                bplt.hold()
+                # if has_drawed_something:
+                #     bplt.figure()
+                # else :
+                #     has_drawed_something = True
+                # bplt.hold()
+
+                hc_file.write(HIGHCHART_DIV % high_container_ind)
+                chart_content = {'cid': high_container_ind,
+                                 'title': '%s wise catch rate' % weight_name,
+                                 'subtitle': bad_name,
+                                 'x': '%s wise operation point' % base_name,
+                                 'tooltip' : high_tooltip_string,
+                                 'tiphead' : high_tiptable_head,
+                                 'tiptable' : high_tiptable_string,
+                                 'suf': "labels: {formatter: function() {return this.value + '%';}},",
+                                 'reverse': 'false',
+                                 'score': ''}
 
                 # replace because    it will have group variables as multiple levels in this position \|/
                 #draw_data = group_operation_pivot.loc[:, pd.IndexSlice[chart_columns_names, base_name, :, :]]
                 #draw_data = draw_data.stack(level=1).reset_index(level=1, drop=True)
                 draw_data = group_operation_pivot.xs(base_name, level='rank_base', axis=1)[chart_columns_names]
 
-                data_x = list(draw_data.index.values)
                 try:
                     line_names_list = list(draw_data[catch_rate_name].columns)
                 except AttributeError as e:
                     line_names_list = list(draw_data[catch_rate_name].name)
-                line_ind = 0
-                for line_names_tuple in line_names_list:
+
+                high_series_string = []
+                for line_names_tuple in line_names_list :
                     line_names = list(line_names_tuple)
-                    data_y = list(draw_data[tuple([catch_rate_name] + line_names)].values)
-                    column_data = {'hit_rate': list(draw_data.loc[:, tuple([hit_rate_name] + line_names)].values)}
-                    catch_lists = {}
-                    hover_tips = [("catch rate", "$y"), ("hit rate", "@hit_rate")]
+                    series_columns = [tuple([catch_rate_name] + line_names)]
+                    series_columns += [tuple([hit_rate_name] + line_names)]
+                    series_columns_names = ['y', 'hit_rate']
                     for catch_rename_name in catch_rename_map.values() :
-                        column_data[catch_rename_name.replace(' ', '_')] = list(draw_data.loc[:, tuple([catch_rename_name] + line_names)].values)
-                        hover_tips.append((catch_rename_name.replace('catch_rate', 'catch'), '@'+catch_rename_name.replace(' ', '_')))
-                    pop_lists = []
-                    for pop_rename_name in pop_rename_map.values():
-                        column_data[pop_rename_name.replace(' ', '_')] = list(draw_data.loc[:, tuple([pop_rename_name] + line_names)].values)
-                        hover_tips.append((pop_rename_name.replace('wise operation_point', 'opt'), '@'+pop_rename_name.replace(' ', '_')))
-                    hover_source = ColumnDataSource(column_data)
-                    bplt.scatter(data_x, data_y, source=hover_source, tools=TOOLS,
-                                 size=7, fill_alpha=.5, color=PREDEFINE_COLORS[line_ind],
-                                 legend=', '.join(line_names), title=catch_rate_name,
-                                 #line_width=2, line_join='round',
-                                 xaxis=base_name + ' operation point', yaxis='catch rate',
-                                 x_range=operation_x_range, y_range=common_y_range)
-                    cur_hover = [t for t in bplt.curplot().tools if isinstance(t, HoverTool)][0]
-                    cur_hover.tooltips = collections.OrderedDict(hover_tips)
-                    bplt.legend().orientation = "bottom_right"
-                    line_ind += 1
+                        series_columns.append(tuple([catch_rename_name] + line_names))
+                        series_columns_names.append(catch_rename_name.replace(' catch_rate', ''))
+                    for pop_rename_name in pop_rename_map.values() :
+                        series_columns.append(tuple([pop_rename_name] + line_names))
+                        series_columns_names.append(pop_rename_name.replace(' wise operation_point', '_opt'))
+                    series_data = draw_data.loc[:, series_columns]
+                    series_data.columns = series_columns_names
+                    series_data.index.name = 'x'
+                    series_data = series_data.reset_index().applymap(lambda x: "{:.2f}".format(x * 100))
+                    series_dict = series_data.transpose().to_dict().values()
+                    series_string = json.dumps(series_dict)
+                    high_data_string.append('var data_{0} = {1};\n'.format(high_line_ind, series_string.replace('"', '')))
+                    high_series_string.append(HIGHCHART_SERIES_TEMPLATE % (high_line_ind, ', '.join(line_names)))
+                    high_line_ind += 1
+
+                chart_content['series'] = ', '.join(high_series_string)
+                high_chart_string.append(HIGHCHART_CHART_TEMPLATE % chart_content)
+                high_container_ind += 1
+
+                # line_ind = 0
+                # data_x = list(draw_data.index.values)
+                # color_map = bplt.brewer['Spectral'][len(line_names_list)]
+                # for line_names_tuple in line_names_list:
+                #     line_names = list(line_names_tuple)
+                #     data_y = list(draw_data[tuple([catch_rate_name] + line_names)].values)
+                #     column_data = {'hit_rate': list(draw_data.loc[:, tuple([hit_rate_name] + line_names)].values)}
+                #     catch_lists = {}
+                #     hover_tips = [("catch rate", "$y"), ("hit rate", "@hit_rate")]
+                #     for catch_rename_name in catch_rename_map.values() :
+                #         column_data[catch_rename_name.replace(' ', '_')] = list(draw_data.loc[:, tuple([catch_rename_name] + line_names)].values)
+                #         hover_tips.append((catch_rename_name.replace('catch_rate', 'catch'), '@'+catch_rename_name.replace(' ', '_')))
+                #     pop_lists = []
+                #     for pop_rename_name in pop_rename_map.values():
+                #         column_data[pop_rename_name.replace(' ', '_')] = list(draw_data.loc[:, tuple([pop_rename_name] + line_names)].values)
+                #         hover_tips.append((pop_rename_name.replace('wise operation_point', 'opt'), '@'+pop_rename_name.replace(' ', '_')))
+                #     hover_source = ColumnDataSource(column_data)
+                #     bplt.scatter(data_x, data_y, source=hover_source, tools=TOOLS,
+                #                  size=7, fill_alpha=.5, color=color_map[line_ind],
+                #                  legend=', '.join(line_names), title=catch_rate_name,
+                #                  plot_width=800, plot_height=450,
+                #                  #line_width=2, line_join='round',
+                #                  x_range=operation_x_range, y_range=common_y_range)
+                #     cur_hover = [t for t in bplt.curplot().tools if isinstance(t, HoverTool)][0]
+                #     cur_hover.tooltips = collections.OrderedDict(hover_tips)
+                #     bplt.legend().orientation = "bottom_right"
+                #     bplt.xaxis().axis_label = base_name + " operation points"
+                #     bplt.yaxis().axis_label = 'catch rate'
+                #     line_ind += 1
+
+            hc_file.write(HIGHCHART_DIV % high_container_ind)
+            chart_content = {'cid': high_container_ind,
+                             'title': '%s wise catch rate' % weight_name,
+                             'subtitle': bad_name,
+                             'x': 'model score',
+                             'tooltip' : "s += 'score: ' + this.x + '<br/>';\n\t\t\t\t" + high_tooltip_string,
+                             'tiphead' : high_tiptable_head,
+                             'tiptable' : high_tiptable_string,
+                             'suf': '',
+                             'score' : "<b>Score: {point.x}</b></br>",
+                             'reverse': 'true'}
+
+            draw_data = group_score_pivot.loc[:, chart_columns_names]
+
+            try:
+                line_names_list = list(draw_data[catch_rate_name].columns)
+            except AttributeError as e:
+                line_names_list = list(draw_data[catch_rate_name].name)
+
+            high_series_string = []
+            for line_names_tuple in line_names_list :
+                line_names = list(line_names_tuple)
+                series_columns = [tuple([catch_rate_name] + line_names)]
+                series_columns += [tuple([hit_rate_name] + line_names)]
+                series_columns_names = ['y', 'hit_rate']
+                for catch_rename_name in catch_rename_map.values() :
+                    series_columns.append(tuple([catch_rename_name] + line_names))
+                    series_columns_names.append(catch_rename_name.replace(' catch_rate', ''))
+                for pop_rename_name in pop_rename_map.values() :
+                    series_columns.append(tuple([pop_rename_name] + line_names))
+                    series_columns_names.append(pop_rename_name.replace(' wise operation_point', '_opt'))
+                series_data = draw_data.loc[:, series_columns]
+                series_data.columns = series_columns_names
+                series_data.index.name = 'x'
+                series_data = series_data.applymap(lambda x: "{:.2f}".format(x * 100)).sort_index().reset_index()
+                series_dict = series_data.transpose().to_dict().values()
+                series_string = json.dumps(series_dict)
+                high_data_string.append('var data_{0} = {1};\n'.format(high_line_ind, series_string.replace('"', '')))
+                high_series_string.append(HIGHCHART_SERIES_TEMPLATE % (high_line_ind, ', '.join(line_names)))
+                high_line_ind += 1
+
+            chart_content['series'] = ', '.join(high_series_string)
+            high_chart_string.append(HIGHCHART_CHART_TEMPLATE % chart_content)
+            high_container_ind += 1
+
+    hc_file.write(HIGHCHART_DATA_TEMPLATE % '\n'.join(high_data_string))
+    hc_file.write(HIGHCHART_FUNCTION_TEMPLATE % '\n'.join(high_chart_string))
 
     logging.info("start saving report...")
     writer.close()
-    bplt.save()
+    # bplt.save()
+    hc_file.write(HIGHCHART_BASE_END)
+    hc_file.close()
     logging.info("all work done")
-
-
 
