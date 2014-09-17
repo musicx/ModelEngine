@@ -35,9 +35,9 @@ HIGHCHART_CHART_TEMPLATE = '''\t$('#container%(cid)d').highcharts({
             zoomType: 'x',
             resetZoomButton: {
                 position: {
-                    // align: 'right', // by default
+                     align: 'left',
                     // verticalAlign: 'top', // by default
-                    x: -10,
+                    x: 10,
                     y: 10
                 },
                 relativeTo: 'chart'
@@ -69,8 +69,8 @@ HIGHCHART_CHART_TEMPLATE = '''\t$('#container%(cid)d').highcharts({
                 }
             },
             gridLineWidth: 1,
-            max : 100,
-            min : 0
+            ceiling : 100,
+            floor : 0
         },
 
         xAxis: {
@@ -90,7 +90,9 @@ HIGHCHART_CHART_TEMPLATE = '''\t$('#container%(cid)d').highcharts({
             align : 'right',
             verticalAlign: 'middle',
             layout : 'vertical',
-            borderWidth : 1
+            borderWidth : 1,
+            floating: true,
+            backgroundColor: 'white'
         },
 
         series: [%(series)s]
@@ -431,7 +433,7 @@ if __name__ == '__main__':
 
         # TODO: just for test here
         #cur_data['even'] = cur_data['char_cp_cust_id'].map(lambda x : 1 if x % 10 < 5 else 0)
-        cur_data['clsn_scr_new'] = cur_data['clsn_scr']
+        cur_data['clsn_scr_new'] = cur_data['clsn_scr'] + pd.Series(np.random.randn(cur_data['clsn_scr'].size)) * 10
 
         if add_windows :
             cur_data['window_name'] = data_names[ind]
@@ -497,8 +499,10 @@ if __name__ == '__main__':
 
     for group_name in groups :
         pivot_raw_columns = groups[group_name] + pivot_base_names
-        group_operation_raws = pd.concat(operation_raw_list[group_name])[pivot_raw_columns + ['rank_base']]
-        group_score_raws = pd.concat(score_raw_list[group_name])[pivot_raw_columns]
+        group_operation_raws = pd.concat(operation_raw_list[group_name])
+        pivot_operation_raws = group_operation_raws[pivot_raw_columns + ['rank_base']]
+        group_score_raws = pd.concat(score_raw_list[group_name])
+        pivot_score_raws = group_score_raws[pivot_raw_columns]
 
         #group_operation_raws['rank_base'] = group_operation_raws['rank_base'].apply(
         #    lambda x : "ranked based on {}".format(x)
@@ -526,12 +530,12 @@ if __name__ == '__main__':
         # data = '[' + ','.join(["[{:.2f},{:.4f}]".format(x[0], x[1]) for x in line.to_records(index=False)]) + ']'
 
         for name_maps in [bad_rate_rename_map, catch_rename_map, pop_rename_map] :
-            group_operation_raws.rename(columns=name_maps, inplace=True)
-            group_score_raws.rename(columns=name_maps, inplace=True)
+            pivot_operation_raws.rename(columns=name_maps, inplace=True)
+            pivot_score_raws.rename(columns=name_maps, inplace=True)
 
-        group_operation_pivot = pd.pivot_table(group_operation_raws, index=['cut_off'],
+        group_operation_pivot = pd.pivot_table(pivot_operation_raws, index=['cut_off'],
                                                columns=['rank_base']+groups[group_name]+['score_name'])
-        group_score_pivot = pd.pivot_table(group_score_raws, index=['cut_off'],
+        group_score_pivot = pd.pivot_table(pivot_score_raws, index=['cut_off'],
                                            columns=groups[group_name]+['score_name'])
         group_score_pivot.sort_index(ascending=False, inplace=True)
 
@@ -574,7 +578,7 @@ if __name__ == '__main__':
         high_tooltip_string = ["s += 'catch: ' + this.y + '%",
                                "s += 'hit: ' + this.point.hit_rate + '%"]
         high_tiptable_head = '<tr><th>line</th><th>catch</th><th>hit</th>'
-        high_tiptable_string = "'<tr><td style=\"color:{series.color}\">{series.name}:</td><td>,{point.y}%</td><td>,{point.hit_rate}%</td>'"
+        high_tiptable_string = "'<tr><td style=\"color:{series.color}\">{series.name}:</td><td>{point.y}%</td><td>,{point.hit_rate}%</td>'"
         for catch_rename_name in catch_rename_map.values() :
             series_catch_name = catch_rename_name.replace(' catch_rate', '')
             high_tooltip_string.append(HIGHCHART_TOOLTIP_TEMPLATE % (series_catch_name, series_catch_name))
