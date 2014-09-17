@@ -14,24 +14,74 @@ __author__ = 'yijiliu'
 HIGHCHART_BASE_BEGIN = '''<!DOCTYPE html>
 <html>
     <head>
-        <script src="http://ajax.aspnetcdn.com/ajax/jQuery/jquery-1.7.2.min.js"></script>
-        <script src="http://code.highcharts.com/highcharts.js"></script>
+        <script src="http://cdn.bootcss.com/jquery/2.1.1/jquery.min.js"></script>
+        <script src="http://cdn.bootcss.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
+        <link href="http://cdn.bootcss.com/bootstrap/3.2.0/css/bootstrap.min.css" rel="stylesheet">
+        <script src="http://cdn.bootcss.com/highcharts/4.0.4/highcharts.js"></script>
+        <title>Advanced Gain Chart</title>
     </head>
     <body>
+    <div class="container-fluid">
+    <div class="row">
+    <div class="col-sm-3 col-md-2 sidebar">%s</div>
+    <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
 '''
 
-HIGHCHART_DIV = '\t<div id="container%d" sytle="height: 400px; min-width: 600px"></div>\n<hr/>\n'
+HIGHCHART_SIDE_TEMPLATE = '''<div class="panel panel-info">
+  <div class="panel-heading">
+    <h3 class="panel-title">Groups</h3>
+  </div>
+  <div class="panel-body">
+    Group list
+  </div>
+</div>
+<div class="panel panel-info">
+  <div class="panel-heading">
+    <h3 class="panel-title">Bad variables</h3>
+  </div>
+  <div class="panel-body">
+    Group list
+  </div>
+</div>
+<div class="panel panel-info">
+  <div class="panel-heading">
+    <h3 class="panel-title">Unit-wise Operation Point</h3>
+  </div>
+  <div class="panel-body">
+    Group list
+  </div>
+</div>
+<div class="panel panel-info">
+  <div class="panel-heading">
+    <h3 class="panel-title">Dollar-wise Operation Point</h3>
+  </div>
+  <div class="panel-body">
+    Group list
+  </div>
+</div>
+<div class="panel panel-info">
+  <div class="panel-heading">
+    <h3 class="panel-title">Model Score</h3>
+  </div>
+  <div class="panel-body">
+    Group list
+  </div>
+</div>
+'''
+
+HIGHCHART_DIV = '\t<div id="container%d" sytle="height: 400px; min-width: 600px">\n</div>\n'
 
 HIGHCHART_DATA_TEMPLATE = '<script>\n%s\n'
 
 HIGHCHART_FUNCTION_TEMPLATE = '$(function () {%s\n});\n</script>\n'
 
-HIGHCHART_SERIES_TEMPLATE = '{\n\t\t\tdata: data_%d,\n\t\t\tname: \'%s\'\n\t\t}'
+HIGHCHART_SERIES_TEMPLATE = '{\n\t\t\tdata: data_%d,\n\t\t\tname: \'%s\',\n\t\t\tturboThreshold:0\n\t\t}'
 
 HIGHCHART_TOOLTIP_TEMPLATE = 's += \'%s: \' + this.point.%s + \'%%'
 
 HIGHCHART_CHART_TEMPLATE = '''\t$('#container%(cid)d').highcharts({
         chart: {
+            borderWidth: 1,
             zoomType: 'x',
             resetZoomButton: {
                 position: {
@@ -41,7 +91,8 @@ HIGHCHART_CHART_TEMPLATE = '''\t$('#container%(cid)d').highcharts({
                     y: 10
                 },
                 relativeTo: 'chart'
-            }
+            },
+            marginRight: 80
         },
 
         title: {
@@ -56,7 +107,8 @@ HIGHCHART_CHART_TEMPLATE = '''\t$('#container%(cid)d').highcharts({
             useHTML: true,
             headerFormat: '%(score)s <table> %(tiphead)s',
             pointFormat: %(tiptable)s,
-            footerFormat: '</table>'
+            footerFormat: '</table>',
+            crosshairs: true
         },
 
         yAxis: {
@@ -99,9 +151,9 @@ HIGHCHART_CHART_TEMPLATE = '''\t$('#container%(cid)d').highcharts({
     });
 '''
 
-HIGHCHART_BASE_END = '''\t</body>
-</html>
-'''
+HIGHCHART_BASE_END = '''\t</div>
+\t</body>
+</html>'''
 
 def ignore_exception(IgnoreException=Exception, DefaultVal=None):
     """ Decorator for ignoring exception from a function
@@ -129,7 +181,7 @@ def operation_performance(data, score, weights=['dummy_weight'], bads=['is_bad']
     raw.sort(columns=score_groups, inplace=True)
     #rank_cumsum = pd.DataFrame(raw.groupby(score_groups)[rank_base].sum().groupby(level=-2).cumsum(),
     #                           columns=["rank_cumsum"]).reset_index()
-    rank_cumsum = pd.DataFrame(raw.groupby(score_groups)[rank_base].sum().groupby(level=-2).cumsum().reset_index())
+    rank_cumsum = pd.DataFrame(raw.groupby(score_groups)[rank_base].sum().groupby(level=groups).cumsum().reset_index())
     rank_cumsum.columns = pd.Index(score_groups + ['rank_cumsum'])
     raw = raw.merge(rank_cumsum, how="left", on=score_groups)
     raw.loc[:, score_rank] = raw['rank_cumsum'] / raw.groupby(groups)[rank_base].transform(pd.Series.sum)
@@ -156,9 +208,20 @@ def operation_performance(data, score, weights=['dummy_weight'], bads=['is_bad']
     score_cut_offs = raw.groupby(score_groups)[score].min()
     score_cut_offs.name = 'cut_off_score'
     sums = raw.groupby(score_groups)[weights_bads_names + weights + catches].sum()
-    totals = sums.sum(level=-2)       # TODO: what if there is more levels
-    sums = sums.groupby(level=-2).cumsum()
-    catch_rates = sums.divide(totals + 1e-20, axis=0)
+    totals = sums.sum(level=groups)
+    sums = sums.groupby(level=groups).cumsum()
+    if type(totals.index) is pd.MultiIndex :
+        catch_rates_parts = []
+        for tidx in totals.index :
+            catch_rates_part = sums.loc[tidx, :].divide(totals.loc[tidx, :] + 1e-20, axis=1)
+            new_idx = [[x] for x in tidx]
+            new_idx.append(catch_rates_part.index)
+            catch_rates_part.index = pd.MultiIndex.from_product(new_idx)
+            catch_rates_part.index.names = score_groups
+            catch_rates_parts.append(catch_rates_part)
+        catch_rates = pd.concat(catch_rates_parts)
+    else :
+        catch_rates = sums.divide(totals + 1e-20, axis=0)
     catch_rates.columns = [x + '|catch_rate' for x in catch_rates.columns]
     hit_rate_list = []
     hit_rate_names = []
@@ -208,9 +271,24 @@ def score_performance(data, score, weights=['dummy_weight'], bads=['is_bad'], gr
     score_groups = groups + [score_rank]
     sums = raw.groupby(score_groups)[weights_bads_names + weights + catches].sum()
     sums.sort_index(ascending=False, inplace=True)
-    totals = sums.sum(level=-2)
-    sums = sums.groupby(level=-2).cumsum()
-    catch_rates = sums.divide(totals + 1e-20, axis=0)
+    totals = sums.sum(level=groups)
+    sums = sums.groupby(level=groups).cumsum()
+    if type(totals.index) is pd.MultiIndex :
+        catch_rates_parts = []
+        sums.sort_index(inplace=True)
+        totals.sort_index(inplace=True)
+        for tidx in totals.index :
+            catch_rates_part = sums.loc[tidx, :].divide(totals.loc[tidx, :] + 1e-20, axis=1)
+            new_idx = [[x] for x in tidx]
+            new_idx.append(catch_rates_part.index)
+            catch_rates_part.index = pd.MultiIndex.from_product(new_idx)
+            catch_rates_part.index.names = score_groups
+            catch_rates_parts.append(catch_rates_part)
+        catch_rates = pd.concat(catch_rates_parts)
+        sums.sort_index(ascending=False, inplace=True)
+        totals.sort_index(ascending=False, inplace=True)
+    else :
+        catch_rates = sums.divide(totals + 1e-20, axis=0)
     catch_rates.columns = [x + '|catch_rate' for x in catch_rates.columns]
     hit_rate_list = []
     hit_rate_names = []
@@ -396,13 +474,14 @@ if __name__ == '__main__':
     for group_name in groups :
         groups[group_name] = [x.lower() for x in groups[group_name]]
         if add_windows :
-            groups[group_name].insert(0, 'window_name')
+            groups[group_name].append('window_name')
         group_vars = group_vars.union(groups[group_name])
     if add_windows or len(groups) == 0:
         add_windows = add_windows or len(groups) == 0
         groups['windows'] = ['window_name']
         group_vars.add('window_name')
     group_vars = list(group_vars)
+    group_vars_type = dict([(x, np.object) for x in group_vars])
 
     if options.log:
         logging.basicConfig(level=logging.DEBUG, format='%(asctime)-15s - %(levelname)s - %(message)s',
@@ -428,12 +507,12 @@ if __name__ == '__main__':
         if not os.path.exists(filepath) :
             logging.error("File not exist! " + filepath)
             continue
-        cur_data = pd.read_csv(filepath, sep=delimiter)
+        cur_data = pd.read_csv(filepath, sep=delimiter, dtype=group_vars_type)
         cur_data.rename(columns=dict(zip(cur_data.columns, [x.lower() for x in cur_data.columns])), inplace=True)
 
         # TODO: just for test here
         #cur_data['even'] = cur_data['char_cp_cust_id'].map(lambda x : 1 if x % 10 < 5 else 0)
-        cur_data['clsn_scr_new'] = cur_data['clsn_scr'] + pd.Series(np.random.randn(cur_data['clsn_scr'].size)) * 10
+        #cur_data['clsn_scr_new'] = cur_data['clsn_scr'] + pd.Series(np.random.randn(cur_data['clsn_scr'].size)) * 10
 
         if add_windows :
             cur_data['window_name'] = data_names[ind]
@@ -491,9 +570,10 @@ if __name__ == '__main__':
 
     # initialization for highchart output
     hc_file = open(options.out + '_charts.html', 'w')
-    hc_file.write(HIGHCHART_BASE_BEGIN)
     high_line_ind = 0
     high_container_ind = 0
+    high_div_string = []
+    high_side_string = []
     high_data_string = []
     high_chart_string = []
 
@@ -523,8 +603,9 @@ if __name__ == '__main__':
         catch_rename_map = dict(zip(pivot_catch_names, ['{} catch_rate'.format(x) for x in catch_vars]))
         pop_rename_map = dict(zip(pivot_pop_names, ['{} wise operation_point'.format(x) for x in weight_vars]))
 
-        group_operation_raws.to_csv(options.out + '_operation_raw.csv', index=False)
-        group_score_raws.to_csv(options.out + '_score_raw.csv', index=False)
+        # TODO: save the raw in the outter space of the loop
+        group_operation_raws.to_csv(options.out + '_operation_raw-{}.csv'.format('-'.join(groups[group_name])), index=False)
+        group_score_raws.to_csv(options.out + '_score_raw-{}.csv'.format('-'.join(groups[group_name])), index=False)
         # sub = raw.loc[(raw['rank_base']=='unit_weight'), ['window_name', 'cut_off', 'score_name', 'unit_weight|is_unauth_collusion|1|catch_rate']]
         # line = sub.loc[(sub.window_name == 'data_1') & (sub.score_name == 'clsn_scr'), ['cut_off','unit_weight|is_unauth_collusion|1|catch_rate']]
         # data = '[' + ','.join(["[{:.2f},{:.4f}]".format(x[0], x[1]) for x in line.to_records(index=False)]) + ']'
@@ -541,11 +622,15 @@ if __name__ == '__main__':
 
         group_operation_pivot.fillna(method='pad', inplace=True)
         group_score_pivot.fillna(method='pad', inplace=True)
+        group_operation_pivot.fillna(0, inplace=True)
+        group_score_pivot.fillna(0, inplace=True)
 
         group_operation_pivot.index.name = None
         group_score_pivot.index.name = None
-        group_operation_pivot.to_csv(options.out + '_operation_pivot.csv')
-        group_score_pivot.to_csv(options.out + '_score_pivot.csv')
+
+        # TODO: save the raw in the outter space of the loop
+        group_operation_pivot.to_csv(options.out + '_operation_pivot-{}.csv'.format('-'.join(groups[group_name])))
+        group_score_pivot.to_csv(options.out + '_score_pivot-{}.csv'.format('-'.join(groups[group_name])))
 
         excel_operation_columns_names = list(group_operation_pivot.columns.names)
         group_operation_columns_names_backup = list(group_operation_pivot.columns.names)
@@ -577,24 +662,24 @@ if __name__ == '__main__':
         # draw carts using highcharts
         high_tooltip_string = ["s += 'catch: ' + this.y + '%",
                                "s += 'hit: ' + this.point.hit_rate + '%"]
-        high_tiptable_head = '<tr><th>line</th><th>catch</th><th>hit</th>'
-        high_tiptable_string = "'<tr><td style=\"color:{series.color}\">{series.name}:</td><td>{point.y}%</td><td>,{point.hit_rate}%</td>'"
+        high_tiptable_head = '<tr><th>line</th><th>&nbsp;catch&nbsp;</th><th>&nbsp;hit&nbsp;</th>'
+        high_tiptable_string = "'<tr><td style=\"color:{series.color}\">{series.name}&nbsp;:</td><td>&nbsp;{point.y}%&nbsp;</td><td>,&nbsp;{point.hit_rate}%&nbsp;</td>'"
         for catch_rename_name in catch_rename_map.values() :
             series_catch_name = catch_rename_name.replace(' catch_rate', '')
             high_tooltip_string.append(HIGHCHART_TOOLTIP_TEMPLATE % (series_catch_name, series_catch_name))
-            high_tiptable_head += '<th>%s</th>' % series_catch_name
-            high_tiptable_string += " + '<td>,{point.%s}%%</td>'" % series_catch_name
+            high_tiptable_head += '<th>&nbsp;%s&nbsp;</th>' % series_catch_name
+            high_tiptable_string += " + '<td>,&nbsp;{point.%s}%%&nbsp;</td>'" % series_catch_name
         for pop_rename_name in pop_rename_map.values() :
             series_pop_name = pop_rename_name.replace(' wise operation_point', '_opt')
-            if series_pop_name.lower().startswith('unit') or series_pop_name.startswith('dummy') :
+            if series_pop_name.lower().find('unit') >= 0 or series_pop_name.startswith('dummy') :
                 series_pop_short_name = '# opt'
-            elif series_pop_name.lower().startswith('dollar') :
+            elif series_pop_name.lower().find('dol') >= 0:
                 series_pop_short_name = '$ opt'
             else :
                 series_pop_short_name = series_pop_name
             high_tooltip_string.append(HIGHCHART_TOOLTIP_TEMPLATE % (series_pop_short_name, series_pop_name))
-            high_tiptable_head += '<th>%s</th>' % series_pop_short_name
-            high_tiptable_string += " + '<td>,{point.%s}%%</td>'" % series_pop_name
+            high_tiptable_head += '<th>&nbsp;%s&nbsp;</th>' % series_pop_short_name
+            high_tiptable_string += " + '<td>,&nbsp;{point.%s}%%&nbsp;</td>'" % series_pop_name
         high_tooltip_string = '<br/>\';\n\t\t\t\t'.join(high_tooltip_string) + '\';'
         high_tiptable_head += "</tr>"
         high_tiptable_string += " + '</tr>'"
@@ -614,7 +699,7 @@ if __name__ == '__main__':
                 #     has_drawed_something = True
                 # bplt.hold()
 
-                hc_file.write(HIGHCHART_DIV % high_container_ind)
+                high_div_string.append(HIGHCHART_DIV % high_container_ind)
                 chart_content = {'cid': high_container_ind,
                                  'title': '%s wise catch rate' % weight_name,
                                  'subtitle': bad_name,
@@ -651,11 +736,13 @@ if __name__ == '__main__':
                     series_data = draw_data.loc[:, series_columns]
                     series_data.columns = series_columns_names
                     series_data.index.name = 'x'
-                    series_data = series_data.reset_index().applymap(lambda x: "{:.2f}".format(x * 100))
+                    series_data = series_data.reset_index().applymap(lambda x: "{:.2f}".format(float(x) * 100))
                     series_dict = series_data.transpose().to_dict().values()
                     series_string = json.dumps(series_dict)
                     high_data_string.append('var data_{0} = {1};\n'.format(high_line_ind, series_string.replace('"', '')))
-                    high_series_string.append(HIGHCHART_SERIES_TEMPLATE % (high_line_ind, ', '.join(line_names)))
+                    legend_names = ['{}={}'.format(group_key, group_value) if group_key != 'window_name' else group_value
+                                    for group_key, group_value in zip(groups[group_name], line_names[:-1])] + line_names[-1:]
+                    high_series_string.append(HIGHCHART_SERIES_TEMPLATE % (high_line_ind, ', '.join(legend_names)))
                     high_line_ind += 1
 
                 chart_content['series'] = ', '.join(high_series_string)
@@ -692,7 +779,7 @@ if __name__ == '__main__':
                 #     bplt.yaxis().axis_label = 'catch rate'
                 #     line_ind += 1
 
-            hc_file.write(HIGHCHART_DIV % high_container_ind)
+            high_div_string.append(HIGHCHART_DIV % high_container_ind)
             chart_content = {'cid': high_container_ind,
                              'title': '%s wise catch rate' % weight_name,
                              'subtitle': bad_name,
@@ -726,24 +813,29 @@ if __name__ == '__main__':
                 series_data = draw_data.loc[:, series_columns]
                 series_data.columns = series_columns_names
                 series_data.index.name = 'x'
-                series_data = series_data.applymap(lambda x: "{:.2f}".format(x * 100)).sort_index().reset_index()
+                series_data = series_data.applymap(lambda x: "{:.2f}".format(float(x) * 100)).sort_index().reset_index()
                 series_dict = series_data.transpose().to_dict().values()
                 series_string = json.dumps(series_dict)
                 high_data_string.append('var data_{0} = {1};\n'.format(high_line_ind, series_string.replace('"', '')))
-                high_series_string.append(HIGHCHART_SERIES_TEMPLATE % (high_line_ind, ', '.join(line_names)))
+                legend_names = ['{}={}'.format(group_key, group_value) if group_key != 'window_name' else group_value
+                                for group_key, group_value in zip(groups[group_name], line_names[:-1])] + line_names[-1:]
+                high_series_string.append(HIGHCHART_SERIES_TEMPLATE % (high_line_ind, ', '.join(legend_names)))
                 high_line_ind += 1
 
             chart_content['series'] = ', '.join(high_series_string)
             high_chart_string.append(HIGHCHART_CHART_TEMPLATE % chart_content)
             high_container_ind += 1
 
+    # hc_file.write(HIGHCHART_BASE_BEGIN % '\n'.join(high_side_string))
+    hc_file.write(HIGHCHART_BASE_BEGIN % HIGHCHART_SIDE_TEMPLATE)
+    hc_file.write('\n'.join(high_div_string))
     hc_file.write(HIGHCHART_DATA_TEMPLATE % '\n'.join(high_data_string))
     hc_file.write(HIGHCHART_FUNCTION_TEMPLATE % '\n'.join(high_chart_string))
+    hc_file.write(HIGHCHART_BASE_END)
 
     logging.info("start saving report...")
     writer.close()
     # bplt.save()
-    hc_file.write(HIGHCHART_BASE_END)
     hc_file.close()
     logging.info("all work done")
 
