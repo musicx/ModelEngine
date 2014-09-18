@@ -42,26 +42,21 @@ HIGHCHART_BASE_BEGIN = '''<!DOCTYPE html>
     <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
 '''
 
-HIGHCHART_SIDE_TEMPLATE = '''<div class="panel panel-info">
-  <div class="panel-heading">
-    <h3 class="panel-title">Groups</h3>
-  </div>
-  <div class="panel-body">
-    %(group_button)s
-  </div>
-</div>
-<div class="panel panel-info">
-  <div class="panel-heading">
-    <h3 class="panel-title">Bad variables</h3>
-  </div>
-  <div class="panel-body">
-    %(bad_button)s
-  </div>
-</div>
-%(panel)s
+HIGHCHART_SIDE_TEMPLATE = '''%(btn_panel)s
+%(lst_panel)s
 '''
 
-HIGHCHART_PANEL_TEMPLATE = '''<div class="panel panel-info">
+HIGHCHART_BUTTON_PANEL_TEMPLATE = '''<div class="panel panel-info">
+  <div class="panel-heading">
+    <h3 class="panel-title">%(title)s</h3>
+  </div>
+  <div class="panel-body">
+    %(button)s
+  </div>
+</div>
+'''
+
+HIGHCHART_LIST_PANEL_TEMPLATE = '''<div class="panel panel-info">
   <div class="panel-heading">
     <h3 class="panel-title">%(base)s</h3>
   </div>
@@ -71,11 +66,11 @@ HIGHCHART_PANEL_TEMPLATE = '''<div class="panel panel-info">
 </div>
 '''
 
-HIGHCHART_WGT_LIST_TEMPLATE = '<a id="%s" href="#" class="list-group-item list-group-item-success">%s</a>\n'
+HIGHCHART_WGT_LIST_TEMPLATE = '<a id="%s" href="#" class="list-group-item%s">%s</a>\n'
 
 HIGHCHART_BUTTON_TEMPLATE = '<button id="%s" type="button" class="btn btn-success">%s</button>'
 
-HIGHCHART_DIV = '\t<div id="container%d" sytle="height: 400px; min-width: 600px" class="show">\n</div>\n'
+HIGHCHART_DIV = '\t<div id="container%d" sytle="height: 400px; min-width: 600px" class="%s">\n</div>\n'
 
 HIGHCHART_DATA_TEMPLATE = '<script>\n%s\n'
 
@@ -165,11 +160,26 @@ HIGHCHART_CHART_TEMPLATE = '''\t$('#container%(cid)d').highcharts({
     });
 '''
 
+HIGHCHART_FILTER_TOGGLE_TEMPLATE = '''    $('#%(bid)s').click(function() {
+        var cs = [%(cids)s];
+        var cl = cs.length;
+        for (var i = 0; i < cl; i++) {
+            if (! ($(cs[i]).hasClass('ls_chosen') || $(cs[i]).hasClass('bd_chosen') || $(cs[i]).hasClass('gp_chosen'))) {
+                $(cs[i]).toggleClass('show');
+                $(cs[i]).toggleClass('hidden');
+            }
+            $(cs[i]).toggleClass('ft_chosen');
+        };
+        $('#%(bid)s').toggleClass('btn-success');
+        $('#%(bid)s').toggleClass('btn-default');
+    });
+'''
+
 HIGHCHART_GROUP_TOGGLE_TEMPLATE = '''    $('#%(bid)s').click(function() {
         var cs = [%(cids)s];
         var cl = cs.length;
         for (var i = 0; i < cl; i++) {
-            if (! ($(cs[i]).hasClass('ls_chosen') || $(cs[i]).hasClass('bd_chosen'))) {
+            if (! ($(cs[i]).hasClass('ls_chosen') || $(cs[i]).hasClass('bd_chosen') || $(cs[i]).hasClass('ft_chosen'))) {
                 $(cs[i]).toggleClass('show');
                 $(cs[i]).toggleClass('hidden');
             }
@@ -179,11 +189,12 @@ HIGHCHART_GROUP_TOGGLE_TEMPLATE = '''    $('#%(bid)s').click(function() {
         $('#%(bid)s').toggleClass('btn-default');
     });
 '''
+
 HIGHCHART_BAD_TOGGLE_TEMPLATE = '''    $('#%(bid)s').click(function() {
         var cs = [%(cids)s];
         var cl = cs.length;
         for (var i = 0; i < cl; i++) {
-            if (! ($(cs[i]).hasClass('ls_chosen') || $(cs[i]).hasClass('gp_chosen'))) {
+            if (! ($(cs[i]).hasClass('ls_chosen') || $(cs[i]).hasClass('gp_chosen') || $(cs[i]).hasClass('ft_chosen'))) {
                 $(cs[i]).toggleClass('show');
                 $(cs[i]).toggleClass('hidden');
             }
@@ -198,7 +209,7 @@ HIGHCHART_LIST_TOGGLE_TEMPLATE = '''    $('#%(lid)s').click(function() {
         var cs = [%(cids)s];
         var cl = cs.length;
         for (var i = 0; i < cl; i++) {
-            if (! ($(cs[i]).hasClass('gp_chosen') || $(cs[i]).hasClass('bd_chosen'))) {
+            if (! ($(cs[i]).hasClass('gp_chosen') || $(cs[i]).hasClass('bd_chosen') || $(cs[i]).hasClass('ft_chosen'))) {
                 $(cs[i]).toggleClass('show');
                 $(cs[i]).toggleClass('hidden');
             }
@@ -227,9 +238,36 @@ def ignore_exception(IgnoreException=Exception, DefaultVal=None):
     return dec
 
 
-def operation_performance(data, score, weights=['dummy_weight'], bads=['is_bad'], groups=['window_name'],
-                          catches=[], points=100., rank_base='dummy_weight') :
-    raw = data[[score] + weights + bads + groups + catches]
+def operation_performance(data, score, weights=None, bads=None, groups=None,
+                          filters=None, catches=None, points=100., rank_base='dummy_weight') :
+    if weights is None:
+        weights = ['dummy_weight']
+    if bads is None:
+        bads = ['is_bad']
+    if groups is None:
+        groups = ['data_file_name']
+    if catches is None:
+        catches = []
+    if filters is None :
+        filters = ['all']
+    if filters[0] == 'all' and len(filters) == 1 :
+        raw = data[[score] + weights + bads + groups + catches]
+    else :
+        if filters[1] == '==' :
+            raw = data[data[filters[0]] == filters[2]][[score] + weights + bads + groups + catches]
+        elif filters[1] == '!=' :
+            raw = data[data[filters[0]] != filters[2]][[score] + weights + bads + groups + catches]
+        elif filters[1] == '>' :
+            raw = data[data[filters[0]] > filters[2]][[score] + weights + bads + groups + catches]
+        elif filters[1] == '>=' :
+            raw = data[data[filters[0]] >= filters[2]][[score] + weights + bads + groups + catches]
+        elif filters[1] == '<' :
+            raw = data[data[filters[0]] < filters[2]][[score] + weights + bads + groups + catches]
+        elif filters[1] == '<=' :
+            raw = data[data[filters[0]] <= filters[2]][[score] + weights + bads + groups + catches]
+        else :
+            raw = data[[score] + weights + bads + groups + catches]
+
     score_rank = "cut_off"
     # Assuming higher score indicates higher risk
     raw[score_rank] = raw.groupby(groups)[score].transform(pd.Series.rank, method='min',
@@ -295,11 +333,38 @@ def operation_performance(data, score, weights=['dummy_weight'], bads=['is_bad']
     raw_output['score_name'] = score
     raw_output['rank_base'] = rank_base
     raw_output['group_name'] = ",".join(groups)
+    raw_output['filter_name'] = filters if filters == 'all' else ' '.join(filters)
     return raw_output
 
-def score_performance(data, score, weights=['dummy_weight'], bads=['is_bad'], groups=['window_name'],
-                      catches=[], low=0, step=5, high=1000):
-    raw = data[[score] + weights + bads + groups + catches]
+def score_performance(data, score, weights=None, bads=None, groups=None,
+                      filters=None, catches=None, low=0, step=5, high=1000):
+    if weights is None:
+        weights = ['dummy_weight']
+    if bads is None:
+        bads = ['is_bad']
+    if groups is None:
+        groups = ['data_file_name']
+    if catches is None:
+        catches = []
+    if filters is None :
+        filters = ['all']
+    if filters[0] == 'all' and len(filters) == 1 :
+        raw = data[[score] + weights + bads + groups + catches]
+    else :
+        if filters[1] == '==' :
+            raw = data[data[filters[0]] == filters[2]][[score] + weights + bads + groups + catches]
+        elif filters[1] == '!=' :
+            raw = data[data[filters[0]] != filters[2]][[score] + weights + bads + groups + catches]
+        elif filters[1] == '>' :
+            raw = data[data[filters[0]] > filters[2]][[score] + weights + bads + groups + catches]
+        elif filters[1] == '>=' :
+            raw = data[data[filters[0]] >= filters[2]][[score] + weights + bads + groups + catches]
+        elif filters[1] == '<' :
+            raw = data[data[filters[0]] < filters[2]][[score] + weights + bads + groups + catches]
+        elif filters[1] == '<=' :
+            raw = data[data[filters[0]] <= filters[2]][[score] + weights + bads + groups + catches]
+        else :
+            raw = data[[score] + weights + bads + groups + catches]
     score_rank = "cut_off"
     # Assuming higher score indicates higher risk
     raw.loc[(raw[score] > high), score] = high
@@ -361,6 +426,7 @@ def score_performance(data, score, weights=['dummy_weight'], bads=['is_bad'], gr
     raw_output.reset_index(inplace=True)
     raw_output['score_name'] = score
     raw_output['group_name'] = ",".join(groups)
+    raw_output['filter_name'] = filters if filters == 'all' else ' '.join(filters)
     return raw_output
 
 def parse_json(src_string):
@@ -419,7 +485,7 @@ if __name__ == '__main__':
     parser.add_option("-g", "--group", dest="group", action="store", type="string",
                       help="optional, group combinations in format class_var1,class_var2|class_var3")
     parser.add_option("-f", "--filter", dest="filter", action="store", type="string",
-                      help="optional, filter criteria in python format, seperate with '|'")
+                      help="optional, filter criteria in python format, seperate with '|', comparison is done as string, 'AND', 'OR' and 'NOT' are not supported")
     # following parts are optional
     parser.add_option("-l", "--log", dest="log", action="store", type="string",
                       help="log file, if not given, stdout is used")
@@ -443,8 +509,8 @@ if __name__ == '__main__':
     bad_vars = []
     weight_vars = []
     catch_vars = []
-    groups = {}
-    filters = {}
+    groups = collections.OrderedDict()
+    filters = collections.OrderedDict()
     data_names = []
 
     if options.json:
@@ -498,6 +564,8 @@ if __name__ == '__main__':
                 logging.error("Error parsing catch field in json")
                 exit()
 
+        if len(input_data) > 1 :
+            groups['data files'] = ['data_file_name']
         if "group" in sources :
             if type(sources['group']) is list :
                 group_list = sources['group']
@@ -513,6 +581,7 @@ if __name__ == '__main__':
                         logging.error("Error parsing group fileds in json")
                         exit()
 
+        filters['all'] = 'all'
         if "filter" in sources :
             if type(sources['filter']) is list :
                 filter_list = sources['filter']
@@ -520,7 +589,7 @@ if __name__ == '__main__':
                 filter_list = [sources['filter']]
             for filter_item in filter_list :
                 for filter_name, filter_content in filter_item :
-                    filters[filter_name] = filter_content
+                    filters[filter_name] = parse_filter(filter_content)
 
     else :
         if not options.input:
@@ -546,15 +615,19 @@ if __name__ == '__main__':
         if options.catch:
             catch_vars = [x.strip() for x in options.catch.split(',')]
 
+        if len(input_data) > 1 :
+            groups['data files'] = ['data_file_name']
         if options.group:
             group_names = options.group.split('|')
-            for group in group_names :
-                groups[group] = [x.strip() for x in group.split(',')]
+            for group_name in group_names :
+                groups[group_name] = [x.strip() for x in group_name.split(',')]
 
+        filters['all'] = ['all']
         if options.filter:
             filter_names = options.filter.split('|')
             for filter_name in filter_names :
-                filters[filter_name] = parse_filter(filter_name)
+                key_string, func_string, value_string = parse_filter(filter_name)
+                filters["%s %s %s" % (key_string, func_string, value_string)] = (key_string, func_string, value_string)
 
     delimiter = chr(int(options.dlm[1:])) if options.dlm.startswith('x') else options.dlm
 
@@ -570,18 +643,15 @@ if __name__ == '__main__':
     weight_vars = [x.lower() for x in weight_vars]
     catch_vars = [x.lower() for x in catch_vars]
     group_vars = set()
-    group_filter_names = []
     for group_name in groups :
         groups[group_name] = [x.lower() for x in groups[group_name]]
-        if add_windows :
-            groups[group_name].append('window_name')
+        if add_windows and group_name != 'data files':
+            groups[group_name].append('data_file_name')
         group_vars = group_vars.union(groups[group_name])
-    if add_windows or len(groups) == 0:
-        add_windows = add_windows or len(groups) == 0
-        groups['windows'] = ['window_name']
-        group_vars.add('window_name')
     filter_vars = set()
     for filter_name in filters :
+        if filter_name == 'all' :
+            continue
         filter_vars.add(filters[filter_name][0])
     group_filter_vars = group_vars.union(filter_vars)
     group_vars = list(group_vars)
@@ -615,17 +685,13 @@ if __name__ == '__main__':
         cur_data = pd.read_csv(filepath, sep=delimiter, dtype=group_filter_vars_type)
         cur_data.rename(columns=dict(zip(cur_data.columns, [x.lower() for x in cur_data.columns])), inplace=True)
 
-        # TODO: just for test here
-        #cur_data['even'] = cur_data['char_cp_cust_id'].map(lambda x : 1 if x % 10 < 5 else 0)
-        #cur_data['clsn_scr_new'] = cur_data['clsn_scr'] + pd.Series(np.random.randn(cur_data['clsn_scr'].size)) * 10
-
         if add_windows :
-            cur_data['window_name'] = data_names[ind]
+            cur_data['data_file_name'] = data_names[ind]
         cur_data['dummy_weight'] = 1
         data_list.append(cur_data)
         logging.info("file {0} has been read : {1}".format(data_names[ind], filepath))
         ind += 1
-    big_raw = pd.concat(data_list)[score_vars + weight_vars + bad_vars + catch_vars + group_vars]
+    big_raw = pd.concat(data_list)[score_vars + weight_vars + bad_vars + catch_vars + group_vars + filter_vars]
     logging.info("fill missing weight, bad, and catch variables with 0")
     big_raw.fillna(pd.Series([0] * len([weight_vars + bad_vars + catch_vars]),
                              index=[weight_vars + bad_vars + catch_vars]), inplace=True)
@@ -639,21 +705,24 @@ if __name__ == '__main__':
         logging.info("score scaling is found to be necessary, start...")
         big_raw[score_vars] = big_raw[score_vars].apply(lambda x: x * ((max_ind & (x > 0)) * 999 + 1), axis=1)
 
-    operation_raw_list = collections.defaultdict(list)
-    score_raw_list = collections.defaultdict(list)
-    for group_name, score_var, weight_var in itertools.product(groups, score_vars, weight_vars) :
-        logging.info("handling {0} based on {1} in group {2}".format(score_var, weight_var, group_name))
-        operation_raw = operation_performance(data=big_raw, score=score_var,
-                                              weights=weight_vars, bads=bad_vars,
-                                              groups=groups[group_name], catches=catch_vars,
-                                              points=point, rank_base=weight_var)
+    operation_raw_list = {}
+    score_raw_list = {}
+    for filter_name, group_name, score_var, weight_var in itertools.product(filters, groups, score_vars, weight_vars) :
+        logging.info("handling '{0}' based on '{1}' in group '{2}' with filter '{3}'".format(score_var, weight_var, group_name, filter_name))
+        operation_raw = operation_performance(data=big_raw, score=score_var, weights=weight_vars, bads=bad_vars,
+                                              groups=groups[group_name], filters=filters[filter_name],
+                                              catches=catch_vars, points=point, rank_base=weight_var)
         logging.info("operation point based analysis done")
         score_raw = score_performance(data=big_raw, score=score_var, weights=weight_vars,
-                                      bads=bad_vars, groups=groups[group_name], catches=catch_vars,
-                                      low=low, step=step, high=high)
+                                      bads=bad_vars, groups=groups[group_name], filters=filters[filter_name],
+                                      catches=catch_vars, low=low, step=step, high=high)
         logging.info("score based analysis done")
-        operation_raw_list[group_name].append(operation_raw)
-        score_raw_list[group_name].append(score_raw)
+        if filter_name not in operation_raw_list :
+            operation_raw_list[filter_name] = collections.defaultdict(list)
+        if filter_name not in score_raw_list :
+            score_raw_list[filter_name] = collections.defaultdict(list)
+        operation_raw_list[filter_name][group_name].append(operation_raw)
+        score_raw_list[filter_name][group_name].append(score_raw)
     logging.info("all raw analysis done, start creating pivot tables...")
 
     pivot_index_name = ['cut_off']
@@ -682,156 +751,259 @@ if __name__ == '__main__':
     high_side_string = []
     high_data_string = []
     high_chart_string = []
+    high_filter_button_string = []
     high_group_button_string = []
     high_bad_button_string = []
-    high_panel_string = []
+    high_button_panel_string = []
+    high_list_panel_string = []
     high_func_string = []
 
-    for group_name in groups :
-        group_filter_names.append(group_name)
-        pivot_raw_columns = groups[group_name] + pivot_base_names
-        group_operation_raws = pd.concat(operation_raw_list[group_name])
-        pivot_operation_raws = group_operation_raws[pivot_raw_columns + ['rank_base']]
-        group_score_raws = pd.concat(score_raw_list[group_name])
-        pivot_score_raws = group_score_raws[pivot_raw_columns]
+    for filter_name in filters:
+        logging.info('creating pivot tables with filter : ' + filter_name)
+        filter_sheet_name = '' if filter_name == 'all' else ''.join(filters[filter_name]) + ' '
+        filter_subtitle = '' if filter_name == 'all' else ', ' + filter_name
 
-        #group_operation_raws['rank_base'] = group_operation_raws['rank_base'].apply(
-        #    lambda x : "ranked based on {}".format(x)
-        #)
+        for group_name in groups :
+            logging.info('creating pivot tables with group : ' + group_name)
+            pivot_raw_columns = groups[group_name] + pivot_base_names
+            group_operation_raws = pd.concat(operation_raw_list[filter_name][group_name])
+            pivot_operation_raws = group_operation_raws[pivot_raw_columns + ['rank_base']]
+            group_score_raws = pd.concat(score_raw_list[filter_name][group_name])
+            pivot_score_raws = group_score_raws[pivot_raw_columns]
 
-        if len(weight_vars) > 1 and len(bad_vars) > 1 :
-            bad_rate_show_names = ["{0}_rate of {1} based on {2}".format(x[1], x[0], x[2])
-                                   for x in itertools.product(bad_vars, ['catch', 'hit'], weight_vars)]
-        elif len(weight_vars) > 1 and len(bad_vars) == 1 :
-            bad_rate_show_names = ["{0}_rate based on {1}".format(x[0], x[1])
-                                   for x in itertools.product(['catch', 'hit'], weight_vars)]
-        elif len(weight_vars) == 1 and len(bad_vars) > 1 :
-            bad_rate_show_names = ["{0}_rate of {1}".format(x[1], x[0])
-                                   for x in itertools.product(bad_vars, ['catch', 'hit'])]
-        else :
-            bad_rate_show_names = ['catch_rate', 'hit_rate']
-        bad_rate_rename_map = dict(zip(pivot_bad_rate_names, bad_rate_show_names))
-        catch_rename_map = dict(zip(pivot_catch_names, ['{} catch_rate'.format(x) for x in catch_vars]))
-        pop_rename_map = dict(zip(pivot_pop_names, ['{} wise operation_point'.format(x) for x in weight_vars]))
+            #group_operation_raws['rank_base'] = group_operation_raws['rank_base'].apply(
+            #    lambda x : "ranked based on {}".format(x)
+            #)
 
-        # TODO: save the raw in the outter space of the loop
-        group_operation_raws.to_csv(options.out + '_operation_raw-{}.csv'.format('-'.join(groups[group_name])), index=False)
-        group_score_raws.to_csv(options.out + '_score_raw-{}.csv'.format('-'.join(groups[group_name])), index=False)
-        # sub = raw.loc[(raw['rank_base']=='unit_weight'), ['window_name', 'cut_off', 'score_name', 'unit_weight|is_unauth_collusion|1|catch_rate']]
-        # line = sub.loc[(sub.window_name == 'data_1') & (sub.score_name == 'clsn_scr'), ['cut_off','unit_weight|is_unauth_collusion|1|catch_rate']]
-        # data = '[' + ','.join(["[{:.2f},{:.4f}]".format(x[0], x[1]) for x in line.to_records(index=False)]) + ']'
-
-        for name_maps in [bad_rate_rename_map, catch_rename_map, pop_rename_map] :
-            pivot_operation_raws.rename(columns=name_maps, inplace=True)
-            pivot_score_raws.rename(columns=name_maps, inplace=True)
-
-        group_operation_pivot = pd.pivot_table(pivot_operation_raws, index=['cut_off'],
-                                               columns=['rank_base']+groups[group_name]+['score_name'])
-        group_score_pivot = pd.pivot_table(pivot_score_raws, index=['cut_off'],
-                                           columns=groups[group_name]+['score_name'])
-        group_score_pivot.sort_index(ascending=False, inplace=True)
-
-        group_operation_pivot.fillna(method='pad', inplace=True)
-        group_score_pivot.fillna(method='pad', inplace=True)
-        group_operation_pivot.fillna(0, inplace=True)
-        group_score_pivot.fillna(0, inplace=True)
-
-        group_operation_pivot.index.name = None
-        group_score_pivot.index.name = None
-
-        # TODO: save the raw in the outter space of the loop
-        group_operation_pivot.to_csv(options.out + '_operation_pivot-{}.csv'.format('-'.join(groups[group_name])))
-        group_score_pivot.to_csv(options.out + '_score_pivot-{}.csv'.format('-'.join(groups[group_name])))
-
-        excel_operation_columns_names = list(group_operation_pivot.columns.names)
-        group_operation_columns_names_backup = list(group_operation_pivot.columns.names)
-        excel_operation_columns_names.pop()
-        excel_operation_columns_names.append('cut_off')
-        excel_score_columns_names = list(group_score_pivot.columns.names)
-        group_score_columns_names_backup = list(group_score_pivot.columns.names)
-        excel_score_columns_names.pop()
-        excel_score_columns_names.append('cut_off')
-        group_operation_pivot.columns.names = excel_operation_columns_names
-        group_score_pivot.columns.names = excel_score_columns_names
-
-        if group_name == "windows" :
-            group_sheet_name = ""
-        else :
-            group_names_for_sheet = [x for x in groups[group_name] if x != 'window_name']
-            group_sheet_name = ','.join(group_names_for_sheet) + ' '
-        try :
-            group_operation_pivot.to_excel(writer, sheet_name=group_sheet_name + "operation_pivot")
-            group_score_pivot.to_excel(writer, sheet_name=group_sheet_name + "score_pivot")
-            group_operation_raws.to_excel(writer, sheet_name=group_sheet_name + "operation_raw", index=False)
-            group_score_raws.to_excel(writer, sheet_name=group_sheet_name + "score_raw", index=False)
-        except RuntimeError as e :
-            logging.error(e.message)
-
-        group_operation_pivot.columns.names = group_operation_columns_names_backup
-        group_score_pivot.columns.names = group_score_columns_names_backup
-
-        # draw carts using highcharts
-        high_tooltip_string = ["s += 'catch: ' + this.y + '%",
-                               "s += 'hit: ' + this.point.hit_rate + '%"]
-        high_tiptable_head = '<tr><th>line</th><th>&nbsp;catch&nbsp;</th><th>&nbsp;hit&nbsp;</th>'
-        high_tiptable_string = "'<tr><td style=\"color:{series.color}\">{series.name}&nbsp;:</td><td>&nbsp;{point.y}%&nbsp;</td><td>,&nbsp;{point.hit_rate}%&nbsp;</td>'"
-        for catch_rename_name in catch_rename_map.values() :
-            series_catch_name = catch_rename_name.replace(' catch_rate', '')
-            high_tooltip_string.append(HIGHCHART_TOOLTIP_TEMPLATE % (series_catch_name, series_catch_name))
-            high_tiptable_head += '<th>&nbsp;%s&nbsp;</th>' % series_catch_name
-            high_tiptable_string += " + '<td>,&nbsp;{point.%s}%%&nbsp;</td>'" % series_catch_name
-        for pop_rename_name in pop_rename_map.values() :
-            series_pop_name = pop_rename_name.replace(' wise operation_point', '_opt')
-            if series_pop_name.lower().find('unit') >= 0 or series_pop_name.startswith('dummy') :
-                series_pop_short_name = '# opt'
-            elif series_pop_name.lower().find('dol') >= 0:
-                series_pop_short_name = '$ opt'
+            if len(weight_vars) > 1 and len(bad_vars) > 1 :
+                bad_rate_show_names = ["{0}_rate of {1} based on {2}".format(x[1], x[0], x[2])
+                                       for x in itertools.product(bad_vars, ['catch', 'hit'], weight_vars)]
+            elif len(weight_vars) > 1 and len(bad_vars) == 1 :
+                bad_rate_show_names = ["{0}_rate based on {1}".format(x[0], x[1])
+                                       for x in itertools.product(['catch', 'hit'], weight_vars)]
+            elif len(weight_vars) == 1 and len(bad_vars) > 1 :
+                bad_rate_show_names = ["{0}_rate of {1}".format(x[1], x[0])
+                                       for x in itertools.product(bad_vars, ['catch', 'hit'])]
             else :
-                series_pop_short_name = series_pop_name
-            high_tooltip_string.append(HIGHCHART_TOOLTIP_TEMPLATE % (series_pop_short_name, series_pop_name))
-            high_tiptable_head += '<th>&nbsp;%s&nbsp;</th>' % series_pop_short_name
-            high_tiptable_string += " + '<td>,&nbsp;{point.%s}%%&nbsp;</td>'" % series_pop_name
-        high_tooltip_string = '<br/>\';\n\t\t\t\t'.join(high_tooltip_string) + '\';'
-        high_tiptable_head += "</tr>"
-        high_tiptable_string += " + '</tr>'"
+                bad_rate_show_names = ['catch_rate', 'hit_rate']
+            bad_rate_rename_map = dict(zip(pivot_bad_rate_names, bad_rate_show_names))
+            catch_rename_map = dict(zip(pivot_catch_names, ['{} catch_rate'.format(x) for x in catch_vars]))
+            pop_rename_map = dict(zip(pivot_pop_names, ['{} wise operation_point'.format(x) for x in weight_vars]))
 
-        # for x in product(group, bad, weight, (rank_base + 1(score))),
-        # draw score * window * (group - 1) lines for the catch_rate,
-        # hover the hit rate and other rates / operation points
-        for bad_name, weight_name in itertools.product(bad_vars, weight_vars) :
-            catch_rate_name = bad_rate_rename_map['{}|{}|1|catch_rate'.format(weight_name, bad_name)]
-            hit_rate_name = bad_rate_rename_map['{}|{}|1|hit_rate'.format(weight_name, bad_name)]
-            chart_columns_names = [catch_rate_name, hit_rate_name] + catch_rename_map.values() + pop_rename_map.values()
+            group_operation_raws.to_csv(options.out + '_operation_raw-{}-{}.csv'.format(''.join(filters[filter_name]), '-'.join(groups[group_name])), index=False)
+            group_score_raws.to_csv(options.out + '_score_raw-{}-{}.csv'.format(''.join(filters[filter_name]), '-'.join(groups[group_name])), index=False)
+            logging.info("raw table saved to flat file for group '{}' with filter '{}'".format(group_name, filter_name))
 
-            for base_name in weight_vars :
-                # if has_drawed_something:
-                #     bplt.figure()
-                # else :
-                #     has_drawed_something = True
-                # bplt.hold()
+            # sub = raw.loc[(raw['rank_base']=='unit_weight'), ['data_file_name', 'cut_off', 'score_name', 'unit_weight|is_unauth_collusion|1|catch_rate']]
+            # line = sub.loc[(sub.data_file_name == 'data_1') & (sub.score_name == 'clsn_scr'), ['cut_off','unit_weight|is_unauth_collusion|1|catch_rate']]
+            # data = '[' + ','.join(["[{:.2f},{:.4f}]".format(x[0], x[1]) for x in line.to_records(index=False)]) + ']'
+
+            for name_maps in [bad_rate_rename_map, catch_rename_map, pop_rename_map] :
+                pivot_operation_raws.rename(columns=name_maps, inplace=True)
+                pivot_score_raws.rename(columns=name_maps, inplace=True)
+
+            group_operation_pivot = pd.pivot_table(pivot_operation_raws, index=['cut_off'],
+                                                   columns=['rank_base']+groups[group_name]+['score_name'])
+            group_score_pivot = pd.pivot_table(pivot_score_raws, index=['cut_off'],
+                                               columns=groups[group_name]+['score_name'])
+            group_score_pivot.sort_index(ascending=False, inplace=True)
+
+            group_operation_pivot.fillna(method='pad', inplace=True)
+            group_score_pivot.fillna(method='pad', inplace=True)
+            group_operation_pivot.fillna(0, inplace=True)
+            group_score_pivot.fillna(0, inplace=True)
+
+            group_operation_pivot.index.name = None
+            group_score_pivot.index.name = None
+
+            group_operation_pivot.to_csv(options.out + '_operation_pivot-{}-{}.csv'.format(''.join(filters[filter_name]), '-'.join(groups[group_name])))
+            group_score_pivot.to_csv(options.out + '_score_pivot-{}-{}.csv'.format(''.join(filters[filter_name]), '-'.join(groups[group_name])))
+            logging.info("pivot table saved to flat file for group '{}' with filter '{}'".format(group_name, filter_name))
+
+            excel_operation_columns_names = list(group_operation_pivot.columns.names)
+            group_operation_columns_names_backup = list(group_operation_pivot.columns.names)
+            excel_operation_columns_names.pop()
+            excel_operation_columns_names.append('cut_off')
+            excel_score_columns_names = list(group_score_pivot.columns.names)
+            group_score_columns_names_backup = list(group_score_pivot.columns.names)
+            excel_score_columns_names.pop()
+            excel_score_columns_names.append('cut_off')
+            group_operation_pivot.columns.names = excel_operation_columns_names
+            group_score_pivot.columns.names = excel_score_columns_names
+
+            if group_name == "data files" :
+                group_sheet_name = ""
+            else :
+                group_names_for_sheet = [x for x in groups[group_name] if x != 'data_file_name']
+                group_sheet_name = ','.join(group_names_for_sheet) + ' '
+            sheet_name = filter_sheet_name + group_sheet_name
+
+            op_sheet_name = (sheet_name + "operation_pivot") if len(sheet_name) <= 16 else (sheet_name + 'op')
+            sp_sheet_name = (sheet_name + "score_pivot") if len(sheet_name) <= 20 else (sheet_name + 'sp')
+            or_sheet_name = (sheet_name + "operation_raw") if len(sheet_name) <= 18 else (sheet_name + 'or')
+            sr_sheet_name = (sheet_name + "score_raw") if len(sheet_name) <= 22 else (sheet_name + 'sr')
+
+            try :
+                group_operation_pivot.to_excel(writer, sheet_name=op_sheet_name[-31:])
+                group_score_pivot.to_excel(writer, sheet_name=sp_sheet_name[-31:])
+                group_operation_raws.to_excel(writer, sheet_name=or_sheet_name[-31:], index=False)
+                group_score_raws.to_excel(writer, sheet_name=sr_sheet_name[-31:], index=False)
+            except RuntimeError as e :
+                logging.error(e.message)
+            logging.info("excel sheets written for group '{}' with filter '{}'".format(group_name, filter_name))
+
+            group_operation_pivot.columns.names = group_operation_columns_names_backup
+            group_score_pivot.columns.names = group_score_columns_names_backup
+
+            # draw carts using highcharts
+            high_tooltip_string = ["s += 'catch: ' + this.y + '%",
+                                   "s += 'hit: ' + this.point.hit_rate + '%"]
+            high_tiptable_head = '<tr><th>line</th><th>&nbsp;catch&nbsp;</th><th>&nbsp;hit&nbsp;</th>'
+            high_tiptable_string = "'<tr><td style=\"color:{series.color}\">{series.name}&nbsp;:</td><td>&nbsp;{point.y}%&nbsp;</td><td>,&nbsp;{point.hit_rate}%&nbsp;</td>'"
+            for catch_rename_name in catch_rename_map.values() :
+                series_catch_name = catch_rename_name.replace(' catch_rate', '')
+                high_tooltip_string.append(HIGHCHART_TOOLTIP_TEMPLATE % (series_catch_name, series_catch_name))
+                high_tiptable_head += '<th>&nbsp;%s&nbsp;</th>' % series_catch_name
+                high_tiptable_string += " + '<td>,&nbsp;{point.%s}%%&nbsp;</td>'" % series_catch_name
+            for pop_rename_name in pop_rename_map.values() :
+                series_pop_name = pop_rename_name.replace(' wise operation_point', '_opt')
+                if series_pop_name.lower().find('unit') >= 0 or series_pop_name.startswith('dummy') :
+                    series_pop_short_name = '# opt'
+                elif series_pop_name.lower().find('dol') >= 0:
+                    series_pop_short_name = '$ opt'
+                else :
+                    series_pop_short_name = series_pop_name
+                high_tooltip_string.append(HIGHCHART_TOOLTIP_TEMPLATE % (series_pop_short_name, series_pop_name))
+                high_tiptable_head += '<th>&nbsp;%s&nbsp;</th>' % series_pop_short_name
+                high_tiptable_string += " + '<td>,&nbsp;{point.%s}%%&nbsp;</td>'" % series_pop_name
+            high_tooltip_string = '<br/>\';\n\t\t\t\t'.join(high_tooltip_string) + '\';'
+            high_tiptable_head += "</tr>"
+            high_tiptable_string += " + '</tr>'"
+
+            # for x in product(group, bad, weight, (rank_base + 1(score))),
+            # draw score * window * (group - 1) lines for the catch_rate,
+            # hover the hit rate and other rates / operation points
+            for bad_name, weight_name in itertools.product(bad_vars, weight_vars) :
+                catch_rate_name = bad_rate_rename_map['{}|{}|1|catch_rate'.format(weight_name, bad_name)]
+                hit_rate_name = bad_rate_rename_map['{}|{}|1|hit_rate'.format(weight_name, bad_name)]
+                chart_columns_names = [catch_rate_name, hit_rate_name] + catch_rename_map.values() + pop_rename_map.values()
+
+                for base_name in weight_vars :
+                    # if has_drawed_something:
+                    #     bplt.figure()
+                    # else :
+                    #     has_drawed_something = True
+                    # bplt.hold()
+                    high_container = {'cid' : high_container_ind,
+                                      'bad' : bad_name,
+                                      'weight' : weight_name,
+                                      'base' : base_name,
+                                      'group' : group_name,
+                                      'filter' : filter_name}
+                    high_container_matrix.append(high_container)
+
+                    show = 'show' if base_name == weight_name else 'hidden ls_chosen'
+                    high_div_string[(filter_name, group_name, bad_name, base_name, weight_name)] = HIGHCHART_DIV % (high_container_ind, show)
+                    chart_content = {'cid': high_container_ind,
+                                     'title': '%s wise catch rate' % weight_name,
+                                     'subtitle': bad_name + filter_subtitle,
+                                     'x': '%s wise operation point' % base_name,
+                                     'tooltip' : high_tooltip_string,
+                                     'tiphead' : high_tiptable_head,
+                                     'tiptable' : high_tiptable_string,
+                                     'suf': "labels: {formatter: function() {return this.value + '%';}},",
+                                     'reverse': 'false',
+                                     'score': ''}
+
+                    # replace because    it will have group variables as multiple levels in this position \|/
+                    #draw_data = group_operation_pivot.loc[:, pd.IndexSlice[chart_columns_names, base_name, :, :]]
+                    #draw_data = draw_data.stack(level=1).reset_index(level=1, drop=True)
+                    draw_data = group_operation_pivot.xs(base_name, level='rank_base', axis=1)[chart_columns_names]
+
+                    try:
+                        line_names_list = list(draw_data[catch_rate_name].columns)
+                    except AttributeError as e:
+                        line_names_list = list(draw_data[catch_rate_name].name)
+
+                    high_series_string = []
+                    for line_names_tuple in line_names_list :
+                        line_names = list(line_names_tuple)
+                        series_columns = [tuple([catch_rate_name] + line_names)]
+                        series_columns += [tuple([hit_rate_name] + line_names)]
+                        series_columns_names = ['y', 'hit_rate']
+                        for catch_rename_name in catch_rename_map.values() :
+                            series_columns.append(tuple([catch_rename_name] + line_names))
+                            series_columns_names.append(catch_rename_name.replace(' catch_rate', ''))
+                        for pop_rename_name in pop_rename_map.values() :
+                            series_columns.append(tuple([pop_rename_name] + line_names))
+                            series_columns_names.append(pop_rename_name.replace(' wise operation_point', '_opt'))
+                        series_data = draw_data.loc[:, series_columns]
+                        series_data.columns = series_columns_names
+                        series_data.index.name = 'x'
+                        series_data = series_data.reset_index().applymap(lambda x: "{:.2f}".format(float(x) * 100))
+                        series_dict = series_data.transpose().to_dict().values()
+                        series_string = json.dumps(series_dict)
+                        high_data_string.append('var data_{0} = {1};\n'.format(high_line_ind, series_string.replace('"', '')))
+                        legend_names = ['{}={}'.format(group_key, group_value) if group_key != 'data_file_name' else group_value
+                                        for group_key, group_value in zip(groups[group_name], line_names[:-1])] + line_names[-1:]
+                        high_series_string.append(HIGHCHART_SERIES_TEMPLATE % (high_line_ind, ', '.join(legend_names)))
+                        high_line_ind += 1
+
+                    chart_content['series'] = ', '.join(high_series_string)
+                    high_chart_string.append(HIGHCHART_CHART_TEMPLATE % chart_content)
+                    high_container_ind += 1
+
+                    # line_ind = 0
+                    # data_x = list(draw_data.index.values)
+                    # color_map = bplt.brewer['Spectral'][len(line_names_list)]
+                    # for line_names_tuple in line_names_list:
+                    #     line_names = list(line_names_tuple)
+                    #     data_y = list(draw_data[tuple([catch_rate_name] + line_names)].values)
+                    #     column_data = {'hit_rate': list(draw_data.loc[:, tuple([hit_rate_name] + line_names)].values)}
+                    #     catch_lists = {}
+                    #     hover_tips = [("catch rate", "$y"), ("hit rate", "@hit_rate")]
+                    #     for catch_rename_name in catch_rename_map.values() :
+                    #         column_data[catch_rename_name.replace(' ', '_')] = list(draw_data.loc[:, tuple([catch_rename_name] + line_names)].values)
+                    #         hover_tips.append((catch_rename_name.replace('catch_rate', 'catch'), '@'+catch_rename_name.replace(' ', '_')))
+                    #     pop_lists = []
+                    #     for pop_rename_name in pop_rename_map.values():
+                    #         column_data[pop_rename_name.replace(' ', '_')] = list(draw_data.loc[:, tuple([pop_rename_name] + line_names)].values)
+                    #         hover_tips.append((pop_rename_name.replace('wise operation_point', 'opt'), '@'+pop_rename_name.replace(' ', '_')))
+                    #     hover_source = ColumnDataSource(column_data)
+                    #     bplt.scatter(data_x, data_y, source=hover_source, tools=TOOLS,
+                    #                  size=7, fill_alpha=.5, color=color_map[line_ind],
+                    #                  legend=', '.join(line_names), title=catch_rate_name,
+                    #                  plot_width=800, plot_height=450,
+                    #                  #line_width=2, line_join='round',
+                    #                  x_range=operation_x_range, y_range=common_y_range)
+                    #     cur_hover = [t for t in bplt.curplot().tools if isinstance(t, HoverTool)][0]
+                    #     cur_hover.tooltips = collections.OrderedDict(hover_tips)
+                    #     bplt.legend().orientation = "bottom_right"
+                    #     bplt.xaxis().axis_label = base_name + " operation points"
+                    #     bplt.yaxis().axis_label = 'catch rate'
+                    #     line_ind += 1
+
                 high_container = {'cid' : high_container_ind,
                                   'bad' : bad_name,
                                   'weight' : weight_name,
-                                  'base' : base_name,
-                                  'group' : group_name}
+                                  'base' : 'Model Score',
+                                  'group' : group_name,
+                                  'filter' : filter_name}
                 high_container_matrix.append(high_container)
 
-                high_div_string[(group_name, bad_name, base_name, weight_name)] = HIGHCHART_DIV % high_container_ind
+                high_div_string[(filter_name, group_name, bad_name, 'Model Score', weight_name)] = HIGHCHART_DIV % (high_container_ind, 'hidden ls_chosen')
                 chart_content = {'cid': high_container_ind,
                                  'title': '%s wise catch rate' % weight_name,
-                                 'subtitle': bad_name,
-                                 'x': '%s wise operation point' % base_name,
-                                 'tooltip' : high_tooltip_string,
+                                 'subtitle': bad_name + filter_subtitle,
+                                 'x': 'model score',
+                                 'tooltip' : "s += 'score: ' + this.x + '<br/>';\n\t\t\t\t" + high_tooltip_string,
                                  'tiphead' : high_tiptable_head,
                                  'tiptable' : high_tiptable_string,
-                                 'suf': "labels: {formatter: function() {return this.value + '%';}},",
-                                 'reverse': 'false',
-                                 'score': ''}
+                                 'suf': '',
+                                 'score' : "<b>Score: {point.x}</b></br>",
+                                 'reverse': 'true'}
 
-                # replace because    it will have group variables as multiple levels in this position \|/
-                #draw_data = group_operation_pivot.loc[:, pd.IndexSlice[chart_columns_names, base_name, :, :]]
-                #draw_data = draw_data.stack(level=1).reset_index(level=1, drop=True)
-                draw_data = group_operation_pivot.xs(base_name, level='rank_base', axis=1)[chart_columns_names]
+                draw_data = group_score_pivot.loc[:, chart_columns_names]
 
                 try:
                     line_names_list = list(draw_data[catch_rate_name].columns)
@@ -853,11 +1025,11 @@ if __name__ == '__main__':
                     series_data = draw_data.loc[:, series_columns]
                     series_data.columns = series_columns_names
                     series_data.index.name = 'x'
-                    series_data = series_data.reset_index().applymap(lambda x: "{:.2f}".format(float(x) * 100))
+                    series_data = series_data.applymap(lambda x: "{:.2f}".format(float(x) * 100)).sort_index().reset_index()
                     series_dict = series_data.transpose().to_dict().values()
                     series_string = json.dumps(series_dict)
                     high_data_string.append('var data_{0} = {1};\n'.format(high_line_ind, series_string.replace('"', '')))
-                    legend_names = ['{}={}'.format(group_key, group_value) if group_key != 'window_name' else group_value
+                    legend_names = ['{}={}'.format(group_key, group_value) if group_key != 'data_file_name' else group_value
                                     for group_key, group_value in zip(groups[group_name], line_names[:-1])] + line_names[-1:]
                     high_series_string.append(HIGHCHART_SERIES_TEMPLATE % (high_line_ind, ', '.join(legend_names)))
                     high_line_ind += 1
@@ -865,119 +1037,41 @@ if __name__ == '__main__':
                 chart_content['series'] = ', '.join(high_series_string)
                 high_chart_string.append(HIGHCHART_CHART_TEMPLATE % chart_content)
                 high_container_ind += 1
-
-                # line_ind = 0
-                # data_x = list(draw_data.index.values)
-                # color_map = bplt.brewer['Spectral'][len(line_names_list)]
-                # for line_names_tuple in line_names_list:
-                #     line_names = list(line_names_tuple)
-                #     data_y = list(draw_data[tuple([catch_rate_name] + line_names)].values)
-                #     column_data = {'hit_rate': list(draw_data.loc[:, tuple([hit_rate_name] + line_names)].values)}
-                #     catch_lists = {}
-                #     hover_tips = [("catch rate", "$y"), ("hit rate", "@hit_rate")]
-                #     for catch_rename_name in catch_rename_map.values() :
-                #         column_data[catch_rename_name.replace(' ', '_')] = list(draw_data.loc[:, tuple([catch_rename_name] + line_names)].values)
-                #         hover_tips.append((catch_rename_name.replace('catch_rate', 'catch'), '@'+catch_rename_name.replace(' ', '_')))
-                #     pop_lists = []
-                #     for pop_rename_name in pop_rename_map.values():
-                #         column_data[pop_rename_name.replace(' ', '_')] = list(draw_data.loc[:, tuple([pop_rename_name] + line_names)].values)
-                #         hover_tips.append((pop_rename_name.replace('wise operation_point', 'opt'), '@'+pop_rename_name.replace(' ', '_')))
-                #     hover_source = ColumnDataSource(column_data)
-                #     bplt.scatter(data_x, data_y, source=hover_source, tools=TOOLS,
-                #                  size=7, fill_alpha=.5, color=color_map[line_ind],
-                #                  legend=', '.join(line_names), title=catch_rate_name,
-                #                  plot_width=800, plot_height=450,
-                #                  #line_width=2, line_join='round',
-                #                  x_range=operation_x_range, y_range=common_y_range)
-                #     cur_hover = [t for t in bplt.curplot().tools if isinstance(t, HoverTool)][0]
-                #     cur_hover.tooltips = collections.OrderedDict(hover_tips)
-                #     bplt.legend().orientation = "bottom_right"
-                #     bplt.xaxis().axis_label = base_name + " operation points"
-                #     bplt.yaxis().axis_label = 'catch rate'
-                #     line_ind += 1
-
-            high_container = {'cid' : high_container_ind,
-                              'bad' : bad_name,
-                              'weight' : weight_name,
-                              'base' : 'Model Score',
-                              'group' : group_name}
-            high_container_matrix.append(high_container)
-
-            high_div_string[(group_name, bad_name, 'Model Score', weight_name)] = HIGHCHART_DIV % high_container_ind
-            chart_content = {'cid': high_container_ind,
-                             'title': '%s wise catch rate' % weight_name,
-                             'subtitle': bad_name,
-                             'x': 'model score',
-                             'tooltip' : "s += 'score: ' + this.x + '<br/>';\n\t\t\t\t" + high_tooltip_string,
-                             'tiphead' : high_tiptable_head,
-                             'tiptable' : high_tiptable_string,
-                             'suf': '',
-                             'score' : "<b>Score: {point.x}</b></br>",
-                             'reverse': 'true'}
-
-            draw_data = group_score_pivot.loc[:, chart_columns_names]
-
-            try:
-                line_names_list = list(draw_data[catch_rate_name].columns)
-            except AttributeError as e:
-                line_names_list = list(draw_data[catch_rate_name].name)
-
-            high_series_string = []
-            for line_names_tuple in line_names_list :
-                line_names = list(line_names_tuple)
-                series_columns = [tuple([catch_rate_name] + line_names)]
-                series_columns += [tuple([hit_rate_name] + line_names)]
-                series_columns_names = ['y', 'hit_rate']
-                for catch_rename_name in catch_rename_map.values() :
-                    series_columns.append(tuple([catch_rename_name] + line_names))
-                    series_columns_names.append(catch_rename_name.replace(' catch_rate', ''))
-                for pop_rename_name in pop_rename_map.values() :
-                    series_columns.append(tuple([pop_rename_name] + line_names))
-                    series_columns_names.append(pop_rename_name.replace(' wise operation_point', '_opt'))
-                series_data = draw_data.loc[:, series_columns]
-                series_data.columns = series_columns_names
-                series_data.index.name = 'x'
-                series_data = series_data.applymap(lambda x: "{:.2f}".format(float(x) * 100)).sort_index().reset_index()
-                series_dict = series_data.transpose().to_dict().values()
-                series_string = json.dumps(series_dict)
-                high_data_string.append('var data_{0} = {1};\n'.format(high_line_ind, series_string.replace('"', '')))
-                legend_names = ['{}={}'.format(group_key, group_value) if group_key != 'window_name' else group_value
-                                for group_key, group_value in zip(groups[group_name], line_names[:-1])] + line_names[-1:]
-                high_series_string.append(HIGHCHART_SERIES_TEMPLATE % (high_line_ind, ', '.join(legend_names)))
-                high_line_ind += 1
-
-            chart_content['series'] = ', '.join(high_series_string)
-            high_chart_string.append(HIGHCHART_CHART_TEMPLATE % chart_content)
-            high_container_ind += 1
-
-    for filter_name in filters :
-        group_filter_names.append(filter_name)
+            logging.info("highcharts created for group '{}' with filter '{}'".format(group_name, filter_name))
 
     high_container = pd.DataFrame(high_container_matrix)
 
     button_ind = 0
     panel_list_ind = 0
 
-    for group_name in groups :
-        high_group_button_string.append(HIGHCHART_BUTTON_TEMPLATE % ('btn{}'.format(button_ind), group_name))
-        cids = list(high_container[high_container['group'] == group_name]['cid'])
-        high_func_string.append(HIGHCHART_GROUP_TOGGLE_TEMPLATE % {'bid' : 'btn{}'.format(button_ind),
-                                                                   'cids' : ','.join(["'#container%s'" % x for x in cids])})
-        button_ind += 1
-    for filter_name in filters :
-        high_group_button_string.append(HIGHCHART_BUTTON_TEMPLATE % ('btn{}'.format(button_ind), filter_name))
-        cids = list(high_container[high_container['group'] == filter_name]['cid'])
-        high_func_string.append(HIGHCHART_GROUP_TOGGLE_TEMPLATE % {'bid' : 'btn{}'.format(button_ind),
-                                                                   'cids' : ','.join(["'#container%s'" % x for x in cids])})
-        button_ind += 1
+    if len(filters) > 1 :
+        for filter_name in filters :
+            high_filter_button_string.append(HIGHCHART_BUTTON_TEMPLATE % ('btn{}'.format(button_ind), filter_name))
+            cids = list(high_container[high_container['filter'] == filter_name]['cid'])
+            high_func_string.append(HIGHCHART_FILTER_TOGGLE_TEMPLATE % {'bid' : 'btn{}'.format(button_ind),
+                                                                        'cids' : ','.join(["'#container%s'" % x for x in cids])})
+            button_ind += 1
+        high_button_panel_string.append(HIGHCHART_BUTTON_PANEL_TEMPLATE % {'title' : 'Filters',
+                                                                           'button' : '\n'.join(high_filter_button_string)})
 
-    for bad_name in bad_vars :
-        high_bad_button_string.append(HIGHCHART_BUTTON_TEMPLATE % ('btn{}'.format(button_ind), bad_name))
-        cids = list(high_container[high_container['bad'] == bad_name]['cid'])
-        high_func_string.append(HIGHCHART_BAD_TOGGLE_TEMPLATE % {'bid' : 'btn{}'.format(button_ind),
-                                                                 'cids' : ','.join(["'#container%s'" % x for x in cids])})
-        button_ind += 1
-
+    if len(groups) > 1 :
+        for group_name in groups :
+            high_group_button_string.append(HIGHCHART_BUTTON_TEMPLATE % ('btn{}'.format(button_ind), group_name))
+            cids = list(high_container[high_container['group'] == group_name]['cid'])
+            high_func_string.append(HIGHCHART_GROUP_TOGGLE_TEMPLATE % {'bid' : 'btn{}'.format(button_ind),
+                                                                       'cids' : ','.join(["'#container%s'" % x for x in cids])})
+            button_ind += 1
+        high_button_panel_string.append(HIGHCHART_BUTTON_PANEL_TEMPLATE % {'title' : 'Groups',
+                                                                           'button' : '\n'.join(high_group_button_string)})
+    if len(bad_vars) > 1 :
+        for bad_name in bad_vars :
+            high_bad_button_string.append(HIGHCHART_BUTTON_TEMPLATE % ('btn{}'.format(button_ind), bad_name))
+            cids = list(high_container[high_container['bad'] == bad_name]['cid'])
+            high_func_string.append(HIGHCHART_BAD_TOGGLE_TEMPLATE % {'bid' : 'btn{}'.format(button_ind),
+                                                                     'cids' : ','.join(["'#container%s'" % x for x in cids])})
+            button_ind += 1
+        high_button_panel_string.append(HIGHCHART_BUTTON_PANEL_TEMPLATE % {'title' : 'Bad variables',
+                                                                           'button' : '\n'.join(high_bad_button_string)})
     for base_name in weight_vars + ["Model Score"] :
         weight_list = ''
         for weight_name in weight_vars :
@@ -987,7 +1081,8 @@ if __name__ == '__main__':
                 weight_short_name = 'Dollar-wise'
             else :
                 weight_short_name = weight_name
-            weight_list += HIGHCHART_WGT_LIST_TEMPLATE % ('lst{}'.format(panel_list_ind), weight_short_name + " Catch Rate")
+            success_ind = ' list-group-item-success' if weight_name == base_name else ''
+            weight_list += HIGHCHART_WGT_LIST_TEMPLATE % ('lst{}'.format(panel_list_ind), success_ind, weight_short_name + " Catch Rate")
             cids = list(high_container[(high_container['base'] == base_name) & (high_container['weight'] == weight_name)]['cid'])
             high_func_string.append(HIGHCHART_LIST_TOGGLE_TEMPLATE % {'lid' : 'lst{}'.format(panel_list_ind),
                                                                       'cids' : ','.join(["'#container%s'" % x for x in cids])})
@@ -998,16 +1093,14 @@ if __name__ == '__main__':
             base_short_name = 'Dollar-wise'
         else :
             base_short_name = base_name
-        high_panel_string.append(HIGHCHART_PANEL_TEMPLATE % {'base' : (base_short_name + ' Operation Point'), 'weight': weight_list})
+        high_list_panel_string.append(HIGHCHART_LIST_PANEL_TEMPLATE % {'base' : (base_short_name + ' Operation Point'), 'weight': weight_list})
     
-    high_side_string = HIGHCHART_SIDE_TEMPLATE % {'group_button' : '\n'.join(high_group_button_string),
-                                                  'bad_button' : '\n'.join(high_bad_button_string),
-                                                  'panel' : '\n'.join(high_panel_string)}
+    high_side_string = HIGHCHART_SIDE_TEMPLATE % {'btn_panel' : '\n'.join(high_button_panel_string),
+                                                  'lst_panel' : '\n'.join(high_list_panel_string)}
 
-    # hc_file.write(HIGHCHART_BASE_BEGIN % '\n'.join(high_side_string))
-    
     hc_file.write(HIGHCHART_BASE_BEGIN % high_side_string)
-    hc_file.write('\n'.join([high_div_string[x] for x in itertools.product(group_filter_names,
+    hc_file.write('\n'.join([high_div_string[x] for x in itertools.product(filters.keys(),
+                                                                           groups.keys(),
                                                                            bad_vars,
                                                                            weight_vars + ["Model Score"],
                                                                            weight_vars)]))
