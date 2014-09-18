@@ -18,6 +18,21 @@ HIGHCHART_BASE_BEGIN = '''<!DOCTYPE html>
         <script src="http://cdn.bootcss.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
         <link href="http://cdn.bootcss.com/bootstrap/3.2.0/css/bootstrap.min.css" rel="stylesheet">
         <script src="http://cdn.bootcss.com/highcharts/4.0.4/highcharts.js"></script>
+        <style type="text/css">
+        .sidebar {
+            position: fixed;
+            top: 0px;
+            bottom: 0px;
+            left: 0px;
+            z-index: 1000;
+            display: block;
+            padding: 10px;
+            overflow-x: hidden;
+            overflow-y: auto;
+            background-color: #F5F5F5;
+            border-right: 1px solid #EEE;
+        }
+        </style>
         <title>Advanced Gain Chart</title>
     </head>
     <body>
@@ -32,7 +47,7 @@ HIGHCHART_SIDE_TEMPLATE = '''<div class="panel panel-info">
     <h3 class="panel-title">Groups</h3>
   </div>
   <div class="panel-body">
-    Group list
+    %(group_button)s
   </div>
 </div>
 <div class="panel panel-info">
@@ -40,40 +55,39 @@ HIGHCHART_SIDE_TEMPLATE = '''<div class="panel panel-info">
     <h3 class="panel-title">Bad variables</h3>
   </div>
   <div class="panel-body">
-    Group list
+    %(bad_button)s
   </div>
 </div>
-<div class="panel panel-info">
+%(panel)s
+'''
+
+HIGHCHART_PANEL_TEMPLATE = '''<div class="panel panel-info">
   <div class="panel-heading">
-    <h3 class="panel-title">Unit-wise Operation Point</h3>
+    <h3 class="panel-title">%(base)s</h3>
   </div>
-  <div class="panel-body">
-    Group list
-  </div>
-</div>
-<div class="panel panel-info">
-  <div class="panel-heading">
-    <h3 class="panel-title">Dollar-wise Operation Point</h3>
-  </div>
-  <div class="panel-body">
-    Group list
-  </div>
-</div>
-<div class="panel panel-info">
-  <div class="panel-heading">
-    <h3 class="panel-title">Model Score</h3>
-  </div>
-  <div class="panel-body">
-    Group list
-  </div>
+  <ul class="list-group">
+    %(weight)s
+  </ul>
 </div>
 '''
 
-HIGHCHART_DIV = '\t<div id="container%d" sytle="height: 400px; min-width: 600px">\n</div>\n'
+HIGHCHART_WGT_LIST_TEMPLATE = '<a id="%s" href="#" class="list-group-item list-group-item-success">%s</a>\n'
+
+HIGHCHART_BUTTON_TEMPLATE = '<button id="%s" type="button" class="btn btn-success">%s</button>'
+
+HIGHCHART_DIV = '\t<div id="container%d" sytle="height: 400px; min-width: 600px" class="show">\n</div>\n'
 
 HIGHCHART_DATA_TEMPLATE = '<script>\n%s\n'
 
-HIGHCHART_FUNCTION_TEMPLATE = '$(function () {%s\n});\n</script>\n'
+HIGHCHART_FUNCTION_TEMPLATE = '''$(function () {
+%s
+});
+
+$(document).ready(function() {
+%s
+});
+</script>
+'''
 
 HIGHCHART_SERIES_TEMPLATE = '{\n\t\t\tdata: data_%d,\n\t\t\tname: \'%s\',\n\t\t\tturboThreshold:0\n\t\t}'
 
@@ -148,6 +162,49 @@ HIGHCHART_CHART_TEMPLATE = '''\t$('#container%(cid)d').highcharts({
         },
 
         series: [%(series)s]
+    });
+'''
+
+HIGHCHART_GROUP_TOGGLE_TEMPLATE = '''    $('#%(bid)s').click(function() {
+        var cs = [%(cids)s];
+        var cl = cs.length;
+        for (var i = 0; i < cl; i++) {
+            if (! ($(cs[i]).hasClass('ls_chosen') || $(cs[i]).hasClass('bd_chosen'))) {
+                $(cs[i]).toggleClass('show');
+                $(cs[i]).toggleClass('hidden');
+            }
+            $(cs[i]).toggleClass('gp_chosen');
+        };
+        $('#%(bid)s').toggleClass('btn-success');
+        $('#%(bid)s').toggleClass('btn-default');
+    });
+'''
+HIGHCHART_BAD_TOGGLE_TEMPLATE = '''    $('#%(bid)s').click(function() {
+        var cs = [%(cids)s];
+        var cl = cs.length;
+        for (var i = 0; i < cl; i++) {
+            if (! ($(cs[i]).hasClass('ls_chosen') || $(cs[i]).hasClass('gp_chosen'))) {
+                $(cs[i]).toggleClass('show');
+                $(cs[i]).toggleClass('hidden');
+            }
+            $(cs[i]).toggleClass('bd_chosen');
+        };
+        $('#%(bid)s').toggleClass('btn-success');
+        $('#%(bid)s').toggleClass('btn-default');
+    });
+'''
+
+HIGHCHART_LIST_TOGGLE_TEMPLATE = '''    $('#%(lid)s').click(function() {
+        var cs = [%(cids)s];
+        var cl = cs.length;
+        for (var i = 0; i < cl; i++) {
+            if (! ($(cs[i]).hasClass('gp_chosen') || $(cs[i]).hasClass('bd_chosen'))) {
+                $(cs[i]).toggleClass('show');
+                $(cs[i]).toggleClass('hidden');
+            }
+            $(cs[i]).toggleClass('ls_chosen');
+        };
+        $('#%(lid)s').toggleClass('list-group-item-success');
     });
 '''
 
@@ -322,13 +379,32 @@ def parse_json(src_string):
         return None
     return sources
 
+def parse_filter(filter_string) :
+    filter_string = filter_string.strip()
+    if filter_string.lower().startswith('not ') :
+        raise NotImplementedError('AND, OR, NOT are not supported yet')
+    for keyword in [' and ', ' or ', ' not '] :
+        if filter_string.lower().find(keyword) >= 0 :
+            raise NotImplementedError('AND, OR, NOT are not supported yet')
+
+    func_string = ''
+    for func_item in ['==', '!=', '>', '>=', '<', '<='] :
+        if filter_string.find(func_item) > 0 :
+            func_string = func_item
+            break
+    if func_string == '' :
+        logging.error("Error parsing filters")
+
+    key_string, value_string = [x.strip() for x in filter_string.split(func_string)]
+    return key_string, func_string, value_string
+
 
 if __name__ == '__main__':
     parser = OptionParser()
     parser.add_option("-j", "--json", dest="json", action="store", type="string",
                       help="raw string of scored files encoded with json or json file. example:\n" +
                            '{"input":["score.csv"],"score":["new_score"],"bad":["is_bad"],"weight":["unit","dollar"],' +
-                           '"catch":["loss"],"group":{"group_name":["region"]}}')
+                           '"catch":["loss"],"group":[{"group_name":["region"]}],"filter":[{"filter_name":"flag==1"}]}')
     # following parts can be ignored if json is given
     parser.add_option("-i", "--input", dest="input", action="store", type="string",
                       help="input datasets, separated with ','")
@@ -342,6 +418,8 @@ if __name__ == '__main__':
                       help="names of extra variables for catch rate calculation, separated with ','")
     parser.add_option("-g", "--group", dest="group", action="store", type="string",
                       help="optional, group combinations in format class_var1,class_var2|class_var3")
+    parser.add_option("-f", "--filter", dest="filter", action="store", type="string",
+                      help="optional, filter criteria in python format, seperate with '|'")
     # following parts are optional
     parser.add_option("-l", "--log", dest="log", action="store", type="string",
                       help="log file, if not given, stdout is used")
@@ -366,6 +444,7 @@ if __name__ == '__main__':
     weight_vars = []
     catch_vars = []
     groups = {}
+    filters = {}
     data_names = []
 
     if options.json:
@@ -420,14 +499,29 @@ if __name__ == '__main__':
                 exit()
 
         if "group" in sources :
-            for group_name, group_vars in sources['group'] :
-                if type(group_vars) is str:
-                    groups[group_name] = [group_vars]
-                elif type(group_vars) is list:
-                    groups[group_name] = group_vars
-                else :
-                    logging.error("Error parsing group fileds in json")
-                    exit()
+            if type(sources['group']) is list :
+                group_list = sources['group']
+            else :
+                group_list = [sources['group']]
+            for group_item in group_list :
+                for group_name, group_vars in group_item :
+                    if type(group_vars) is str:
+                        groups[group_name] = [group_vars]
+                    elif type(group_vars) is list:
+                        groups[group_name] = group_vars
+                    else :
+                        logging.error("Error parsing group fileds in json")
+                        exit()
+
+        if "filter" in sources :
+            if type(sources['filter']) is list :
+                filter_list = sources['filter']
+            else :
+                filter_list = [sources['filter']]
+            for filter_item in filter_list :
+                for filter_name, filter_content in filter_item :
+                    filters[filter_name] = filter_content
+
     else :
         if not options.input:
             logging.error("Input datasets must be specified")
@@ -457,6 +551,11 @@ if __name__ == '__main__':
             for group in group_names :
                 groups[group] = [x.strip() for x in group.split(',')]
 
+        if options.filter:
+            filter_names = options.filter.split('|')
+            for filter_name in filter_names :
+                filters[filter_name] = parse_filter(filter_name)
+
     delimiter = chr(int(options.dlm[1:])) if options.dlm.startswith('x') else options.dlm
 
     data_names = ["data_{}".format(x) for x in xrange(1, max(1, len(input_data))+1)]
@@ -471,6 +570,7 @@ if __name__ == '__main__':
     weight_vars = [x.lower() for x in weight_vars]
     catch_vars = [x.lower() for x in catch_vars]
     group_vars = set()
+    group_filter_names = []
     for group_name in groups :
         groups[group_name] = [x.lower() for x in groups[group_name]]
         if add_windows :
@@ -480,8 +580,13 @@ if __name__ == '__main__':
         add_windows = add_windows or len(groups) == 0
         groups['windows'] = ['window_name']
         group_vars.add('window_name')
+    filter_vars = set()
+    for filter_name in filters :
+        filter_vars.add(filters[filter_name][0])
+    group_filter_vars = group_vars.union(filter_vars)
     group_vars = list(group_vars)
-    group_vars_type = dict([(x, np.object) for x in group_vars])
+    filter_vars = list(filter_vars)
+    group_filter_vars_type = dict([(x, np.object) for x in group_filter_vars])
 
     if options.log:
         logging.basicConfig(level=logging.DEBUG, format='%(asctime)-15s - %(levelname)s - %(message)s',
@@ -507,7 +612,7 @@ if __name__ == '__main__':
         if not os.path.exists(filepath) :
             logging.error("File not exist! " + filepath)
             continue
-        cur_data = pd.read_csv(filepath, sep=delimiter, dtype=group_vars_type)
+        cur_data = pd.read_csv(filepath, sep=delimiter, dtype=group_filter_vars_type)
         cur_data.rename(columns=dict(zip(cur_data.columns, [x.lower() for x in cur_data.columns])), inplace=True)
 
         # TODO: just for test here
@@ -572,12 +677,18 @@ if __name__ == '__main__':
     hc_file = open(options.out + '_charts.html', 'w')
     high_line_ind = 0
     high_container_ind = 0
-    high_div_string = []
+    high_container_matrix = []
+    high_div_string = {}
     high_side_string = []
     high_data_string = []
     high_chart_string = []
+    high_group_button_string = []
+    high_bad_button_string = []
+    high_panel_string = []
+    high_func_string = []
 
     for group_name in groups :
+        group_filter_names.append(group_name)
         pivot_raw_columns = groups[group_name] + pivot_base_names
         group_operation_raws = pd.concat(operation_raw_list[group_name])
         pivot_operation_raws = group_operation_raws[pivot_raw_columns + ['rank_base']]
@@ -698,8 +809,14 @@ if __name__ == '__main__':
                 # else :
                 #     has_drawed_something = True
                 # bplt.hold()
+                high_container = {'cid' : high_container_ind,
+                                  'bad' : bad_name,
+                                  'weight' : weight_name,
+                                  'base' : base_name,
+                                  'group' : group_name}
+                high_container_matrix.append(high_container)
 
-                high_div_string.append(HIGHCHART_DIV % high_container_ind)
+                high_div_string[(group_name, bad_name, base_name, weight_name)] = HIGHCHART_DIV % high_container_ind
                 chart_content = {'cid': high_container_ind,
                                  'title': '%s wise catch rate' % weight_name,
                                  'subtitle': bad_name,
@@ -779,7 +896,14 @@ if __name__ == '__main__':
                 #     bplt.yaxis().axis_label = 'catch rate'
                 #     line_ind += 1
 
-            high_div_string.append(HIGHCHART_DIV % high_container_ind)
+            high_container = {'cid' : high_container_ind,
+                              'bad' : bad_name,
+                              'weight' : weight_name,
+                              'base' : 'Model Score',
+                              'group' : group_name}
+            high_container_matrix.append(high_container)
+
+            high_div_string[(group_name, bad_name, 'Model Score', weight_name)] = HIGHCHART_DIV % high_container_ind
             chart_content = {'cid': high_container_ind,
                              'title': '%s wise catch rate' % weight_name,
                              'subtitle': bad_name,
@@ -826,11 +950,69 @@ if __name__ == '__main__':
             high_chart_string.append(HIGHCHART_CHART_TEMPLATE % chart_content)
             high_container_ind += 1
 
+    for filter_name in filters :
+        group_filter_names.append(filter_name)
+
+    high_container = pd.DataFrame(high_container_matrix)
+
+    button_ind = 0
+    panel_list_ind = 0
+
+    for group_name in groups :
+        high_group_button_string.append(HIGHCHART_BUTTON_TEMPLATE % ('btn{}'.format(button_ind), group_name))
+        cids = list(high_container[high_container['group'] == group_name]['cid'])
+        high_func_string.append(HIGHCHART_GROUP_TOGGLE_TEMPLATE % {'bid' : 'btn{}'.format(button_ind),
+                                                                   'cids' : ','.join(["'#container%s'" % x for x in cids])})
+        button_ind += 1
+    for filter_name in filters :
+        high_group_button_string.append(HIGHCHART_BUTTON_TEMPLATE % ('btn{}'.format(button_ind), filter_name))
+        cids = list(high_container[high_container['group'] == filter_name]['cid'])
+        high_func_string.append(HIGHCHART_GROUP_TOGGLE_TEMPLATE % {'bid' : 'btn{}'.format(button_ind),
+                                                                   'cids' : ','.join(["'#container%s'" % x for x in cids])})
+        button_ind += 1
+
+    for bad_name in bad_vars :
+        high_bad_button_string.append(HIGHCHART_BUTTON_TEMPLATE % ('btn{}'.format(button_ind), bad_name))
+        cids = list(high_container[high_container['bad'] == bad_name]['cid'])
+        high_func_string.append(HIGHCHART_BAD_TOGGLE_TEMPLATE % {'bid' : 'btn{}'.format(button_ind),
+                                                                 'cids' : ','.join(["'#container%s'" % x for x in cids])})
+        button_ind += 1
+
+    for base_name in weight_vars + ["Model Score"] :
+        weight_list = ''
+        for weight_name in weight_vars :
+            if weight_name.lower().find('unit') >= 0 or weight_name.lower().startswith('dummy') :
+                weight_short_name = 'Unit-wise'
+            elif weight_name.lower().find('dol') >= 0 :
+                weight_short_name = 'Dollar-wise'
+            else :
+                weight_short_name = weight_name
+            weight_list += HIGHCHART_WGT_LIST_TEMPLATE % ('lst{}'.format(panel_list_ind), weight_short_name + " Catch Rate")
+            cids = list(high_container[(high_container['base'] == base_name) & (high_container['weight'] == weight_name)]['cid'])
+            high_func_string.append(HIGHCHART_LIST_TOGGLE_TEMPLATE % {'lid' : 'lst{}'.format(panel_list_ind),
+                                                                      'cids' : ','.join(["'#container%s'" % x for x in cids])})
+            panel_list_ind += 1
+        if base_name.lower().find('unit') >= 0 or base_name.lower().startswith('dummy') :
+            base_short_name = 'Unit-wise'
+        elif base_name.lower().find('dol') >= 0 :
+            base_short_name = 'Dollar-wise'
+        else :
+            base_short_name = base_name
+        high_panel_string.append(HIGHCHART_PANEL_TEMPLATE % {'base' : (base_short_name + ' Operation Point'), 'weight': weight_list})
+    
+    high_side_string = HIGHCHART_SIDE_TEMPLATE % {'group_button' : '\n'.join(high_group_button_string),
+                                                  'bad_button' : '\n'.join(high_bad_button_string),
+                                                  'panel' : '\n'.join(high_panel_string)}
+
     # hc_file.write(HIGHCHART_BASE_BEGIN % '\n'.join(high_side_string))
-    hc_file.write(HIGHCHART_BASE_BEGIN % HIGHCHART_SIDE_TEMPLATE)
-    hc_file.write('\n'.join(high_div_string))
+    
+    hc_file.write(HIGHCHART_BASE_BEGIN % high_side_string)
+    hc_file.write('\n'.join([high_div_string[x] for x in itertools.product(group_filter_names,
+                                                                           bad_vars,
+                                                                           weight_vars + ["Model Score"],
+                                                                           weight_vars)]))
     hc_file.write(HIGHCHART_DATA_TEMPLATE % '\n'.join(high_data_string))
-    hc_file.write(HIGHCHART_FUNCTION_TEMPLATE % '\n'.join(high_chart_string))
+    hc_file.write(HIGHCHART_FUNCTION_TEMPLATE % ('\n'.join(high_chart_string), '\n'.join(high_func_string)))
     hc_file.write(HIGHCHART_BASE_END)
 
     logging.info("start saving report...")
