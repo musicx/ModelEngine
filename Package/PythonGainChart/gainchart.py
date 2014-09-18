@@ -1103,7 +1103,8 @@ if __name__ == '__main__':
             base_short_name = 'Dollar-wise'
         else :
             base_short_name = base_name
-        high_list_panel_string.append(HIGHCHART_LIST_PANEL_TEMPLATE % {'base' : (base_short_name + ' Operation Point'), 'weight': weight_list})
+        base_short_name = base_short_name + ' Operation Point' if base_short_name != 'Model Score' else base_short_name
+        high_list_panel_string.append(HIGHCHART_LIST_PANEL_TEMPLATE % {'base' : base_short_name, 'weight': weight_list})
 
     cids = list(high_container[(high_container['base'] != high_container['weight'])]['cid'])
     high_func_string.append(HIGHCHART_READY_TOGGLE_TEMPLATE % (','.join(["'#container%s'" % x for x in cids])))
