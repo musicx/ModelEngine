@@ -70,7 +70,7 @@ HIGHCHART_WGT_LIST_TEMPLATE = '<a id="%s" href="#" class="list-group-item%s">%s<
 
 HIGHCHART_BUTTON_TEMPLATE = '<button id="%s" type="button" class="btn btn-success">%s</button>'
 
-HIGHCHART_DIV = '\t<div id="container%d" sytle="height: 400px; min-width: 600px" class="%s">\n</div>\n'
+HIGHCHART_DIV = '\t<div id="container%d" sytle="height: 400px; min-width: 600px" class="show">\n</div>\n'
 
 HIGHCHART_DATA_TEMPLATE = '<script>\n%s\n'
 
@@ -217,6 +217,16 @@ HIGHCHART_LIST_TOGGLE_TEMPLATE = '''    $('#%(lid)s').click(function() {
         };
         $('#%(lid)s').toggleClass('list-group-item-success');
     });
+'''
+
+HIGHCHART_READY_TOGGLE_TEMPLATE = '''
+    var ics = [%s];
+    var icl = ics.length;
+    for (var i = 0; i < icl; i++) {
+        $(ics[i]).toggleClass('show');
+        $(ics[i]).toggleClass('hidden');
+        $(ics[i]).toggleClass('ls_chosen');
+    };
 '''
 
 HIGHCHART_BASE_END = '''\t</div>
@@ -902,8 +912,7 @@ if __name__ == '__main__':
                                       'filter' : filter_name}
                     high_container_matrix.append(high_container)
 
-                    show = 'show' if base_name == weight_name else 'hidden ls_chosen'
-                    high_div_string[(filter_name, group_name, bad_name, base_name, weight_name)] = HIGHCHART_DIV % (high_container_ind, show)
+                    high_div_string[(filter_name, group_name, bad_name, base_name, weight_name)] = HIGHCHART_DIV % high_container_ind
                     chart_content = {'cid': high_container_ind,
                                      'title': '%s wise catch rate' % weight_name,
                                      'subtitle': bad_name + filter_subtitle,
@@ -991,7 +1000,7 @@ if __name__ == '__main__':
                                   'filter' : filter_name}
                 high_container_matrix.append(high_container)
 
-                high_div_string[(filter_name, group_name, bad_name, 'Model Score', weight_name)] = HIGHCHART_DIV % (high_container_ind, 'hidden ls_chosen')
+                high_div_string[(filter_name, group_name, bad_name, 'Model Score', weight_name)] = HIGHCHART_DIV % high_container_ind
                 chart_content = {'cid': high_container_ind,
                                  'title': '%s wise catch rate' % weight_name,
                                  'subtitle': bad_name + filter_subtitle,
@@ -1072,6 +1081,7 @@ if __name__ == '__main__':
             button_ind += 1
         high_button_panel_string.append(HIGHCHART_BUTTON_PANEL_TEMPLATE % {'title' : 'Bad variables',
                                                                            'button' : '\n'.join(high_bad_button_string)})
+
     for base_name in weight_vars + ["Model Score"] :
         weight_list = ''
         for weight_name in weight_vars :
@@ -1094,7 +1104,10 @@ if __name__ == '__main__':
         else :
             base_short_name = base_name
         high_list_panel_string.append(HIGHCHART_LIST_PANEL_TEMPLATE % {'base' : (base_short_name + ' Operation Point'), 'weight': weight_list})
-    
+
+    cids = list(high_container[(high_container['base'] != high_container['weight'])]['cid'])
+    high_func_string.append(HIGHCHART_READY_TOGGLE_TEMPLATE % (','.join(["'#container%s'" % x for x in cids])))
+
     high_side_string = HIGHCHART_SIDE_TEMPLATE % {'btn_panel' : '\n'.join(high_button_panel_string),
                                                   'lst_panel' : '\n'.join(high_list_panel_string)}
 
