@@ -8,6 +8,7 @@ import pandas as pd
 import numpy as np
 # import bokeh.plotting as bplt
 # from bokeh.objects import Range1d, HoverTool, ColumnDataSource
+# -i test_data1.csv,test_data2.csv -s clsn_scr -b is_unauth_collusion -w unit_weight,dollar_weight -c net_loss -p 1000 -o test -g segment
 
 __author__ = 'yijiliu'
 
@@ -481,14 +482,14 @@ if __name__ == '__main__':
                       help="raw string of scored files encoded with json or json file. example:\n" +
                            '{"input":["score.csv"],"score":["new_score"],"bad":["is_bad"],"weight":["unit","dollar"],' +
                            '"catch":["loss"],"group":[{"group_name":["region"]}],"filter":[{"filter_name":"flag==1"}]}')
-    # following parts can be ignored if json is given
+    # json will cover all following options. but it will be overriden if specified in command line
     parser.add_option("-i", "--input", dest="input", action="store", type="string",
                       help="input datasets, separated with ','")
     parser.add_option("-s", "--score", dest="score", action="store", type="string",
                       help="score variables, separated with ','")
     parser.add_option("-b", "--bad", dest="bad", action="store", type="string",
                       help="name of bad variables")
-    parser.add_option("-w", "--wgt", dest="wgt", action="store", type="string", default="dummy_weight",
+    parser.add_option("-w", "--wgt", dest="wgt", action="store", type="string",
                       help="names of weight variables, separated by ',', default is dummy")
     parser.add_option("-c", "--catch", dest="catch", action="store", type="string",
                       help="names of extra variables for catch rate calculation, separated with ','")
@@ -499,17 +500,17 @@ if __name__ == '__main__':
     # following parts are optional
     parser.add_option("-l", "--log", dest="log", action="store", type="string",
                       help="log file, if not given, stdout is used")
-    parser.add_option("-d", "--dlm", dest="dlm", action="store", type="string", default=",",
+    parser.add_option("-d", "--dlm", dest="dlm", action="store", type="string",
                       help="delimiter char, accept xASCII format, default=','")
     parser.add_option("-n", "--name", dest="name", action="store", type="string",
                       help="names of input datasets, separated with ','")
-    parser.add_option("-o", "--out", dest="out", action="store", type="string", default="perf_report",
-                      help="output performance file")
+    parser.add_option("-o", "--out", dest="out", action="store", type="string",
+                      help="output performance file, default='output")
     # following parts are for report control
-    parser.add_option("-r", "--range", dest="range", action="store", type="string", default="0,5,1000",
+    parser.add_option("-r", "--range", dest="range", action="store", type="string",
                       help="score capping and step check after auto-mapping, given as low,step,high. default is 0,5,1000")
-    parser.add_option("-p", "--point", dest="point", action="store", type="float", default=100.,
-                      help="number of operation points in reports")
+    parser.add_option("-p", "--point", dest="point", action="store", type="float",
+                      help="number of operation points in reports, default=100")
     (options, args) = parser.parse_args()
 
     nfloat = ignore_exception(ValueError, None)(float)
@@ -522,6 +523,13 @@ if __name__ == '__main__':
     groups = collections.OrderedDict()
     filters = collections.OrderedDict()
     data_names = []
+    delimiter = None
+    log_filename = None
+    output_filename = None
+    point = None
+    low = None
+    step = None
+    high = None
 
     if options.json:
         sources = parse_json(options.json)
@@ -532,7 +540,7 @@ if __name__ == '__main__':
 
         if type(sources['input']) is list:
             input_data.extend(sources['input'])
-        elif type(sources['input']) is str:
+        elif type(sources['input']) in [str, unicode]:
             input_data.append(sources['input'])
         else:
             logging.error("Error parsing input field in json")
@@ -540,7 +548,7 @@ if __name__ == '__main__':
 
         if type(sources['score']) is list:
             score_vars.extend(sources['score'])
-        elif type(sources['score']) is str:
+        elif type(sources['score']) in [str, unicode]:
             score_vars.append(sources['score'])
         else:
             logging.error("Error parsing score field in json")
@@ -548,7 +556,7 @@ if __name__ == '__main__':
 
         if type(sources['bad']) is list:
             bad_vars.extend(sources['bad'])
-        elif type(sources['bad']) is str:
+        elif type(sources['bad']) in [str, unicode]:
             bad_vars.append(sources['bad'])
         else:
             logging.error("Error parsing bad field in json")
@@ -557,7 +565,7 @@ if __name__ == '__main__':
         if "weight" in sources :
             if type(sources['weight']) is list:
                 weight_vars.extend(sources['weight'])
-            elif type(sources['weight']) is str:
+            elif type(sources['weight']) in [str, unicode]:
                 weight_vars.append(sources['weight'])
             else:
                 logging.error("Error parsing weight field in json")
@@ -568,7 +576,7 @@ if __name__ == '__main__':
         if "catch" in sources :
             if type(sources['catch']) is list:
                 catch_vars.extend(sources['catch'])
-            elif type(sources['catch']) is str:
+            elif type(sources['catch']) is [str, unicode]:
                 catch_vars.append(sources['catch'])
             else:
                 logging.error("Error parsing catch field in json")
@@ -582,8 +590,8 @@ if __name__ == '__main__':
             else :
                 group_list = [sources['group']]
             for group_item in group_list :
-                for group_name, group_vars in group_item :
-                    if type(group_vars) is str:
+                for group_name, group_vars in group_item.iteritems() :
+                    if type(group_vars) in [str, unicode]:
                         groups[group_name] = [group_vars]
                     elif type(group_vars) is list:
                         groups[group_name] = group_vars
@@ -598,33 +606,64 @@ if __name__ == '__main__':
             else :
                 filter_list = [sources['filter']]
             for filter_item in filter_list :
-                for filter_name, filter_content in filter_item :
+                for filter_name, filter_content in filter_item.iteritems() :
                     filters[filter_name] = parse_filter(filter_content)
 
-    else :
-        if not options.input:
-            logging.error("Input datasets must be specified")
-            exit()
+        if 'delimiter' in sources :
+            delimiter = chr(int(sources['delimiter'][1:])) if sources['delimiter'].startswith('x') else sources['delimiter']
+
+        if 'log' in sources :
+            log_filename = sources['log']
+
+        if 'output' in sources:
+            output_filename = sources['output']
+
+        if 'point' in sources :
+            point = nfloat(sources['point'])
+
+        if 'high' in sources:
+            high = nfloat(sources['high'])
+
+        if 'step' in sources:
+            step = nfloat(sources['step'])
+
+        if 'low' in sources:
+            low = nfloat(sources['low'])
+
+    if not options.input and len(input_data) == 0:
+        logging.error("Input datasets must be specified")
+        exit()
+    elif options.input:
         input_data = [x.strip() for x in options.input.split(',')]
 
-        if not options.score:
-            logging.error("Score variables must be specified")
-            exit()
+    if not options.score and len(score_vars) == 0:
+        logging.error("Score variables must be specified")
+        exit()
+    elif options.score :
         score_vars = [x.strip() for x in options.score.split(',')]
 
-        if not options.bad:
-            logging.error("Bad variables must be specified")
-            exit()
+    if not options.bad and len(bad_vars) == 0:
+        logging.error("Bad variables must be specified")
+        exit()
+    elif options.bad:
         bad_vars = [x.strip() for x in options.bad.split(',')]
 
-        if options.wgt:
-            weight_vars = [x.strip() for x in options.wgt.split(',')]
-        if len(weight_vars) == 0:
-            weight_vars.append('dummy_weight')
+    if options.wgt:
+        weight_vars = [x.strip() for x in options.wgt.split(',')]
+    if len(weight_vars) == 0:
+        weight_vars.append('dummy_weight')
 
-        if options.catch:
-            catch_vars = [x.strip() for x in options.catch.split(',')]
+    if options.catch:
+        catch_vars = [x.strip() for x in options.catch.split(',')]
 
+    if len(groups) > 0 and options.group :
+        groups = collections.OrderedDict()
+        if len(input_data) > 1 :
+            groups['data files'] = ['data_file_name']
+        group_names = options.group.split('|')
+        for group_name in group_names :
+            groups[group_name] = [x.strip() for x in group_name.split(',')]
+    elif len(groups) == 0 :
         if len(input_data) > 1 :
             groups['data files'] = ['data_file_name']
         if options.group:
@@ -632,14 +671,51 @@ if __name__ == '__main__':
             for group_name in group_names :
                 groups[group_name] = [x.strip() for x in group_name.split(',')]
 
+    if len(filters) > 0 and options.filter :
+        filters = collections.OrderedDict()
         filters['all'] = ['all']
-        if options.filter:
+        filter_names = options.filter.split('|')
+        for filter_name in filter_names :
+            key_string, func_string, value_string = parse_filter(filter_name)
+            filters["%s %s %s" % (key_string, func_string, value_string)] = (key_string, func_string, value_string)
+    elif len(filters) == 0 :
+        filters['all'] = ['all']
+        if options.filter :
             filter_names = options.filter.split('|')
             for filter_name in filter_names :
                 key_string, func_string, value_string = parse_filter(filter_name)
                 filters["%s %s %s" % (key_string, func_string, value_string)] = (key_string, func_string, value_string)
 
-    delimiter = chr(int(options.dlm[1:])) if options.dlm.startswith('x') else options.dlm
+    if delimiter is None:
+        delimiter = ','
+    if options.dlm:
+        delimiter = chr(int(options.dlm[1:])) if options.dlm.startswith('x') else options.dlm
+
+    if output_filename is None:
+        output_filename = 'output'
+    if options.out:
+        output_filename = options.out
+
+    if options.log:
+        logging.basicConfig(level=logging.DEBUG, format='%(asctime)-15s - %(levelname)s - %(message)s',
+                            filename=options.log, filemode='w')
+    elif log_filename is not None :
+        logging.basicConfig(level=logging.DEBUG, format='%(asctime)-15s - %(levelname)s - %(message)s',
+                            filename=log_filename, filemode='w')
+    else:
+        logging.basicConfig(level=logging.INFO, format='%(asctime)-15s - %(levelname)s - %(message)s')
+
+    if options.range :
+        if len(options.range.split(',')) != 3:
+            logging.error("Score range must be given in format low,step,high")
+            exit()
+        low, step, high = [nfloat(x) for x in options.range.split(',')]
+    low = 0. if low is None else low
+    step = 5. if step is None else step
+    high = 1000. if high is None else high
+
+    point = nfloat(options.point) if options.point is not None else point
+    point = 100. if point is None else point
 
     data_names = ["data_{}".format(x) for x in xrange(1, max(1, len(input_data))+1)]
     if options.name :
@@ -667,22 +743,6 @@ if __name__ == '__main__':
     group_vars = list(group_vars)
     filter_vars = list(filter_vars)
     group_filter_vars_type = dict([(x, np.object) for x in group_filter_vars])
-
-    if options.log:
-        logging.basicConfig(level=logging.DEBUG, format='%(asctime)-15s - %(levelname)s - %(message)s',
-                            filename=options.log, filemode='w')
-    else:
-        logging.basicConfig(level=logging.INFO, format='%(asctime)-15s - %(levelname)s - %(message)s')
-
-    if len(options.range.split(',')) != 3:
-        logging.error("Score range must be given in format low,step,high")
-        exit()
-    low, step, high = [nfloat(x) for x in options.range.split(',')]
-    if low is None or step is None or high is None :
-        logging.error("Score range parsing error")
-        exit()
-
-    point = options.point
 
     logging.info("program started...")
 
@@ -742,10 +802,10 @@ if __name__ == '__main__':
     pivot_catch_names = ['{}|catch_rate'.format(x) for x in catch_vars]
     pivot_pop_names = ['{}|catch_rate'.format(x) for x in weight_vars]
     pivot_base_names = pivot_index_name + pivot_column_name + pivot_bad_rate_names + pivot_catch_names + pivot_pop_names
-    writer = pd.ExcelWriter(options.out+'.xlsx')
+    writer = pd.ExcelWriter(output_filename+'.xlsx')
 
     # initialization for bokeh usage
-    # bplt.output_file(options.out+'_gainchart.html', title=options.out+' gainchart report')
+    # bplt.output_file(output_file+'_gainchart.html', title=output_file+' gainchart report')
     # TOOLS = "pan, wheel_zoom, box_zoom, resize, reset, hover, previewsave"
     # has_drawed_something = False
     # operation_x_range = Range1d(start=-0.04, end=1.04)
@@ -753,7 +813,7 @@ if __name__ == '__main__':
     # common_y_range = Range1d(start=-0.04, end=1.04)
 
     # initialization for highchart output
-    hc_file = open(options.out + '_charts.html', 'w')
+    hc_file = open(output_filename + '_charts.html', 'w')
     high_line_ind = 0
     high_container_ind = 0
     high_container_matrix = []
@@ -800,8 +860,8 @@ if __name__ == '__main__':
             catch_rename_map = dict(zip(pivot_catch_names, ['{} catch_rate'.format(x) for x in catch_vars]))
             pop_rename_map = dict(zip(pivot_pop_names, ['{} wise operation_point'.format(x) for x in weight_vars]))
 
-            group_operation_raws.to_csv(options.out + '_operation_raw-{}-{}.csv'.format(''.join(filters[filter_name]), '-'.join(groups[group_name])), index=False)
-            group_score_raws.to_csv(options.out + '_score_raw-{}-{}.csv'.format(''.join(filters[filter_name]), '-'.join(groups[group_name])), index=False)
+            group_operation_raws.to_csv(output_filename + '_operation_raw-{}-{}.csv'.format(''.join(filters[filter_name]), '-'.join(groups[group_name])), index=False)
+            group_score_raws.to_csv(output_filename + '_score_raw-{}-{}.csv'.format(''.join(filters[filter_name]), '-'.join(groups[group_name])), index=False)
             logging.info("raw table saved to flat file for group '{}' with filter '{}'".format(group_name, filter_name))
 
             # sub = raw.loc[(raw['rank_base']=='unit_weight'), ['data_file_name', 'cut_off', 'score_name', 'unit_weight|is_unauth_collusion|1|catch_rate']]
@@ -826,8 +886,8 @@ if __name__ == '__main__':
             group_operation_pivot.index.name = None
             group_score_pivot.index.name = None
 
-            group_operation_pivot.to_csv(options.out + '_operation_pivot-{}-{}.csv'.format(''.join(filters[filter_name]), '-'.join(groups[group_name])))
-            group_score_pivot.to_csv(options.out + '_score_pivot-{}-{}.csv'.format(''.join(filters[filter_name]), '-'.join(groups[group_name])))
+            group_operation_pivot.to_csv(output_filename + '_operation_pivot-{}-{}.csv'.format(''.join(filters[filter_name]), '-'.join(groups[group_name])))
+            group_score_pivot.to_csv(output_filename + '_score_pivot-{}-{}.csv'.format(''.join(filters[filter_name]), '-'.join(groups[group_name])))
             logging.info("pivot table saved to flat file for group '{}' with filter '{}'".format(group_name, filter_name))
 
             excel_operation_columns_names = list(group_operation_pivot.columns.names)
