@@ -973,16 +973,16 @@ if __name__ == '__main__':
                     high_container_matrix.append(high_container)
 
                     high_div_string[(filter_name, group_name, bad_name, base_name, weight_name)] = HIGHCHART_DIV % high_container_ind
-                    chart_content = {'cid': high_container_ind,
-                                     'title': '%s wise catch rate' % weight_name,
-                                     'subtitle': bad_name + filter_subtitle,
-                                     'x': '%s wise operation point' % base_name,
-                                     'tooltip' : high_tooltip_string,
-                                     'tiphead' : high_tiptable_head,
-                                     'tiptable' : high_tiptable_string,
-                                     'suf': "labels: {formatter: function() {return this.value + '%';}},",
-                                     'reverse': 'false',
-                                     'score': ''}
+                    chart_content = dict(cid=high_container_ind,
+                                         title='%s wise catch rate' % weight_name,
+                                         subtitle=bad_name + filter_subtitle,
+                                         x='%s wise operation point' % base_name,
+                                         tooltip=high_tooltip_string,
+                                         tiphead=high_tiptable_head,
+                                         tiptable=high_tiptable_string,
+                                         suf="labels: {formatter: function() {return this.value + '%';}},",
+                                         reverse='false',
+                                         score='')
 
                     # replace because    it will have group variables as multiple levels in this position \|/
                     #draw_data = group_operation_pivot.loc[:, pd.IndexSlice[chart_columns_names, base_name, :, :]]
@@ -1186,5 +1186,7 @@ if __name__ == '__main__':
     writer.close()
     # bplt.save()
     hc_file.close()
-    logging.info("all work done")
+    logging.info("all work done, check {0}.xlsx and {0}_chart.html".format(output_filename))
+
+
 
