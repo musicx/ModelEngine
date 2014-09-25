@@ -752,8 +752,9 @@ if __name__ == '__main__':
         if not os.path.exists(filepath) :
             logging.error("File not exist! " + filepath)
             continue
-        cur_data = pd.read_csv(filepath, sep=delimiter, dtype=group_filter_vars_type)
-        cur_data.rename(columns=dict(zip(cur_data.columns, [x.lower() for x in cur_data.columns])), inplace=True)
+        cur_data = pd.read_csv(filepath, sep=delimiter, dtype=group_filter_vars_type,
+                               keep_default_na=False, na_values=['', '.'])
+        cur_data.rename(columns=dict(zip(cur_data.columns, [x.lower().strip() for x in cur_data.columns])), inplace=True)
 
         if add_windows :
             cur_data['data_file_name'] = data_names[ind]
