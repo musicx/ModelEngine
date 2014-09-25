@@ -159,6 +159,8 @@ if __name__ == "__main__":
                       default=",")
     parser.add_option("-e", "--head", dest="head", help="optional head line file, must use ',' as delimiter",
                       action="store", type="string")
+    parser.add_option("-k", "--keep", dest="keep", help="optional, if given, only raw variables in this list will be kept",
+                      action="store", type="string")
     parser.add_option("-b", "--bin", dest="bin", help="z-scaled input file, choose one or more among {bin, woe, zscl}",
                       action="store", type="string")
     parser.add_option("-w", "--woe", dest="woe", help="WoE input file, choose one or more among {bin, woe, zscl}",
@@ -187,6 +189,7 @@ if __name__ == "__main__":
         logging.basicConfig(level=logging.INFO, format='%(levelname)s - %(message)s')
     if options.dlm.startswith('x'):
         options.dlm = chr(int(options.dlm[1:]))
+    keep_base = [x.lower().strip() for x in options.keep.split(',')] if options.keep else None
 
     # get the sequence of raw variables
     header = parseHeader(options)
@@ -203,6 +206,9 @@ if __name__ == "__main__":
     for var in header:
         if var.lower() in dropVars:
             continue
+        if keep_base is not None:
+            if var.lower() not in keep_base :
+                continue
         if first:
             writeString += "        fout.write('{0}'.format({1}))\n".format('{0}', var)
             first = False
