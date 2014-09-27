@@ -473,7 +473,7 @@ def parse_filter(filter_string) :
         logging.error("Error parsing filters")
 
     key_string, value_string = [x.strip() for x in filter_string.split(func_string)]
-    return key_string, func_string, value_string
+    return key_string.lower(), func_string, value_string
 
 
 if __name__ == '__main__':
@@ -635,26 +635,31 @@ if __name__ == '__main__':
         exit()
     elif options.input:
         input_data = [x.strip() for x in options.input.split(',')]
+    input_data = [x for x in input_data if x != '']
 
     if not options.score and len(score_vars) == 0:
         logging.error("Score variables must be specified")
         exit()
     elif options.score :
         score_vars = [x.strip() for x in options.score.split(',')]
+    score_vars = [x.lower() for x in score_vars if x != '']
 
     if not options.bad and len(bad_vars) == 0:
         logging.error("Bad variables must be specified")
         exit()
     elif options.bad:
         bad_vars = [x.strip() for x in options.bad.split(',')]
+    bad_vars = [x.lower() for x in bad_vars if x != '']
 
     if options.wgt:
         weight_vars = [x.strip() for x in options.wgt.split(',')]
+    weight_vars = [x.lower() for x in weight_vars if x != '']
     if len(weight_vars) == 0:
         weight_vars.append('dummy_weight')
 
     if options.catch:
         catch_vars = [x.strip() for x in options.catch.split(',')]
+    catch_vars = [x.lower() for x in catch_vars if x != '']
 
     if len(groups) > 0 and options.group :
         groups = collections.OrderedDict()
@@ -662,14 +667,16 @@ if __name__ == '__main__':
             groups['data files'] = ['data_file_name']
         group_names = options.group.split('|')
         for group_name in group_names :
-            groups[group_name] = [x.strip() for x in group_name.split(',')]
+            groups[group_name] = [x.lower().strip() for x in group_name.split(',')]
     elif len(groups) == 0 :
         if len(input_data) > 1 :
             groups['data files'] = ['data_file_name']
         if options.group:
             group_names = options.group.split('|')
             for group_name in group_names :
-                groups[group_name] = [x.strip() for x in group_name.split(',')]
+                groups[group_name] = [x.lower().strip() for x in group_name.split(',')]
+    if len(groups) == 0 :
+        groups['data files'] = ['data_file_name']
 
     if len(filters) > 0 and options.filter :
         filters = collections.OrderedDict()
@@ -717,20 +724,16 @@ if __name__ == '__main__':
     point = nfloat(options.point) if options.point is not None else point
     point = 100. if point is None else point
 
-    data_names = ["data_{}".format(x) for x in xrange(1, max(1, len(input_data))+1)]
+    data_names = ["data_{}".format(x) for x in xrange(1, len(input_data)+1)]
     if options.name :
         names = [x.strip().lower() for x in options.name.split(',')]
         for ind in xrange(min(len(names), len(input_data))) :
             data_names[ind] = names[ind]
-    add_windows = True if len(data_names) > 1 else False
+    add_windows = True if 'data files' in groups else False
 
-    score_vars = [x.lower() for x in score_vars]
-    bad_vars = [x.lower() for x in bad_vars]
-    weight_vars = [x.lower() for x in weight_vars]
-    catch_vars = [x.lower() for x in catch_vars]
     group_vars = set()
     for group_name in groups :
-        groups[group_name] = [x.lower() for x in groups[group_name]]
+        groups[group_name] = [x.lower() for x in groups[group_name] if x != '']
         if add_windows and group_name != 'data files':
             groups[group_name].append('data_file_name')
         group_vars = group_vars.union(groups[group_name])
@@ -753,7 +756,8 @@ if __name__ == '__main__':
             logging.error("File not exist! " + filepath)
             continue
         cur_data = pd.read_csv(filepath, sep=delimiter, dtype=group_filter_vars_type,
-                               keep_default_na=False, na_values=['', '.'])
+                               keep_default_na=False, na_values=['', '.'],
+                               skipinitialspace=True)
         cur_data.rename(columns=dict(zip(cur_data.columns, [x.lower().strip() for x in cur_data.columns])), inplace=True)
 
         if add_windows :
@@ -768,13 +772,13 @@ if __name__ == '__main__':
                              index=[weight_vars + bad_vars + catch_vars]), inplace=True)
 
     # score auto-mapping. This step will map [0,1] ranged score to [0,1000], without touching minus scores.
-    #mapped_scores = big_raw[score_vars] * ((big_raw[score_vars].max() <= 1) * 999 + 1)
+    #mapped_scores = big_raw[score_vars] * ((big_raw[score_vars].max() <= 1) * 999 + 1) # why * 999 + 1? it means [1,1000]
     #big_raw[score_vars] = big_raw[score_vars][big_raw[score_vars] < 0].combine_first(mapped_scores)
     # or
     max_ind = big_raw[score_vars].max() <= 1 + 1e-10
     if max_ind.any() :
         logging.info("score scaling is found to be necessary, start...")
-        big_raw[score_vars] = big_raw[score_vars].apply(lambda x: x * ((max_ind & (x > 0)) * 999 + 1), axis=1)
+        big_raw[score_vars] = big_raw[score_vars].apply(lambda x: x * ((max_ind & (x > 0)) * 1000), axis=1)
 
     operation_raw_list = {}
     score_raw_list = {}
@@ -794,7 +798,7 @@ if __name__ == '__main__':
             score_raw_list[filter_name] = collections.defaultdict(list)
         operation_raw_list[filter_name][group_name].append(operation_raw)
         score_raw_list[filter_name][group_name].append(score_raw)
-    logging.info("all raw analysis done, start creating pivot tables...")
+    logging.info("all raw analysis is done, start creating pivot tables...")
 
     pivot_index_name = ['cut_off']
     pivot_column_name = ['score_name']
@@ -1109,6 +1113,10 @@ if __name__ == '__main__':
                 high_container_ind += 1
             logging.info("highcharts created for group '{}' with filter '{}'".format(group_name, filter_name))
 
+    logging.info("start saving excel report...")
+    writer.close()
+
+    logging.info("start writing chart html file...")
     high_container = pd.DataFrame(high_container_matrix)
 
     button_ind = 0
@@ -1183,8 +1191,6 @@ if __name__ == '__main__':
     hc_file.write(HIGHCHART_FUNCTION_TEMPLATE % ('\n'.join(high_chart_string), '\n'.join(high_func_string)))
     hc_file.write(HIGHCHART_BASE_END)
 
-    logging.info("start saving report...")
-    writer.close()
     # bplt.save()
     hc_file.close()
     logging.info("all work done, check {0}.xlsx and {0}_chart.html".format(output_filename))
