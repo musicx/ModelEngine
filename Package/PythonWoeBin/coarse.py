@@ -1062,8 +1062,8 @@ def SaveUniAnalysis(path, variables, status, badname) :
         firstLine.append(str("%13s" % ivs))
         ivs = "Data {0} IV a.".format(i)
         firstLine.append(str("%13s" % ivs))
-        ivs = "Data {0} max IV".format(i)
-        firstLine.append(str("%13s" % ivs))
+        #ivs = "Data {0} max IV".format(i)
+        #firstLine.append(str("%13s" % ivs))
     firstLine.extend([str("%8s" % "Wgt PSI"),
                       str("%8s" % "Bad PSI"),
                       str("%9s" % "Good PSI"),
@@ -1083,8 +1083,8 @@ def SaveUniAnalysis(path, variables, status, badname) :
             uniLine.append(str("%13.4f" % variable.iv[badname][i * 2]))
             uniLine.append(str("%13.4f" % variable.iv[badname][i * 2 + 1]))
             #calculate the max iv in the time window here!
-            maxiv = max([bin.windows[i].iv for bin in variable.solution[badname] if bin.windows[i].pGood > 0 and bin.windows[i].pBad > 0])
-            uniLine.append(str("%13.4f" % maxiv))
+            #maxiv = max([bin.windows[i].iv for bin in variable.solution[badname] if bin.windows[i].pGood > 0 and bin.windows[i].pBad > 0])
+            #uniLine.append(str("%13.4f" % maxiv))
         uniLine.extend([str("%8.4f" % variable.psi[badname][0][0]),
                         str("%8.4f" % variable.psi[badname][1][0]),
                         str("%9.4f" % variable.psi[badname][2][0]),
