@@ -772,13 +772,13 @@ if __name__ == '__main__':
                              index=[weight_vars + bad_vars + catch_vars]), inplace=True)
 
     # score auto-mapping. This step will map [0,1] ranged score to [0,1000], without touching minus scores.
-    #mapped_scores = big_raw[score_vars] * ((big_raw[score_vars].max() <= 1) * 999 + 1) # why * 999 + 1? it means [1,1000]
+    #mapped_scores = big_raw[score_vars] * ((big_raw[score_vars].max() <= 1) * 999 + 1) # why * 999 + 1
     #big_raw[score_vars] = big_raw[score_vars][big_raw[score_vars] < 0].combine_first(mapped_scores)
     # or
     max_ind = big_raw[score_vars].max() <= 1 + 1e-10
     if max_ind.any() :
         logging.info("score scaling is found to be necessary, start...")
-        big_raw[score_vars] = big_raw[score_vars].apply(lambda x: x * ((max_ind & (x > 0)) * 1000), axis=1)
+        big_raw[score_vars] = big_raw[score_vars].apply(lambda x: x * ((max_ind & (x > 0)) * 999 + 1), axis=1)
 
     operation_raw_list = {}
     score_raw_list = {}
@@ -1193,7 +1193,7 @@ if __name__ == '__main__':
 
     # bplt.save()
     hc_file.close()
-    logging.info("all work done, check {0}.xlsx and {0}_chart.html".format(output_filename))
+    logging.info("all work done, check {0}.xlsx and {0}_charts.html".format(output_filename))
 
 
 
