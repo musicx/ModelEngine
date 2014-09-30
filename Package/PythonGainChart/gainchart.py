@@ -6,6 +6,7 @@ from optparse import OptionParser
 import os
 import pandas as pd
 import numpy as np
+import math
 # import bokeh.plotting as bplt
 # from bokeh.objects import Range1d, HoverTool, ColumnDataSource
 # -i test_data1.csv,test_data2.csv -s clsn_scr -b is_unauth_collusion -w unit_weight,dollar_weight -c net_loss -p 1000 -o test -g segment
@@ -291,7 +292,7 @@ def operation_performance(data, score, weights=None, bads=None, groups=None,
     rank_cumsum.columns = pd.Index(score_groups + ['rank_cumsum'])
     raw = raw.merge(rank_cumsum, how="left", on=score_groups)
     raw.loc[:, score_rank] = raw['rank_cumsum'] / raw.groupby(groups)[rank_base].transform(pd.Series.sum)
-    raw.loc[:, score_rank] = raw[score_rank].apply(lambda x: np.ceil(x * points) * (1.0 / points))
+    raw.loc[:, score_rank] = raw[score_rank].apply(lambda x: math.ceil(x * points) * (1.0 / points))
     raw.pop('rank_cumsum')
 
     bad_dummy_names = {}
@@ -348,7 +349,7 @@ def operation_performance(data, score, weights=None, bads=None, groups=None,
     return raw_output
 
 def score_performance(data, score, weights=None, bads=None, groups=None,
-                      filters=None, catches=None, low=0, step=5, high=1000):
+                      filters=None, catches=None, low=0, step=5, high=1000, cap_one=False):
     if weights is None:
         weights = ['dummy_weight']
     if bads is None:
@@ -378,10 +379,14 @@ def score_performance(data, score, weights=None, bads=None, groups=None,
             raw = data[[score] + weights + bads + groups + catches]
     score_rank = "cut_off"
     # Assuming higher score indicates higher risk
+    high = high * 0.001 if cap_one else high
+    low = low * 0.001 if cap_one else low
+    step = step * 0.001 if cap_one else step
+
     raw.loc[(raw[score] > high), score] = high
     raw.loc[(raw[score] < low), score] = low
     raw.fillna({score : low}, inplace=True)
-    raw[score_rank] = raw[score].apply(lambda x: np.ceil(x * 1.0 / step) * step)
+    raw[score_rank] = raw[score].apply(lambda x: math.ceil(x * 1.0 / step) * step)
 
     bad_dummy_names = {}
     full_bads_dummy_names = []
@@ -435,6 +440,9 @@ def score_performance(data, score, weights=None, bads=None, groups=None,
 
     raw_output = pd.concat([sums, catch_rates, hit_rates], axis=1)
     raw_output.reset_index(inplace=True)
+    if cap_one:
+        raw_output.loc[:, score_rank] = raw_output.loc[:, score_rank] * 1000
+    raw_output.loc[:, score_rank] = raw_output.loc[:, score_rank].astype(int)
     raw_output['score_name'] = score
     raw_output['group_name'] = ",".join(groups)
     raw_output['filter_name'] = filters if filters == 'all' else ' '.join(filters)
@@ -508,7 +516,7 @@ if __name__ == '__main__':
                       help="output performance file, default='output")
     # following parts are for report control
     parser.add_option("-r", "--range", dest="range", action="store", type="string",
-                      help="score capping and step check after auto-mapping, given as low,step,high. default is 0,5,1000")
+                      help="score capping and step check after auto-mapping scores to [0,1000], given as low,step,high. default is 0,5,1000")
     parser.add_option("-p", "--point", dest="point", action="store", type="float",
                       help="number of operation points in reports, default=100")
     (options, args) = parser.parse_args()
@@ -772,13 +780,11 @@ if __name__ == '__main__':
                              index=[weight_vars + bad_vars + catch_vars]), inplace=True)
 
     # score auto-mapping. This step will map [0,1] ranged score to [0,1000], without touching minus scores.
-    #mapped_scores = big_raw[score_vars] * ((big_raw[score_vars].max() <= 1) * 999 + 1) # why * 999 + 1
-    #big_raw[score_vars] = big_raw[score_vars][big_raw[score_vars] < 0].combine_first(mapped_scores)
-    # or
+    # FIXED: this takes too much time. need to be removed
     max_ind = big_raw[score_vars].max() <= 1 + 1e-10
-    if max_ind.any() :
-        logging.info("score scaling is found to be necessary, start...")
-        big_raw[score_vars] = big_raw[score_vars].apply(lambda x: x * ((max_ind & (x > 0)) * 999 + 1), axis=1)
+    # if max_ind.any() :
+    #     logging.info("score scaling is found to be necessary, start...")
+    #     big_raw[score_vars] = big_raw[score_vars].apply(lambda x: x * ((max_ind & (x > 0)) * 999 + 1), axis=1)
 
     operation_raw_list = {}
     score_raw_list = {}
@@ -790,8 +796,8 @@ if __name__ == '__main__':
         logging.info("operation point based analysis done")
         score_raw = score_performance(data=big_raw, score=score_var, weights=weight_vars,
                                       bads=bad_vars, groups=groups[group_name], filters=filters[filter_name],
-                                      catches=catch_vars, low=low, step=step, high=high)
-        logging.info("score based analysis done")
+                                      catches=catch_vars, low=low, step=step, high=high, cap_one=max_ind[score_var])
+        logging.info("score based analysis done, {} is a {} score".format(score_var, "NN" if max_ind[score_var] else "Normal"))
         if filter_name not in operation_raw_list :
             operation_raw_list[filter_name] = collections.defaultdict(list)
         if filter_name not in score_raw_list :
