@@ -493,6 +493,8 @@ if __name__ == '__main__':
     # json will cover all following options. but it will be overriden if specified in command line
     parser.add_option("-i", "--input", dest="input", action="store", type="string",
                       help="input datasets, separated with ','")
+    parser.add_option("-e", "--head", dest="head", action="store", type="string",
+                      help="header file path. if given, all input datasets share it. must use ',' as separator")
     parser.add_option("-s", "--score", dest="score", action="store", type="string",
                       help="score variables, separated with ','")
     parser.add_option("-b", "--bad", dest="bad", action="store", type="string",
@@ -538,6 +540,7 @@ if __name__ == '__main__':
     low = None
     step = None
     high = None
+    header_path = None
 
     if options.json:
         sources = parse_json(options.json)
@@ -553,6 +556,9 @@ if __name__ == '__main__':
         else:
             logging.error("Error parsing input field in json")
             exit()
+
+        if "head" in sources :
+            header_path = sources['head']
 
         if type(sources['score']) is list:
             score_vars.extend(sources['score'])
@@ -644,6 +650,12 @@ if __name__ == '__main__':
     elif options.input:
         input_data = [x.strip() for x in options.input.split(',')]
     input_data = [x for x in input_data if x != '']
+
+    if options.head :
+        header_path = options.head
+    if header_path :
+        header_line = open(header_path).readline().strip()
+        headers = [x.lower() for x in header_line.split(',')]
 
     if not options.score and len(score_vars) == 0:
         logging.error("Score variables must be specified")
@@ -763,9 +775,14 @@ if __name__ == '__main__':
         if not os.path.exists(filepath) :
             logging.error("File not exist! " + filepath)
             continue
-        cur_data = pd.read_csv(filepath, sep=delimiter, dtype=group_filter_vars_type,
-                               keep_default_na=False, na_values=['', '.'],
-                               skipinitialspace=True)
+        if header_path :
+            cur_data = pd.read_csv(filepath, sep=delimiter, dtype=group_filter_vars_type,
+                                   keep_default_na=False, na_values=['', '.'], names=headers,
+                                   skipinitialspace=True, skiprows=1)
+        else :
+            cur_data = pd.read_csv(filepath, sep=delimiter, dtype=group_filter_vars_type,
+                                   keep_default_na=False, na_values=['', '.'],
+                                   skipinitialspace=True)
         cur_data.rename(columns=dict(zip(cur_data.columns, [x.lower().strip() for x in cur_data.columns])), inplace=True)
 
         if add_windows :
