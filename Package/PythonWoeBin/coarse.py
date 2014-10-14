@@ -64,7 +64,7 @@ class BinWindow:
     def Update(self) :
         self.pBad = self.bad / (self.allBad + self.__eps)
         self.pGood = self.good / (self.allGood + self.__eps)
-        self.odds = self.pBad / (self.pGood + self.__eps)
+        self.odds = self.pGood / (self.pBad + self.__eps)
         self.badRate = self.bad / (self.total + self.__eps)
         self.woe = log((self.pBad + self.__eps) / (self.pGood + self.__eps))
         self.iv = self.woe * (self.pBad - self.pGood)
