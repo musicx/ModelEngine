@@ -494,7 +494,7 @@ if __name__ == '__main__':
     parser.add_option("-i", "--input", dest="input", action="store", type="string",
                       help="input datasets, separated with ','")
     parser.add_option("-e", "--head", dest="head", action="store", type="string",
-                      help="header file path. if given, all input datasets share it. must use ',' as separator")
+                      help="header file path. if given, all input datasets share it. must use same separator as input")
     parser.add_option("-s", "--score", dest="score", action="store", type="string",
                       help="score variables, separated with ','")
     parser.add_option("-b", "--bad", dest="bad", action="store", type="string",
@@ -651,11 +651,16 @@ if __name__ == '__main__':
         input_data = [x.strip() for x in options.input.split(',')]
     input_data = [x for x in input_data if x != '']
 
+    if delimiter is None:
+        delimiter = ','
+    if options.dlm:
+        delimiter = chr(int(options.dlm[1:])) if options.dlm.startswith('x') else options.dlm
+
     if options.head :
         header_path = options.head
     if header_path :
         header_line = open(header_path).readline().strip()
-        headers = [x.lower() for x in header_line.split(',')]
+        headers = [x.lower() for x in header_line.split(delimiter)]
 
     if not options.score and len(score_vars) == 0:
         logging.error("Score variables must be specified")
@@ -712,11 +717,6 @@ if __name__ == '__main__':
             for filter_name in filter_names :
                 key_string, func_string, value_string = parse_filter(filter_name)
                 filters["%s %s %s" % (key_string, func_string, value_string)] = (key_string, func_string, value_string)
-
-    if delimiter is None:
-        delimiter = ','
-    if options.dlm:
-        delimiter = chr(int(options.dlm[1:])) if options.dlm.startswith('x') else options.dlm
 
     if output_filename is None:
         output_filename = 'output'
@@ -959,7 +959,7 @@ if __name__ == '__main__':
             high_tiptable_head = '<tr><th>line</th><th>&nbsp;catch&nbsp;</th><th>&nbsp;hit&nbsp;</th>'
             high_tiptable_string = "'<tr><td style=\"color:{series.color}\">{series.name}&nbsp;:</td><td>&nbsp;{point.y}%&nbsp;</td><td>,&nbsp;{point.hit_rate}%&nbsp;</td>'"
             for catch_rename_name in catch_rename_map.values() :
-                series_catch_name = catch_rename_name.replace(' catch_rate', '')
+                series_catch_name = catch_rename_name.replace(' catch_rate', '').replace("::", "_")
                 high_tooltip_string.append(HIGHCHART_TOOLTIP_TEMPLATE % (series_catch_name, series_catch_name))
                 high_tiptable_head += '<th>&nbsp;%s&nbsp;</th>' % series_catch_name
                 high_tiptable_string += " + '<td>,&nbsp;{point.%s}%%&nbsp;</td>'" % series_catch_name
@@ -1040,7 +1040,7 @@ if __name__ == '__main__':
                         series_data = series_data.reset_index().applymap(lambda x: "{:.2f}".format(float(x) * 100))
                         series_dict = series_data.transpose().to_dict().values()
                         series_string = json.dumps(series_dict)
-                        high_data_string.append('var data_{0} = {1};\n'.format(high_line_ind, series_string.replace('"', '')))
+                        high_data_string.append('var data_{0} = {1};\n'.format(high_line_ind, series_string.replace('"', '').replace('::', '_')))
                         legend_names = ['{}={}'.format(group_key, group_value) if group_key != 'data_file_name' else group_value
                                         for group_key, group_value in zip(groups[group_name], line_names[:-1])] + line_names[-1:]
                         high_series_string.append(HIGHCHART_SERIES_TEMPLATE % (high_line_ind, ', '.join(legend_names)))
@@ -1125,7 +1125,7 @@ if __name__ == '__main__':
                     series_data = series_data.applymap(lambda x: "{:.2f}".format(float(x) * 100)).sort_index().reset_index()
                     series_dict = series_data.transpose().to_dict().values()
                     series_string = json.dumps(series_dict)
-                    high_data_string.append('var data_{0} = {1};\n'.format(high_line_ind, series_string.replace('"', '')))
+                    high_data_string.append('var data_{0} = {1};\n'.format(high_line_ind, series_string.replace('"', '').replace('::', '_')))
                     legend_names = ['{}={}'.format(group_key, group_value) if group_key != 'data_file_name' else group_value
                                     for group_key, group_value in zip(groups[group_name], line_names[:-1])] + line_names[-1:]
                     high_series_string.append(HIGHCHART_SERIES_TEMPLATE % (high_line_ind, ', '.join(legend_names)))
