@@ -954,13 +954,13 @@ if __name__ == '__main__':
             group_score_pivot.columns.names = group_score_columns_names_backup
 
             # draw carts using highcharts
-            high_tooltip_string = ["s += 'catch: ' + this.y + '%",
-                                   "s += 'hit: ' + this.point.hit_rate + '%"]
+            #high_tooltip_string = ["s += 'catch: ' + this.y + '%",
+            #                       "s += 'hit: ' + this.point.hit_rate + '%"]
             high_tiptable_head = '<tr><th>line</th><th>&nbsp;catch&nbsp;</th><th>&nbsp;hit&nbsp;</th>'
             high_tiptable_string = "'<tr><td style=\"color:{series.color}\">{series.name}&nbsp;:</td><td>&nbsp;{point.y}%&nbsp;</td><td>,&nbsp;{point.hit_rate}%&nbsp;</td>'"
             for catch_rename_name in catch_rename_map.values() :
-                series_catch_name = catch_rename_name.replace(' catch_rate', '').replace("::", "_")
-                high_tooltip_string.append(HIGHCHART_TOOLTIP_TEMPLATE % (series_catch_name, series_catch_name))
+                series_catch_name = catch_rename_name.replace(' catch_rate', '')
+                #high_tooltip_string.append(HIGHCHART_TOOLTIP_TEMPLATE % (series_catch_name, series_catch_name))
                 high_tiptable_head += '<th>&nbsp;%s&nbsp;</th>' % series_catch_name
                 high_tiptable_string += " + '<td>,&nbsp;{point.%s}%%&nbsp;</td>'" % series_catch_name
             for pop_rename_name in pop_rename_map.values() :
@@ -971,12 +971,13 @@ if __name__ == '__main__':
                     series_pop_short_name = '$ opt'
                 else :
                     series_pop_short_name = series_pop_name
-                high_tooltip_string.append(HIGHCHART_TOOLTIP_TEMPLATE % (series_pop_short_name, series_pop_name))
+                #high_tooltip_string.append(HIGHCHART_TOOLTIP_TEMPLATE % (series_pop_short_name, series_pop_name))
                 high_tiptable_head += '<th>&nbsp;%s&nbsp;</th>' % series_pop_short_name
                 high_tiptable_string += " + '<td>,&nbsp;{point.%s}%%&nbsp;</td>'" % series_pop_name
-            high_tooltip_string = '<br/>\';\n\t\t\t\t'.join(high_tooltip_string) + '\';'
+            #high_tooltip_string = '<br/>\';\n\t\t\t\t'.join(high_tooltip_string) + '\';'
             high_tiptable_head += "</tr>"
             high_tiptable_string += " + '</tr>'"
+            high_tiptable_string = high_tiptable_string.replace('::', '_')
 
             # for x in product(group, bad, weight, (rank_base + 1(score))),
             # draw score * window * (group - 1) lines for the catch_rate,
@@ -1005,7 +1006,7 @@ if __name__ == '__main__':
                                          title='%s wise catch rate' % weight_name,
                                          subtitle=bad_name + filter_subtitle,
                                          x='%s wise operation point' % base_name,
-                                         tooltip=high_tooltip_string,
+                                         #tooltip=high_tooltip_string,
                                          tiphead=high_tiptable_head,
                                          tiptable=high_tiptable_string,
                                          suf="labels: {formatter: function() {return this.value + '%';}},",
@@ -1093,7 +1094,7 @@ if __name__ == '__main__':
                                  'title': '%s wise catch rate' % weight_name,
                                  'subtitle': bad_name + filter_subtitle,
                                  'x': 'model score',
-                                 'tooltip' : "s += 'score: ' + this.x + '<br/>';\n\t\t\t\t" + high_tooltip_string,
+                                 #'tooltip' : "s += 'score: ' + this.x + '<br/>';\n\t\t\t\t" + high_tooltip_string,
                                  'tiphead' : high_tiptable_head,
                                  'tiptable' : high_tiptable_string,
                                  'suf': '',
