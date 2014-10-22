@@ -667,24 +667,24 @@ if __name__ == '__main__':
         exit()
     elif options.score :
         score_vars = [x.strip() for x in options.score.split(',')]
-    score_vars = [x.lower() for x in score_vars if x != '']
+    score_vars = list(set([x.lower() for x in score_vars if x != '']))
 
     if not options.bad and len(bad_vars) == 0:
         logging.error("Bad variables must be specified")
         exit()
     elif options.bad:
         bad_vars = [x.strip() for x in options.bad.split(',')]
-    bad_vars = [x.lower() for x in bad_vars if x != '']
+    bad_vars = list(set([x.lower() for x in bad_vars if x != '']))
 
     if options.wgt:
         weight_vars = [x.strip() for x in options.wgt.split(',')]
-    weight_vars = [x.lower() for x in weight_vars if x != '']
+    weight_vars = list(set([x.lower() for x in weight_vars if x != '']))
     if len(weight_vars) == 0:
         weight_vars.append('dummy_weight')
 
     if options.catch:
         catch_vars = [x.strip() for x in options.catch.split(',')]
-    catch_vars = [x.lower() for x in catch_vars if x != '']
+    catch_vars = list(set([x.lower() for x in catch_vars if x != '']))
 
     if len(groups) > 0 and options.group :
         groups = collections.OrderedDict()
