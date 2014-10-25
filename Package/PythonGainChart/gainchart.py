@@ -235,6 +235,7 @@ HIGHCHART_BASE_END = '''\t</div>
 \t</body>
 </html>'''
 
+
 def ignore_exception(IgnoreException=Exception, DefaultVal=None):
     """ Decorator for ignoring exception from a function
     e.g.   @ignore_exception(DivideByZero)
