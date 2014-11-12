@@ -796,6 +796,7 @@ if __name__ == '__main__':
     logging.info("fill missing weight, bad, and catch variables with 0")
     big_raw.fillna(pd.Series([0] * len([weight_vars + bad_vars + catch_vars]),
                              index=[weight_vars + bad_vars + catch_vars]), inplace=True)
+    big_raw.loc[:, bad_vars] = pd.DataFrame(big_raw.loc[:, bad_vars]).applymap(np.int)
 
     # score auto-mapping. This step will map [0,1] ranged score to [0,1000], without touching minus scores.
     # FIXED: this takes too much time. need to be removed
