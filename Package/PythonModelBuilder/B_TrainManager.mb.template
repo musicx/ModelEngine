@@ -13,10 +13,6 @@ input :
     drop_vars : drop variables list
     pre : output file name prefix
 ***************/
-
-import com.fairisaac.mb.api.job.launch.LaunchedJob
-import com.fairisaac.mb.common.data.base.BaseTable
-import java.awt.Color 
 /********************************************************************************
 User input
 ********************************************************************************/
