@@ -115,8 +115,10 @@ numHiddenNodesToTry.each(){{nodes->
 String propFile = ''
 while (propertyFiles.size()>0){{
     for (i in 0..numConcurrentJobs-1) {{
-        propFile = propertyFiles.pop()
-        LaunchedJob job1 = app.job.submit(script:'C_TrainWorker.mb',arguments:['-DPropFile='+propFile])
+        if (propertyFiles.size()>0) {{
+            propFile = propertyFiles.pop()
+            LaunchedJob job1 = app.job.submit(script:'C_TrainWorker.mb',arguments:['-DPropFile='+propFile])
+        }}
     }}
     // Wait for the jobs to finish.
     app.job.waitForChildren()
