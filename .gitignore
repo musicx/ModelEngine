@@ -3,6 +3,8 @@
 *.pyc
 *.csv
 *.zip
+*.html
+*.json
 *.gz
 Temp/
 Output/
