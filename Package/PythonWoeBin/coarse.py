@@ -348,19 +348,19 @@ class Variable:
             else :
                 pd = bin.windows[0].total * 1.0 / bin.windows[0].allTotal
                 po = bin.windows[1].total * 1.0 / bin.windows[1].allTotal
-                psi[0][0] += (pd - po) * log(pd / po) / 2
+                psi[0][0] += (pd - po) * log(pd / po)
             if bin.windows[0].pBad == 0 :
                 psi[1][2] += bin.windows[1].pBad
             elif bin.windows[1].pBad == 0 :
                 psi[1][1] += bin.windows[0].pBad
             else :
-                psi[1][0] += (bin.windows[0].pBad - bin.windows[1].pBad) * log(bin.windows[0].pBad / bin.windows[1].pBad) / 2
+                psi[1][0] += (bin.windows[0].pBad - bin.windows[1].pBad) * log(bin.windows[0].pBad / bin.windows[1].pBad)
             if bin.windows[0].pGood == 0 :
                 psi[2][2] += bin.windows[1].pGood
             elif bin.windows[1].pGood == 0 :
                 psi[2][1] += bin.windows[0].pGood
             else :
-                psi[2][0] += (bin.windows[0].pGood - bin.windows[1].pGood) * log(bin.windows[0].pGood / bin.windows[1].pGood) / 2
+                psi[2][0] += (bin.windows[0].pGood - bin.windows[1].pGood) * log(bin.windows[0].pGood / bin.windows[1].pGood)
         return psi
 
     def IV(self, badname) :
@@ -801,9 +801,9 @@ def SaveToCsv(basepath, variables, status, badname) :
                             capWoe = 4
                         elif win.woe < -4 :
                             capWoe = -4
-                        zsclsTemp[0] += capWoe * (win.good + win.bad)
-                        zsclsTemp[1] += (capWoe ** 2) * (win.good + win.bad)
-                        zsclsTemp[2] += win.good + win.bad
+                        zsclsTemp[0] += capWoe * win.total
+                        zsclsTemp[1] += (capWoe ** 2) * win.total
+                        zsclsTemp[2] += win.total
                 # NOTE: notice here that all the discarded bins are missed in the zscaling part.
                 if ind == 0 :
                     zscls[variable.name][0] = zsclsTemp[0] / zsclsTemp[2]
