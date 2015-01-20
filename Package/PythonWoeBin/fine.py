@@ -5,6 +5,8 @@ import logging
 from optparse import OptionParser
 import math
 import os
+import multiprocessing
+import time
 
 __author__ = 'yijiliu'
 
@@ -204,14 +206,14 @@ class Variable :
                         zbin[bad_name] = UniBin(cbin.value, [bad_name])
                         if nonmiss_cnt == 0 :
                             nonmiss_cnt += lefts[bn].wtotal()
-                    elif (  zbin[bad_name].value is not None
-                            and (zbin[bad_name].stats[bad_name].wbad >= bcut[bad_name]
-                            or zbin[bad_name].stats[bad_name].wgood >= gcut[bad_name])
-                            and zbin[bad_name].stats[bad_name].wtotal() >= mcut[bad_name]
-                            and zbin[bad_name].stats[bad_name].wtotal() > 0
-                            and lefts[bad_name].wtotal() >= mcut[bad_name]
-                            and lefts[bad_name].wbad >= bcut[bad_name]
-                            and lefts[bad_name].wgood >= gcut[bad_name]) :
+                    elif (zbin[bad_name].value is not None
+                          and (zbin[bad_name].stats[bad_name].wbad >= bcut[bad_name]
+                          or zbin[bad_name].stats[bad_name].wgood >= gcut[bad_name])
+                          and zbin[bad_name].stats[bad_name].wtotal() >= mcut[bad_name]
+                          and zbin[bad_name].stats[bad_name].wtotal() > 0
+                          and lefts[bad_name].wtotal() >= mcut[bad_name]
+                          and lefts[bad_name].wbad >= bcut[bad_name]
+                          and lefts[bad_name].wgood >= gcut[bad_name]) :
                         self.bins[bad_name].append(zbin[bad_name])
                         zbin[bad_name] = UniBin(cbin.value, [bad_name])
                     zbin[bad_name].mergeStats(cbin)
@@ -703,6 +705,48 @@ def findPatterns(base, patterns) :
     return selected
 
 
+class Consumer(multiprocessing.Process):
+    def __init__(self, task_queue, result_queue):
+        multiprocessing.Process.__init__(self)
+        self.task_queue = task_queue
+        self.result_queue = result_queue
+
+    def run(self):
+        proc_name = self.name
+        logging.info("name: {0}".format(proc_name))
+        while True:
+            next_task = self.task_queue.get()
+            if next_task is None:
+                # Poison pill means shutdown
+                logging.info('{0}: Exiting'.format(proc_name))
+                self.task_queue.task_done()
+                break
+            logging.info("{0}, {1}".format(proc_name, next_task))
+            answer = next_task()
+            self.task_queue.task_done()
+            self.result_queue.put(answer)
+        return
+
+
+class BinTask(object):
+    def __init__(self, options, bad_names, wgt, name_batch, special_type, header_count, job_no):
+        self.options = options
+        self.bad_names = bad_names
+        self.wgt = wgt
+        self.name_batch = name_batch
+        self.special_type = special_type
+        self.header_count = header_count
+        self.job_no = job_no
+
+    def __call__(self):
+        time.sleep(0.1) # pretend to take some time to do the work
+        return distinctSortVariables(self.options, self.bad_names, self.wgt, self.name_batch, self.special_type, self.header_count)
+
+    def __str__(self):
+        return 'Job no {0} processing variables: {1}\n'.format(self.job_no, self.name_batch)
+
+
+
 if __name__ == '__main__' :
     parser = OptionParser()
     parser.add_option("-s", "--src", dest="src", help="develop data file", action="store", type="string")
@@ -718,6 +762,7 @@ if __name__ == '__main__' :
     parser.add_option("-p", "--pct", dest="pct", help="minimum target block, default=2% of all bad or all good", action="store", type="float", default=0.02)
     parser.add_option("-o", "--out", dest="out", help="output fine bin file", action="store", type="string")
     parser.add_option("-l", "--log", dest="log", help="log file, if not given, stdout is used", action="store", type="string")
+    parser.add_option("-c", "--core", dest="core", help="number of cores to use, default is half of cpu cores", action="store", type="int", default=0)
     (options, args) = parser.parse_args()
 
     if not options.src :
@@ -776,6 +821,22 @@ if __name__ == '__main__' :
     bad_names = {}
     for bad in bads :
         bad_names[bad] = vnames[bad]
+
+    # Establish communication queues
+    tasks = multiprocessing.JoinableQueue()
+    results = multiprocessing.Queue()
+
+    multiprocessing.log_to_stderr(level=logging.INFO)
+
+    # Start consumers
+    available_cores = multiprocessing.cpu_count()
+    num_consumers = available_cores >> 1 if options.core == 0 else min(available_cores, options.core)
+    num_jobs = 0
+    logging.info("Creating {0} consumers".format(num_consumers))
+    consumers = [Consumer(tasks, results) for i in xrange(num_consumers)]
+    for w in consumers:
+        w.start()
+
     for vind in xrange(len(vnames)) :
         if len(keeps) > 0 :
             if vnames[vind].lower() in keeps :
@@ -784,14 +845,26 @@ if __name__ == '__main__' :
             if vnames[vind].lower() not in drops and vind not in bads and vind != wgt :
                 name_batch[vind] = vnames[vind]
         if 0 < options.num <= len(name_batch) :
-            # TODO: use multiprocessing to accelerate this process
-            raw = distinctSortVariables(options, bad_names, wgt, name_batch, special_type, header_count)
-            for variable in raw :
-                variables[variable] = raw[variable]
+            tasks.put(BinTask(options, bad_names, wgt, name_batch, special_type, header_count, num_jobs))
+            num_jobs += 1
             name_batch = {}
-    raw = distinctSortVariables(options, bad_names, wgt, name_batch, special_type, header_count)
-    for variable in raw :
-        variables[variable] = raw[variable]
+    tasks.put(BinTask(options, bad_names, wgt, name_batch, special_type, header_count, num_jobs))
+    num_jobs += 1
+
+    logging.info("num_jobs: {0}".format(num_jobs))
+
+    # Add a poison pill for each consumer
+    for i in xrange(num_consumers):
+        tasks.put(None)
+
+    # Wait for all of the tasks to finish
+    tasks.join()
+
+    while num_jobs:
+        raw = results.get()
+        for variable in raw:
+            variables[variable] = raw[variable]
+        num_jobs -= 1
 
     if options.val :
         logging.info("start applying fine bin boundaries to other datasets...")
