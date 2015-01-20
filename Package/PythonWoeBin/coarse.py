@@ -910,6 +910,74 @@ def SaveToSasWoe(path, variables, excludes, badname) :
         woe.write("\n")
     woe.close()
 
+def SaveToSasZWoe(path, variables, excludes, badname, zscls) :
+    """ apply z-scaling in the woe transform """
+    if not excludes :
+        excludes = set()
+    woe = open(path, "w")
+    for variable in variables :
+        if variable.name in excludes :
+            continue
+        is_num = 1 if variable.isnumeric else 0
+        oriName = variable.name
+        woe.write("/* WOE recoding for %s */\n" % (oriName, is_num))
+        woeName = variable.woeName + "_zscl"
+        numbins = len(variable.solution[badname])
+        if variable.isnumeric :
+            woe.write("if %s = . then %s = " % (oriName, woeName))
+            if variable.solution[badname][0].rank == 0 and oriName.lower().find("ars_") < 0:
+                woeValue = variable.solution[badname][0].windows[0].woe
+                if woeValue > 4 :
+                    woeValue = 4
+                elif woeValue < -4 :
+                    woeValue = -4
+                woeValue = (woeValue - zscls[variable.name][0]) / zscls[variable.name][1]
+                woe.write("%.6f;\n" % woeValue)
+            else :
+                woe.write("%.6f;\n" % (-zscls[variable.name][0] / zscls[variable.name][1]))
+            lastValue = "-1e38"
+            for i in xrange(numbins) :
+                if variable.solution[badname][i].rank == 0 :
+                    continue
+                woeValue = variable.solution[badname][i].windows[0].woe
+                value = variable.solution[badname][i].value
+                if woeValue > 4 :
+                    woeValue = 4
+                elif woeValue < -4 :
+                    woeValue = -4
+                woeValue = (woeValue - zscls[variable.name][0]) / zscls[variable.name][1]
+                if i == numbins - 1 :
+                    woe.write("else if %s > %s then %s = %.6f;\nelse %s = %.6f;\n" % (oriName, lastValue, woeName, woeValue, woeName, (-zscls[variable.name][0] / zscls[variable.name][1])))
+                else :
+                    woe.write("elif (%s < %s <= %s) then %s = %.6f;\n" % (lastValue, oriName, value, woeName, woeValue))
+                    lastValue = value
+        else :
+            firstFlag = True
+            values = []
+            for i in xrange(numbins) :
+                if variable.solution[badname][i].rank == 0 :
+                    continue
+                if variable.name.lower().startswith("ars_") and variable.solution[badname][i].value == "" :
+                    continue
+                woeValue = variable.solution[badname][i].windows[0].woe
+                rawValue = variable.solution[badname][i].value
+                if woeValue > 4 :
+                    woeValue = 4
+                elif woeValue < -4 :
+                    woeValue = -4
+                woeValue = (woeValue - zscls[variable.name][0]) / zscls[variable.name][1]
+                values.append(", ".join([repr(x) for x in rawValue.split(",")]))
+                for value in values :
+                    if not firstFlag :
+                        woe.write("else ")
+                    else :
+                        firstFlag = False
+                    woe.write("if %s in (%s) then %s = %.6f;\n" % (oriName, value, woeName, woeValue))
+                values = []
+            woe.write("else %s = %.6f;\n" % (woeName, (-zscls[variable.name][0] / zscls[variable.name][1])))
+        woe.write("\n")
+    woe.close()
+
 def SaveToWoe(path, variables, excludes, badname) :
     if not excludes :
         excludes = set()
@@ -930,9 +998,9 @@ def SaveToWoe(path, variables, excludes, badname) :
                     woeValue = 4
                 elif woeValue < -4 :
                     woeValue = -4
-                woe.write("%.6f;\n" % woeValue)
+                woe.write("%.6f\n" % woeValue)
             else :
-                woe.write("0.000000;\n")
+                woe.write("0.000000\n")
             lastValue = "-1e38"
             for i in xrange(numbins) :
                 if variable.solution[badname][i].rank == 0 :
@@ -968,9 +1036,9 @@ def SaveToWoe(path, variables, excludes, badname) :
                         woe.write("el")
                     else :
                         firstFlag = False
-                    woe.write("if %s in (%s) :\n    %s = %.6f;\n" % (oriName, value, woeName, woeValue))
+                    woe.write("if %s in (%s) :\n    %s = %.6f\n" % (oriName, value, woeName, woeValue))
                 values = []
-            woe.write("else:\n    %s = 0.000000;\n" % woeName)
+            woe.write("else:\n    %s = 0.000000\n" % woeName)
         woe.write("\n")
     woe.close()
 
@@ -996,9 +1064,9 @@ def SaveToZWoe(path, variables, excludes, badname, zscls) :
                 elif woeValue < -4 :
                     woeValue = -4
                 woeValue = (woeValue - zscls[variable.name][0]) / zscls[variable.name][1]
-                woe.write("%.6f;\n" % woeValue)
+                woe.write("%.6f\n" % woeValue)
             else :
-                woe.write("%.6f;\n" % (-zscls[variable.name][0] / zscls[variable.name][1]))
+                woe.write("%.6f\n" % (-zscls[variable.name][0] / zscls[variable.name][1]))
             lastValue = "-1e38"
             for i in xrange(numbins) :
                 if variable.solution[badname][i].rank == 0 :
@@ -1036,9 +1104,9 @@ def SaveToZWoe(path, variables, excludes, badname, zscls) :
                         woe.write("el")
                     else :
                         firstFlag = False
-                    woe.write("if %s in (%s) :\n    %s = %.6f;\n" % (oriName, value, woeName, woeValue))
+                    woe.write("if %s in (%s) :\n    %s = %.6f\n" % (oriName, value, woeName, woeValue))
                 values = []
-            woe.write("else:\n    %s = %.6f;\n" % (woeName, (-zscls[variable.name][0] / zscls[variable.name][1])))
+            woe.write("else:\n    %s = %.6f\n" % (woeName, (-zscls[variable.name][0] / zscls[variable.name][1])))
         woe.write("\n")
     woe.close()
 
@@ -1227,4 +1295,5 @@ if __name__ == "__main__" :
         logging.info("start writing woe file after variable exclusion...")
         SaveToZWoe(options.woe.format("_zscl" + bad_suffix), variables, excludes, badname, zscls)
 
-        #After this process, use the woe file to generate transformed variables. Maybe in another py file.
+        SaveToSasZWoe(options.woe.format("_zscl" + bad_suffix) + ".sas", variables, excludes, badname, zscls)
+
