@@ -920,7 +920,7 @@ def SaveToSasZWoe(path, variables, excludes, badname, zscls) :
             continue
         is_num = 1 if variable.isnumeric else 0
         oriName = variable.name
-        woe.write("/* WOE recoding for %s */\n" % (oriName, is_num))
+        woe.write("/* WOE recoding for %s */\n" % oriName)
         woeName = variable.woeName + "_zscl"
         numbins = len(variable.solution[badname])
         if variable.isnumeric :
