@@ -469,7 +469,8 @@ def GreedySearchTree(bins, inc) :
     if len(mnodes) == 1 :
         snodes = mnodes[0]
     else :
-        snodes = mnodes.sort(cmp=lambda x, y : cmp(len(x[1]), len(y[1])), reverse=True)[0]
+        mnodes.sort(cmp=lambda x, y : cmp(len(x[1]), len(y[1])), reverse=True)
+        snodes = mnodes[0]
     return [nodes[x][0] for x in snodes[1]]
 
 def Evaluate(cvalue, cbin) :
