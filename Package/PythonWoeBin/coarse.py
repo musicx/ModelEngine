@@ -950,7 +950,7 @@ def SaveToSasZWoe(path, variables, excludes, badname, zscls) :
                 if i == numbins - 1 :
                     woe.write("else if %s > %s then %s = %.6f;\nelse %s = %.6f;\n" % (oriName, lastValue, woeName, woeValue, woeName, (-zscls[variable.name][0] / zscls[variable.name][1])))
                 else :
-                    woe.write("elif (%s < %s <= %s) then %s = %.6f;\n" % (lastValue, oriName, value, woeName, woeValue))
+                    woe.write("else if (%s < %s <= %s) then %s = %.6f;\n" % (lastValue, oriName, value, woeName, woeValue))
                     lastValue = value
         else :
             firstFlag = True
