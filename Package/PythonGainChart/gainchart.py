@@ -807,21 +807,22 @@ if __name__ == '__main__':
 
     operation_raw_list = {}
     score_raw_list = {}
-    for filter_name, group_name, score_var, weight_var in itertools.product(filters, groups, score_vars, weight_vars) :
-        logging.info("handling '{0}' based on '{1}' in group '{2}' with filter '{3}'".format(score_var, weight_var, group_name, filter_name))
-        operation_raw = operation_performance(data=big_raw, score=score_var, weights=weight_vars, bads=bad_vars,
-                                              groups=groups[group_name], filters=filters[filter_name],
-                                              catches=catch_vars, points=point, rank_base=weight_var)
+    for filter_name, group_name, score_var in itertools.product(filters, groups, score_vars) :
+        logging.info("handling '{0}' in group '{1}' with filter '{2}'".format(score_var, group_name, filter_name))
+        for weight_var in weight_vars:
+            operation_raw = operation_performance(data=big_raw, score=score_var, weights=weight_vars, bads=bad_vars,
+                                                  groups=groups[group_name], filters=filters[filter_name],
+                                                  catches=catch_vars, points=point, rank_base=weight_var)
+            if filter_name not in operation_raw_list :
+                operation_raw_list[filter_name] = collections.defaultdict(list)
+            operation_raw_list[filter_name][group_name].append(operation_raw)
         logging.info("operation point based analysis done")
         score_raw = score_performance(data=big_raw, score=score_var, weights=weight_vars,
                                       bads=bad_vars, groups=groups[group_name], filters=filters[filter_name],
                                       catches=catch_vars, low=low, step=step, high=high, cap_one=max_ind[score_var])
         logging.info("score based analysis done, {} is a {} score".format(score_var, "NN" if max_ind[score_var] else "Normal"))
-        if filter_name not in operation_raw_list :
-            operation_raw_list[filter_name] = collections.defaultdict(list)
         if filter_name not in score_raw_list :
             score_raw_list[filter_name] = collections.defaultdict(list)
-        operation_raw_list[filter_name][group_name].append(operation_raw)
         score_raw_list[filter_name][group_name].append(score_raw)
     logging.info("all raw analysis is done, start creating pivot tables...")
 
@@ -903,9 +904,9 @@ if __name__ == '__main__':
                 pivot_score_raws.rename(columns=name_maps, inplace=True)
 
             group_operation_pivot = pd.pivot_table(pivot_operation_raws, index=['cut_off'],
-                                                   columns=['rank_base']+groups[group_name]+['score_name'])
+                                                   columns=['rank_base'] + groups[group_name] + ['score_name'])
             group_score_pivot = pd.pivot_table(pivot_score_raws, index=['cut_off'],
-                                               columns=groups[group_name]+['score_name'])
+                                               columns=groups[group_name] + ['score_name'])
             group_score_pivot.sort_index(ascending=False, inplace=True)
 
             group_operation_pivot.fillna(method='pad', inplace=True)
