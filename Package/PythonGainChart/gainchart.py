@@ -959,7 +959,7 @@ if __name__ == '__main__':
             # draw carts using highcharts
             #high_tooltip_string = ["s += 'catch: ' + this.y + '%",
             #                       "s += 'hit: ' + this.point.hit_rate + '%"]
-            high_tiptable_head = '<tr><th>line</th><th>&nbsp;catch&nbsp;</th><th>&nbsp;hit&nbsp;</th>'
+            high_tiptable_head = '<tr><th>line</th><th>&nbsp;catch&nbsp;</th><th>&nbsp;fpr&nbsp;</th>'
             high_tiptable_string = "'<tr><td style=\"color:{series.color}\">{series.name}&nbsp;:</td><td>&nbsp;{point.y}%&nbsp;</td><td>,&nbsp;{point.hit_rate}%&nbsp;</td>'"
             for catch_rename_name in catch_rename_map.values() :
                 series_catch_name = catch_rename_name.replace(' catch_rate', '')
@@ -1040,6 +1040,7 @@ if __name__ == '__main__':
                             series_columns_names.append(pop_rename_name.replace(' wise operation_point', '_opt'))
                         series_data = draw_data.loc[:, series_columns]
                         series_data.columns = series_columns_names
+                        series_data.loc[:, "hit_rate"] = series_data.loc[:, "hit_rate"].apply(lambda h: (1 - h) / (h + 1e-10))
                         series_data.index.name = 'x'
                         series_data = series_data.reset_index().applymap(lambda x: "{:.2f}".format(float(x) * 100))
                         series_dict = series_data.transpose().to_dict().values()
